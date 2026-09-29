@@ -101,6 +101,12 @@ export function TenantLayout() {
       ],
     },
     {
+      label: 'Configuration',
+      items: [
+        { to: '/tenant/revenue', label: 'Revenue Setup' },
+      ],
+    },
+    {
       label: 'Finance',
       items: [
         { to: '/tenant/settlements', label: 'Settlements' },

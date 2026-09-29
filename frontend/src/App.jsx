@@ -18,6 +18,7 @@ import TenantTransactions from './pages/tenant/Transactions'
 import TenantSettlements from './pages/tenant/Settlements'
 import TenantReports from './pages/tenant/Reports'
 import TenantObligations from './pages/tenant/Obligations'
+import TenantRevenue from './pages/tenant/Revenue'
 import PlatformDashboard from './pages/platform/Dashboard'
 import PlatformTenants from './pages/platform/Tenants'
 import PlatformGeography from './pages/platform/Geography'
@@ -62,6 +63,7 @@ export default function App() {
           <Route element={<TenantLayout />}>
             <Route path="/tenant" element={<TenantDashboard />} />
             <Route path="/tenant/obligations" element={<TenantObligations />} />
+            <Route path="/tenant/revenue" element={<TenantRevenue />} />
             <Route path="/tenant/transactions" element={<TenantTransactions />} />
             <Route path="/tenant/settlements" element={<TenantSettlements />} />
             <Route path="/tenant/reports" element={<TenantReports />} />
