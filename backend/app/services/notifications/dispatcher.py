@@ -90,9 +90,9 @@ def _dispatch_channel(
         )
         return
     if channel == "EMAIL":
-        err = send_fn(recipient, subject, body)
+        err = send_fn(recipient, subject, body, db)
     else:
-        err = send_fn(recipient, body)
+        err = send_fn(recipient, body, db)
     _log_delivery(
         db,
         tenant_id=tenant_id,

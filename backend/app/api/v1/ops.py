@@ -893,6 +893,10 @@ def settlement_detail(settlement_id: str, db: DbDep, current = Depends(require_p
             "net_amount": str(s.net_amount),
             "period_start": s.period_start.isoformat(),
             "period_end": s.period_end.isoformat(),
+            "payout_method": s.payout_method,
+            "payout_destination": s.payout_destination,
+            "payout_provider_reference": s.payout_provider_reference,
+            "payout_status": s.payout_status,
         },
         "lines": enriched,
     }

@@ -24,6 +24,11 @@ class Settlement(Base, TimestampMixin, StatusMixin):
     approved_by: Mapped[Optional[str]] = mapped_column(String(36))
     approved_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
     processed_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    payout_method: Mapped[Optional[str]] = mapped_column(String(32))
+    # MOMO | BANK
+    payout_destination: Mapped[Optional[str]] = mapped_column(String(128))
+    payout_provider_reference: Mapped[Optional[str]] = mapped_column(String(128))
+    payout_status: Mapped[Optional[str]] = mapped_column(String(32))
     # status: CALCULATED | PENDING_APPROVAL | APPROVED | PROCESSING | COMPLETED | REJECTED
 
 

@@ -44,6 +44,10 @@ class Transaction(Base, TimestampMixin, StatusMixin):
     total_amount: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
     currency: Mapped[str] = mapped_column(String(8), default="XAF")
     payment_channel: Mapped[str] = mapped_column(String(64), default="MOBILE_MONEY")
+    payment_provider: Mapped[Optional[str]] = mapped_column(String(64), index=True)
+    provider_reference: Mapped[Optional[str]] = mapped_column(String(128), index=True)
+    provider_status: Mapped[Optional[str]] = mapped_column(String(32))
+    payer_msisdn: Mapped[Optional[str]] = mapped_column(String(32))
     initiated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
     settled_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
     # status: INITIATED | PROCESSING | DEBITED | CREDITED | SETTLED | REJECTED

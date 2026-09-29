@@ -20,6 +20,7 @@ from app.models.ledger import FinancialAccount, LedgerPosting, LedgerEntry
 from app.models.receipt import Receipt
 from app.models.settlement import Settlement, SettlementLine, ReconciliationRecord
 from app.models.notification import NotificationDelivery
+from app.models.provider import ProviderConfiguration, ProviderPaymentIntent
 
 __all__ = [
     "Base",
@@ -56,4 +57,6 @@ __all__ = [
     "SettlementLine",
     "ReconciliationRecord",
     "NotificationDelivery",
+    "ProviderConfiguration",
+    "ProviderPaymentIntent",
 ]

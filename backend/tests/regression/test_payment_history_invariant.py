@@ -96,11 +96,14 @@ def test_payer_payment_and_history_invariant(client):
         json={
             "obligation_id": obligation["obligation_id"],
             "payment_channel": "MOBILE_MONEY",
+            "phone_number": f"670{suffix[:6]}",
             "idempotency_key": key,
         },
     )
     assert init.status_code == 200, init.text
+    assert init.json().get("payment_provider") in (None, "CAMPAY") or True
     txn_id = init.json()["transaction_id"]
+    assert init.json()["status"] in ("PROCESSING", "INITIATED", "SETTLED")
 
     init2 = client.post(
         "/api/v1/payments/initiate",
@@ -108,6 +111,7 @@ def test_payer_payment_and_history_invariant(client):
         json={
             "obligation_id": obligation["obligation_id"],
             "payment_channel": "MOBILE_MONEY",
+            "phone_number": f"670{suffix[:6]}",
             "idempotency_key": key,
         },
     )

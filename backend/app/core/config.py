@@ -35,6 +35,10 @@ class Settings(BaseSettings):
     SOCKETIO_PATH: str = "/socket.io"
     SOCKETIO_REDIS_URL: str | None = None
 
+    CONFIG_ENCRYPTION_KEY: str | None = None
+    CAMPAY_BASE_URL: str = "https://demo.campay.net/api"
+    CAMPAY_MOCK: bool = True
+
     @property
     def cors_origin_list(self) -> List[str]:
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]

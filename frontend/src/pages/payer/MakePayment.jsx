@@ -11,6 +11,7 @@ export default function MakePaymentPage() {
   const [obligations, setObligations] = useState([])
   const [obligationId, setObligationId] = useState('')
   const [channel, setChannel] = useState('MOBILE_MONEY')
+  const [phone, setPhone] = useState('')
   const [resolved, setResolved] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -40,8 +41,12 @@ export default function MakePaymentPage() {
       const txn = await api.initiatePayment({
         obligation_id: obligationId,
         payment_channel: channel,
+        phone_number: channel === 'MOBILE_MONEY' ? phone : undefined,
         idempotency_key: newIdempotencyKey(),
       })
+      if (txn.status === 'REJECTED') {
+        throw new Error('Mobile Money collection was rejected by Campay')
+      }
       const detail = await api.confirmPayment(txn.transaction_id)
       navigate(`/payer/payments/${detail.transaction_id}`)
     } catch (err) {
@@ -69,12 +74,23 @@ export default function MakePaymentPage() {
         <div className="field">
           <label>Payment Channel</label>
           <select value={channel} onChange={(e) => setChannel(e.target.value)}>
-            <option value="MOBILE_MONEY">Mobile Money</option>
-            <option value="BANK">Bank</option>
+            <option value="MOBILE_MONEY">Mobile Money (Campay)</option>
             <option value="CARD">Card</option>
             <option value="OTHER">Other</option>
           </select>
         </div>
+        {channel === 'MOBILE_MONEY' && (
+          <div className="field">
+            <label>MoMo phone number</label>
+            <input
+              required
+              placeholder="2376XXXXXXXX"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+            />
+            <p className="muted">Collections are processed exclusively through Campay.</p>
+          </div>
+        )}
         {resolved && (
           <div className="stack">
             <div><span className="muted">Operating Area</span><br /><strong>{resolved.operating_area}</strong></div>

@@ -30,7 +30,7 @@ class CurrentUser:
         return self.user.user_type
 
     def has_permission(self, code: str) -> bool:
-        if self.user.user_type == "PLATFORM_ADMIN":
+        if self.user.user_type in ("PLATFORM_ADMIN", "SUPER_ADMIN"):
             return True
         return code in self.permissions or "*" in self.permissions
 
@@ -70,7 +70,7 @@ def get_current_user(
 
 def require_permissions(*codes: str):
     def _dep(current: Annotated[CurrentUser, Depends(get_current_user)]) -> CurrentUser:
-        if current.user.user_type == "PLATFORM_ADMIN":
+        if current.user.user_type in ("PLATFORM_ADMIN", "SUPER_ADMIN"):
             return current
         if not any(current.has_permission(c) for c in codes):
             raise HTTPException(status_code=403, detail="Insufficient permissions")
@@ -79,5 +79,15 @@ def require_permissions(*codes: str):
     return _dep
 
 
+def require_system_admin(current: Annotated[CurrentUser, Depends(get_current_user)]) -> CurrentUser:
+    """Restrict sensitive provider configuration to system/super admins only."""
+    if current.user.user_type in ("SUPER_ADMIN", "PLATFORM_ADMIN"):
+        return current
+    if current.has_permission("providers:write") or current.has_permission("system:configure"):
+        return current
+    raise HTTPException(status_code=403, detail="System administrator access required")
+
+
 DbDep = Annotated[Session, Depends(get_db)]
 UserDep = Annotated[CurrentUser, Depends(get_current_user)]
+SystemAdminDep = Annotated[CurrentUser, Depends(require_system_admin)]

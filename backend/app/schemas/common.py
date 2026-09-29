@@ -223,6 +223,8 @@ class PaymentInitiateRequest(BaseModel):
     obligation_id: str
     payment_channel: str = "MOBILE_MONEY"
     idempotency_key: str
+    phone_number: Optional[str] = None
+    # Required for MOBILE_MONEY — charged via Campay collect
 
 
 class TransactionOut(ORMModel):
@@ -238,6 +240,10 @@ class TransactionOut(ORMModel):
     total_amount: Decimal
     currency: str
     payment_channel: str
+    payment_provider: Optional[str] = None
+    provider_reference: Optional[str] = None
+    provider_status: Optional[str] = None
+    payer_msisdn: Optional[str] = None
     status: str
     initiated_at: datetime
     settled_at: Optional[datetime] = None
@@ -297,6 +303,15 @@ class SettlementCreateRequest(BaseModel):
     period_end: datetime
 
 
+class SettlementProcessRequest(BaseModel):
+    payout_method: str = "MOMO"
+    # MOMO | BANK
+    momo_number: Optional[str] = None
+    bank_account_number: Optional[str] = None
+    bank_account_name: Optional[str] = None
+    bank_code: Optional[str] = None
+
+
 class SettlementOut(ORMModel):
     settlement_id: str
     settlement_reference: str
@@ -307,6 +322,10 @@ class SettlementOut(ORMModel):
     service_fees: Decimal
     commission_amount: Decimal
     net_amount: Decimal
+    payout_method: Optional[str] = None
+    payout_destination: Optional[str] = None
+    payout_provider_reference: Optional[str] = None
+    payout_status: Optional[str] = None
     currency: str
     status: str
 

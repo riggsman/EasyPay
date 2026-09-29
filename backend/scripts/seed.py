@@ -36,6 +36,8 @@ PERMISSIONS = [
     "dashboards:read",
     "dashboards:platform",
     "reports:read",
+    "providers:write",
+    "system:configure",
 ]
 
 
@@ -122,6 +124,7 @@ def seed():
             perm_map[code] = p
 
         roles = {
+            "SUPER_ADMIN": ("Super Administrator", "PLATFORM", list(PERMISSIONS)),
             "PLATFORM_ADMIN": ("Platform Administrator", "PLATFORM", list(PERMISSIONS)),
             "TENANT_ADMIN": (
                 "Council Administrator",
@@ -153,12 +156,30 @@ def seed():
             username="admin",
             email="admin@easypay.local",
             password_hash=hash_password("admin123"),
-            full_name="Platform Admin",
-            user_type="PLATFORM_ADMIN",
+            full_name="Super Admin",
+            user_type="SUPER_ADMIN",
         )
         db.add(admin)
         db.flush()
-        db.add(UserRole(user_id=admin.user_id, role_id=role_objs["PLATFORM_ADMIN"].role_id))
+        db.add(UserRole(user_id=admin.user_id, role_id=role_objs["SUPER_ADMIN"].role_id))
+
+        from app.services.providers import store as provider_store
+
+        provider_store.upsert_provider_config(
+            db,
+            provider_code=provider_store.PROVIDER_CAMPAY,
+            display_name="Campay",
+            enabled=True,
+            secrets={
+                "username": "demo",
+                "password": "demo",
+                "base_url": "https://demo.campay.net/api",
+                "mock": True,
+                "bank_transfer_path": "/withdraw/",
+            },
+            public_meta={"environment": "sandbox", "mock": True},
+            updated_by=admin.user_id,
+        )
 
         # Tenant admins
         for t, g in tenants:

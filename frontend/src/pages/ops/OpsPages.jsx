@@ -1289,6 +1289,11 @@ export function OpsSettlementDetail() {
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [payoutMethod, setPayoutMethod] = useState('MOMO')
+  const [momoNumber, setMomoNumber] = useState('')
+  const [bankAccount, setBankAccount] = useState('')
+  const [bankName, setBankName] = useState('')
+  const [bankCode, setBankCode] = useState('')
   async function load() {
     setData(await api.opsSettlementDetail(id))
   }
@@ -1306,8 +1311,14 @@ export function OpsSettlementDetail() {
   }
   async function process() {
     try {
-      await api.processSettlement(id)
-      setMessage('Processed')
+      await api.processSettlement(id, {
+        payout_method: payoutMethod,
+        momo_number: payoutMethod === 'MOMO' ? momoNumber || undefined : undefined,
+        bank_account_number: payoutMethod === 'BANK' ? bankAccount || undefined : undefined,
+        bank_account_name: payoutMethod === 'BANK' ? bankName || undefined : undefined,
+        bank_code: payoutMethod === 'BANK' ? bankCode || undefined : undefined,
+      })
+      setMessage(`Payout processed via Campay (${payoutMethod})`)
       await load()
     } catch (e) {
       setError(e.message)
@@ -1326,10 +1337,50 @@ export function OpsSettlementDetail() {
       {message && <div className="alert ok">{message}</div>}
       <div className="row"><span className="pill">{s.status}</span></div>
       <MoneyCells amount={s.gross_amount} fee={s.service_fees} commission={s.commission_amount} total={s.net_amount} />
+      {s.payout_method && (
+        <p className="muted">
+          Payout: {s.payout_method} → {s.payout_destination || '—'} · {s.payout_status || '—'}
+          {s.payout_provider_reference ? ` · Campay ${s.payout_provider_reference}` : ''}
+        </p>
+      )}
       <div className="row">
         {s.status === 'PENDING_APPROVAL' && <button className="btn btn-primary" type="button" onClick={approve}>Approve</button>}
-        {s.status === 'APPROVED' && <button className="btn btn-primary" type="button" onClick={process}>Process</button>}
       </div>
+      {s.status === 'APPROVED' && (
+        <Disclosure title="Client reconciliation payout (Campay)" open>
+          <div className="stack" style={{ maxWidth: 480 }}>
+            <div className="field">
+              <label>Payout channel</label>
+              <select value={payoutMethod} onChange={(e) => setPayoutMethod(e.target.value)}>
+                <option value="MOMO">Mobile Money (Campay disburse)</option>
+                <option value="BANK">Bank transfer (Campay bank service)</option>
+              </select>
+            </div>
+            {payoutMethod === 'MOMO' ? (
+              <div className="field">
+                <label>Council MoMo number</label>
+                <input value={momoNumber} onChange={(e) => setMomoNumber(e.target.value)} placeholder="Uses tenant momo_number if blank" />
+              </div>
+            ) : (
+              <>
+                <div className="field">
+                  <label>Bank account number</label>
+                  <input value={bankAccount} onChange={(e) => setBankAccount(e.target.value)} placeholder="Uses tenant bank account if blank" />
+                </div>
+                <div className="field">
+                  <label>Account name</label>
+                  <input value={bankName} onChange={(e) => setBankName(e.target.value)} />
+                </div>
+                <div className="field">
+                  <label>Bank code</label>
+                  <input value={bankCode} onChange={(e) => setBankCode(e.target.value)} />
+                </div>
+              </>
+            )}
+            <button className="btn btn-primary" type="button" onClick={process}>Process payout via Campay</button>
+          </div>
+        </Disclosure>
+      )}
       <Disclosure title="Geographic settlement lines" open>
         <table className="data">
           <thead>

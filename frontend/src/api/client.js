@@ -162,7 +162,6 @@ export const api = {
   calculateSettlement: (body, tenantId) =>
     request(withTenant('/api/v1/settlements/calculate', tenantId), { method: 'POST', body: JSON.stringify(body) }),
   approveSettlement: (id) => request(`/api/v1/settlements/${id}/approve`, { method: 'POST' }),
-  processSettlement: (id) => request(`/api/v1/settlements/${id}/process`, { method: 'POST' }),
   settlementLines: (id) => request(`/api/v1/settlements/${id}/lines`),
   createObligation: (body) => request('/api/v1/obligations', { method: 'POST', body: JSON.stringify(body) }),
   createRevenueType: (body) => request('/api/v1/revenue-types', { method: 'POST', body: JSON.stringify(body) }),
@@ -198,6 +197,16 @@ export const api = {
   opsSearch: (q, tenantId) => request(withTenant(`/api/v1/ops/search?q=${encodeURIComponent(q)}`, tenantId)),
   exportCollectionsCsv: (tenantId) => download(withTenant('/api/v1/ops/exports/collections.csv', tenantId), 'collections.csv'),
   exportCollectionsXlsx: (tenantId) => download(withTenant('/api/v1/ops/exports/collections.xlsx', tenantId), 'collections.xlsx'),
+
+  providers: () => request('/api/v1/providers'),
+  provider: (code) => request(`/api/v1/providers/${code}`),
+  upsertCampay: (body) => request('/api/v1/providers/campay', { method: 'PUT', body: JSON.stringify(body) }),
+  upsertEmailProvider: (body) => request('/api/v1/providers/email', { method: 'PUT', body: JSON.stringify(body) }),
+  upsertWhatsappProvider: (body) => request('/api/v1/providers/whatsapp', { method: 'PUT', body: JSON.stringify(body) }),
+  upsertSmsProvider: (body) => request('/api/v1/providers/sms', { method: 'PUT', body: JSON.stringify(body) }),
+  testCampayToken: () => request('/api/v1/providers/campay/test-token', { method: 'POST' }),
+  processSettlement: (id, body) =>
+    request(`/api/v1/settlements/${id}/process`, { method: 'POST', body: JSON.stringify(body || {}) }),
 
   clearTokens,
   setTokens,

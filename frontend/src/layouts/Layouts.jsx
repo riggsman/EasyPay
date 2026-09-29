@@ -16,7 +16,7 @@ export function PublicLayout() {
             <Link to="/verify">Verify</Link>
             {isAuthenticated ? (
               <>
-                <Link to={userType === 'PAYER' ? '/payer' : userType === 'PLATFORM_ADMIN' ? '/platform' : '/tenant'}>
+                <Link to={userType === 'PAYER' ? '/payer' : (userType === 'PLATFORM_ADMIN' || userType === 'SUPER_ADMIN') ? '/platform' : '/tenant'}>
                   Dashboard
                 </Link>
                 <button className="btn btn-ghost" type="button" onClick={logout}>Sign out</button>
@@ -272,7 +272,10 @@ export function PlatformLayout() {
     },
     {
       label: 'Configuration',
-      items: [{ to: '/platform/config', label: 'System Config' }],
+      items: [
+        { to: '/platform/providers', label: 'Providers (Campay / Email / WA)' },
+        { to: '/platform/config', label: 'System Config' },
+      ],
     },
     {
       label: 'Operations',

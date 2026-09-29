@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from app.core.deps import DbDep, UserDep, require_permissions
 from app.schemas.pagination import PaginatedResponse, paginate_query
 from app.models.settlement import Settlement, SettlementLine
-from app.schemas.common import SettlementCreateRequest, SettlementOut
+from app.schemas.common import SettlementCreateRequest, SettlementOut, SettlementProcessRequest
 from app.services.settlements import approve_settlement, calculate_settlement, process_settlement
 
 router = APIRouter(prefix="/settlements")
@@ -61,8 +61,13 @@ def approve(settlement_id: str, db: DbDep, current = Depends(require_permissions
 
 
 @router.post("/{settlement_id}/process", response_model=SettlementOut)
-def process(settlement_id: str, db: DbDep, current = Depends(require_permissions("settlements:write"))):
-    return process_settlement(db, settlement_id)
+def process(
+    settlement_id: str,
+    db: DbDep,
+    current=Depends(require_permissions("settlements:write")),
+    body: SettlementProcessRequest | None = None,
+):
+    return process_settlement(db, settlement_id, body or SettlementProcessRequest())
 
 
 @router.get("/{settlement_id}/lines")

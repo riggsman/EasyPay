@@ -119,6 +119,12 @@ def initiate_payment(db: Session, payer: Payer, data: PaymentInitiateRequest, ac
     db.add(collection)
     db.flush()
 
+    channel = (data.payment_channel or "MOBILE_MONEY").upper()
+    is_momo = channel in ("MOBILE_MONEY", "MOMO", "MTN_MOMO", "ORANGE_MONEY")
+    phone = data.phone_number or payer.phone_number
+    if is_momo and not phone:
+        raise HTTPException(status_code=422, detail="phone_number required for Mobile Money payments")
+
     txn = Transaction(
         transaction_reference=_next_ref(db, "TXN"),
         correlation_id=new_id("cor_"),
@@ -134,13 +140,49 @@ def initiate_payment(db: Session, payer: Payer, data: PaymentInitiateRequest, ac
         commission_amount=ctx.commission_amount,
         total_amount=ctx.total_amount,
         currency=ctx.currency,
-        payment_channel=data.payment_channel,
+        payment_channel="MOBILE_MONEY" if is_momo else channel,
+        payment_provider="CAMPAY" if is_momo else None,
+        payer_msisdn=phone if is_momo else None,
         status="INITIATED",
         initiated_at=utcnow(),
     )
     db.add(txn)
     db.flush()
     _add_event(db, txn, None, "INITIATED", "Payment initiated", actor_user_id)
+
+    if is_momo:
+        from app.services.providers.campay import CampayClient, record_intent
+
+        client = CampayClient(db)
+        result = client.collect(
+            amount=txn.total_amount,
+            phone=phone,
+            description=f"EasyPay {txn.transaction_reference}",
+            external_reference=txn.transaction_reference,
+            currency=txn.currency,
+        )
+        record_intent(
+            db,
+            operation="COLLECT",
+            entity_type="transaction",
+            entity_id=txn.transaction_id,
+            tenant_id=txn.transaction_tenant_id,
+            amount=str(txn.total_amount),
+            currency=txn.currency,
+            destination=phone,
+            result=result,
+            external_reference=txn.transaction_reference,
+            payout_method="MOMO",
+        )
+        txn.provider_reference = result.reference
+        txn.provider_status = result.status
+        if not result.ok:
+            txn.status = "REJECTED"
+            _add_event(db, txn, "INITIATED", "REJECTED", result.error or "Campay collect failed", actor_user_id)
+        else:
+            txn.status = "PROCESSING"
+            _add_event(db, txn, "INITIATED", "PROCESSING", f"Campay collect {result.reference}", actor_user_id)
+
     db.add(IdempotencyKey(key_value=data.idempotency_key, scope="payment", response_ref=txn.transaction_id))
     write_audit(
         db,
@@ -149,7 +191,12 @@ def initiate_payment(db: Session, payer: Payer, data: PaymentInitiateRequest, ac
         entity_type="transaction",
         entity_id=txn.transaction_id,
         action="INITIATE",
-        after={"amount": str(ctx.amount), "zone": ctx.geographic_unit_id},
+        after={
+            "amount": str(ctx.amount),
+            "zone": ctx.geographic_unit_id,
+            "provider": txn.payment_provider,
+            "provider_reference": txn.provider_reference,
+        },
     )
     db.commit()
     db.refresh(txn)
@@ -159,8 +206,8 @@ def initiate_payment(db: Session, payer: Payer, data: PaymentInitiateRequest, ac
         db,
         txn,
         from_status=None,
-        to_status="INITIATED",
-        note="Payment initiated",
+        to_status=txn.status,
+        note="Payment initiated via Campay" if is_momo else "Payment initiated",
         actor_user_id=actor_user_id,
     )
     return txn
@@ -204,9 +251,30 @@ def complete_payment_happy_path(db: Session, transaction_id: str, actor_user_id:
     txn = db.get(Transaction, transaction_id)
     if not txn:
         raise HTTPException(status_code=404, detail="Transaction not found")
+    if txn.status == "REJECTED":
+        return txn
+
+    # MoMo must settle only after Campay confirms SUCCESSFUL
+    if txn.payment_provider == "CAMPAY" and txn.provider_reference:
+        from app.services.providers.campay import CampayClient
+
+        client = CampayClient(db)
+        status_result = client.get_transaction_status(txn.provider_reference)
+        txn.provider_status = status_result.status
+        db.flush()
+        if status_result.status in ("FAILED", "CANCELED", "CANCELLED"):
+            if txn.status != "REJECTED":
+                txn = advance_transaction(db, txn, "REJECTED", actor_user_id, f"Campay {status_result.status}")
+            return txn
+        if status_result.status not in ("SUCCESSFUL", "SUCCESS", "COMPLETED") and not client.mock:
+            # Leave in PROCESSING until webhook/poll confirms
+            db.commit()
+            db.refresh(txn)
+            return txn
+
     for state, note in [
         ("PROCESSING", "Payment processing"),
-        ("DEBITED", "Customer account debited"),
+        ("DEBITED", "Customer account debited via Campay" if txn.payment_provider == "CAMPAY" else "Customer account debited"),
         ("CREDITED", "Council credited"),
         ("SETTLED", "Settlement completed"),
     ]:

@@ -19,6 +19,7 @@ import TenantObligations from './pages/tenant/Obligations'
 import TenantRevenue from './pages/tenant/Revenue'
 import PlatformTenants from './pages/platform/Tenants'
 import PlatformGeography from './pages/platform/Geography'
+import PlatformProviders from './pages/platform/Providers'
 import {
   OpsDashboard,
   OpsAlerts,
@@ -49,7 +50,7 @@ function RequireAuth({ allow }) {
   if (!isAuthenticated) return <Navigate to="/login" replace />
   if (allow && !allow.includes(userType)) {
     if (userType === 'PAYER') return <Navigate to="/payer" replace />
-    if (userType === 'PLATFORM_ADMIN') return <Navigate to="/platform" replace />
+    if (userType === 'PLATFORM_ADMIN' || userType === 'SUPER_ADMIN') return <Navigate to="/platform" replace />
     return <Navigate to="/tenant" replace />
   }
   return <Outlet />
@@ -119,11 +120,12 @@ export default function App() {
           </Route>
         </Route>
 
-        <Route element={<RequireAuth allow={['PLATFORM_ADMIN']} />}>
+        <Route element={<RequireAuth allow={['PLATFORM_ADMIN', 'SUPER_ADMIN']} />}>
           <Route element={<PlatformLayout />}>
             <Route path="/platform" element={<OpsDashboard mode="platform" />} />
             <Route path="/platform/tenants" element={<PlatformTenants />} />
             <Route path="/platform/geography" element={<PlatformGeography />} />
+            <Route path="/platform/providers" element={<PlatformProviders />} />
             {sharedOpsRoutes('/platform')}
           </Route>
         </Route>
