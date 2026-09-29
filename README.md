@@ -50,7 +50,7 @@ docker compose up --build
 
 | User | Password | Role |
 |------|----------|------|
-| `admin` | `admin123` | Platform admin |
+| `admin` (`wireitapp@gmail.com` / `682835503`) | `admin123` | Super admin |
 | `kumba1_admin` | `council123` | Kumba 1 council admin |
 | `abctrading` | `payer123` | Payer in Kumba 1 |
 

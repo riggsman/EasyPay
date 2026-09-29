@@ -48,7 +48,7 @@ export default function LoginPage() {
         <Link to="/register">Create Account</Link>
       </p>
       <p className="muted" style={{ fontSize: '0.85rem' }}>
-        Demo: abctrading / payer123 · kumba1_admin / council123 · admin / admin123
+        Demo: abctrading / payer123 · kumba1_admin / council123 · admin / admin123 (wireitapp@gmail.com · 682835503)
       </p>
     </div>
   )

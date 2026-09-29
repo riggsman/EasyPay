@@ -40,20 +40,109 @@ PERMISSIONS = [
     "system:configure",
 ]
 
+# Default SUPER ADMIN (login via username, email, or phone)
+DEFAULT_SUPER_ADMIN = {
+    "username": "admin",
+    "email": "wireitapp@gmail.com",
+    "phone_number": "682835503",
+    "password": "admin123",
+    "full_name": "Super Admin",
+}
+
+
+def ensure_super_admin_role(db) -> Role:
+    """Ensure SUPER_ADMIN role exists with full permission set."""
+    role = db.query(Role).filter(Role.role_code == "SUPER_ADMIN").first()
+    if not role:
+        role = Role(
+            role_code="SUPER_ADMIN",
+            role_name="Super Administrator",
+            scope="PLATFORM",
+        )
+        db.add(role)
+        db.flush()
+
+    for code in PERMISSIONS:
+        perm = db.query(Permission).filter(Permission.permission_code == code).first()
+        if not perm:
+            perm = Permission(permission_code=code, description=code)
+            db.add(perm)
+            db.flush()
+        link = (
+            db.query(RolePermission)
+            .filter(
+                RolePermission.role_id == role.role_id,
+                RolePermission.permission_id == perm.permission_id,
+            )
+            .first()
+        )
+        if not link:
+            db.add(RolePermission(role_id=role.role_id, permission_id=perm.permission_id))
+    return role
+
+
+def ensure_default_super_admin(db) -> User:
+    """Create or update the default SUPER_ADMIN seed user."""
+    role = ensure_super_admin_role(db)
+
+    user = (
+        db.query(User)
+        .filter(
+            (User.username == DEFAULT_SUPER_ADMIN["username"])
+            | (User.email == DEFAULT_SUPER_ADMIN["email"])
+            | (User.phone_number == DEFAULT_SUPER_ADMIN["phone_number"])
+        )
+        .first()
+    )
+    if user:
+        user.username = DEFAULT_SUPER_ADMIN["username"]
+        user.email = DEFAULT_SUPER_ADMIN["email"]
+        user.phone_number = DEFAULT_SUPER_ADMIN["phone_number"]
+        user.full_name = DEFAULT_SUPER_ADMIN["full_name"]
+        user.user_type = "SUPER_ADMIN"
+        user.is_active = True
+        user.password_hash = hash_password(DEFAULT_SUPER_ADMIN["password"])
+    else:
+        user = User(
+            username=DEFAULT_SUPER_ADMIN["username"],
+            email=DEFAULT_SUPER_ADMIN["email"],
+            phone_number=DEFAULT_SUPER_ADMIN["phone_number"],
+            password_hash=hash_password(DEFAULT_SUPER_ADMIN["password"]),
+            full_name=DEFAULT_SUPER_ADMIN["full_name"],
+            user_type="SUPER_ADMIN",
+        )
+        db.add(user)
+        db.flush()
+
+    link = (
+        db.query(UserRole)
+        .filter(UserRole.user_id == user.user_id, UserRole.role_id == role.role_id)
+        .first()
+    )
+    if not link:
+        db.add(UserRole(user_id=user.user_id, role_id=role.role_id))
+    return user
+
 
 def seed():
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
         if db.query(Platform).first():
-            print("Already seeded — skipping")
+            admin = ensure_default_super_admin(db)
+            db.commit()
+            print("Already seeded — ensured default SUPER ADMIN")
+            print(
+                f"  {admin.username} / {DEFAULT_SUPER_ADMIN['password']} "
+                f"({admin.email}, {admin.phone_number})"
+            )
             return
 
         platform = Platform(
             platform_code="EASYPAY",
             platform_name="EasyPay",
             legal_name="EasyPay Collection Platform",
-            email="admin@easypay.local",
+            email=DEFAULT_SUPER_ADMIN["email"],
             default_currency="XAF",
         )
         db.add(platform)
@@ -152,16 +241,8 @@ def seed():
             for pc in perms:
                 db.add(RolePermission(role_id=r.role_id, permission_id=perm_map[pc].permission_id))
 
-        admin = User(
-            username="admin",
-            email="admin@easypay.local",
-            password_hash=hash_password("admin123"),
-            full_name="Super Admin",
-            user_type="SUPER_ADMIN",
-        )
-        db.add(admin)
+        admin = ensure_default_super_admin(db)
         db.flush()
-        db.add(UserRole(user_id=admin.user_id, role_id=role_objs["SUPER_ADMIN"].role_id))
 
         from app.services.providers import store as provider_store
 
@@ -318,7 +399,10 @@ def seed():
 
         db.commit()
         print("Seed complete.")
-        print("  admin / admin123 (platform)")
+        print(
+            f"  {DEFAULT_SUPER_ADMIN['username']} / {DEFAULT_SUPER_ADMIN['password']} "
+            f"(SUPER ADMIN · {DEFAULT_SUPER_ADMIN['email']} · {DEFAULT_SUPER_ADMIN['phone_number']})"
+        )
         print("  kumba1_admin / council123 (tenant)")
         print("  abctrading / payer123 (payer in Kumba 1)")
     finally:
