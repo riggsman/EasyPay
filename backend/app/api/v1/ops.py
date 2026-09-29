@@ -490,56 +490,10 @@ def tenant_statement(
 
 @router.get("/alerts")
 def ops_alerts(db: DbDep, current = Depends(require_permissions("dashboards:read", "dashboards:platform", "settlements:read"))):
+    from app.services.alerts import compute_ops_alerts
+
     tid = _tenant_scope(current)
-    pending_q = db.query(Transaction).filter(Transaction.status.in_(["INITIATED", "PROCESSING"]))
-    rejected_q = db.query(Transaction).filter(Transaction.status == "REJECTED")
-    settle_q = db.query(Settlement).filter(Settlement.status == "PENDING_APPROVAL")
-    if tid:
-        pending_q = pending_q.filter(Transaction.transaction_tenant_id == tid)
-        rejected_q = rejected_q.filter(Transaction.transaction_tenant_id == tid)
-        settle_q = settle_q.filter(Settlement.tenant_id == tid)
-    pending = pending_q.order_by(Transaction.initiated_at.desc()).limit(50).all()
-    rejected = rejected_q.order_by(Transaction.initiated_at.desc()).limit(50).all()
-    settlements = settle_q.order_by(Settlement.created_at.desc()).limit(50).all()
-    return {
-        "pending_transactions": len(pending),
-        "rejected_transactions": len(rejected),
-        "settlements_awaiting_approval": len(settlements),
-        "items": {
-            "pending": [
-                {
-                    "transaction_id": t.transaction_id,
-                    "reference": t.transaction_reference,
-                    "amount": str(t.total_amount),
-                    "status": t.status,
-                    "initiated_at": t.initiated_at.isoformat() if t.initiated_at else None,
-                    "href_hint": "transactions",
-                }
-                for t in pending
-            ],
-            "rejected": [
-                {
-                    "transaction_id": t.transaction_id,
-                    "reference": t.transaction_reference,
-                    "amount": str(t.total_amount),
-                    "status": t.status,
-                    "initiated_at": t.initiated_at.isoformat() if t.initiated_at else None,
-                    "href_hint": "transactions",
-                }
-                for t in rejected
-            ],
-            "settlements": [
-                {
-                    "settlement_id": s.settlement_id,
-                    "reference": s.settlement_reference,
-                    "net_amount": str(s.net_amount),
-                    "status": s.status,
-                    "href_hint": "settlements",
-                }
-                for s in settlements
-            ],
-        },
-    }
+    return compute_ops_alerts(db, tid)
 
 
 @router.get("/search")

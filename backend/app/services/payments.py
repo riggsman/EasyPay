@@ -153,6 +153,16 @@ def initiate_payment(db: Session, payer: Payer, data: PaymentInitiateRequest, ac
     )
     db.commit()
     db.refresh(txn)
+    from app.realtime.publisher import publish_transaction_status
+
+    publish_transaction_status(
+        db,
+        txn,
+        from_status=None,
+        to_status="INITIATED",
+        note="Payment initiated",
+        actor_user_id=actor_user_id,
+    )
     return txn
 
 
@@ -160,7 +170,8 @@ def advance_transaction(db: Session, txn: Transaction, to_status: str, actor_use
     allowed = VALID_TRANSITIONS.get(txn.status, set())
     if to_status not in allowed:
         raise HTTPException(status_code=422, detail=f"Cannot transition from {txn.status} to {to_status}")
-    _add_event(db, txn, txn.status, to_status, note, actor_user_id)
+    from_status = txn.status
+    _add_event(db, txn, from_status, to_status, note, actor_user_id)
     txn.status = to_status
     if to_status == "SETTLED":
         txn.settled_at = utcnow()
@@ -176,6 +187,16 @@ def advance_transaction(db: Session, txn: Transaction, to_status: str, actor_use
                 col.status = "COMPLETED"
     db.commit()
     db.refresh(txn)
+    from app.realtime.publisher import publish_transaction_status
+
+    publish_transaction_status(
+        db,
+        txn,
+        from_status=from_status,
+        to_status=to_status,
+        note=note,
+        actor_user_id=actor_user_id,
+    )
     return txn
 
 

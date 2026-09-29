@@ -31,9 +31,17 @@ class Settings(BaseSettings):
     WHATSAPP_API_URL: str | None = None
     WHATSAPP_API_KEY: str | None = None
 
+    SOCKETIO_ENABLED: bool = True
+    SOCKETIO_PATH: str = "/socket.io"
+    SOCKETIO_REDIS_URL: str | None = None
+
     @property
     def cors_origin_list(self) -> List[str]:
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
+
+    @property
+    def socketio_cors_origins(self) -> List[str]:
+        return self.cors_origin_list if self.cors_origin_list else ["*"]
 
 
 @lru_cache

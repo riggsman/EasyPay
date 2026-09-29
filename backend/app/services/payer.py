@@ -228,4 +228,23 @@ def review_zone_change(db: Session, request_id: str, approve: bool, reviewer_id:
 
         notify_zone_change_decision(db, payer, approve, notes)
         db.commit()
+        from app.realtime.publisher import publish
+
+        from app.realtime import schemas as evt
+        from app.realtime.rooms import rooms_for_tenant_event
+
+        publish(
+            evt.envelope(
+                "payer.zone_change_decision",
+                {
+                    "payer_id": payer.payer_id,
+                    "approved": approve,
+                    "notes": notes,
+                },
+                tenant_id=payer.tenant_id,
+                entity_type="payer",
+                entity_id=payer.payer_id,
+            ),
+            rooms_for_tenant_event(payer.tenant_id),
+        )
     return req

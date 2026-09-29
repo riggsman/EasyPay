@@ -70,6 +70,17 @@ export function OpsAlerts() {
   useEffect(() => {
     api.opsAlerts().then(setAlerts).catch(() => {})
   }, [])
+  useEffect(() => {
+    function onRealtime(e) {
+      const msg = e.detail
+      if (msg?.type === 'alerts.updated') {
+        const { digest: _d, ...snapshot } = msg.payload || {}
+        setAlerts(snapshot)
+      }
+    }
+    window.addEventListener('ep:realtime', onRealtime)
+    return () => window.removeEventListener('ep:realtime', onRealtime)
+  }, [])
 
   return (
     <div className="rise stack">
@@ -964,6 +975,16 @@ export function OpsConfig() {
   }
   useEffect(() => {
     load().catch((e) => setError(e.message))
+  }, [])
+  useEffect(() => {
+    function onRealtime(e) {
+      const msg = e.detail
+      if (msg?.type === 'notification.delivery') {
+        api.opsNotificationLog({ page: 1, page_size: 20 }).then(setLogPage).catch(() => {})
+      }
+    }
+    window.addEventListener('ep:realtime', onRealtime)
+    return () => window.removeEventListener('ep:realtime', onRealtime)
   }, [])
   async function toggleChannel(key, value) {
     setError('')

@@ -18,6 +18,17 @@ export default function PaymentDetail() {
       .catch((e) => setError(e.message))
   }, [id])
 
+  useEffect(() => {
+    function onRealtime(e) {
+      const msg = e.detail
+      if (msg?.type !== 'transaction.status_changed') return
+      if (msg.entity_id !== id && msg.payload?.transaction_id !== id) return
+      api.payment(id).then(setTxn).catch(() => {})
+    }
+    window.addEventListener('ep:realtime', onRealtime)
+    return () => window.removeEventListener('ep:realtime', onRealtime)
+  }, [id])
+
   if (error) return <div className="alert">{error}</div>
   if (!txn) return <p>Loading…</p>
 

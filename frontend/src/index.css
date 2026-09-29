@@ -428,3 +428,28 @@ button.linkish {
   .btn { width: auto; }
   table.data th, table.data td { font-size: 0.85rem; }
 }
+
+.realtime-toasts {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 50;
+  display: grid;
+  gap: 0.5rem;
+  max-width: min(360px, calc(100vw - 2rem));
+}
+.realtime-toast {
+  padding: 0.75rem 1rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  animation: rise 0.25s ease-out;
+}
+.realtime-toast strong { display: block; font-size: 0.9rem; }
+.ops-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted, #888);
+  display: inline-block;
+  margin-right: 0.35rem;
+}
+.ops-live-dot.on { background: #1f6b4a; box-shadow: 0 0 0 3px rgba(31, 107, 74, 0.25); }

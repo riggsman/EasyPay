@@ -1,5 +1,6 @@
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { RealtimeProvider } from './contexts/RealtimeContext'
 import { PublicLayout, PayerLayout, TenantLayout, PlatformLayout } from './layouts/Layouts'
 import LandingPage from './pages/public/LandingPage'
 import LoginPage from './pages/public/LoginPage'
@@ -84,6 +85,7 @@ function sharedOpsRoutes(prefix) {
 export default function App() {
   return (
     <AuthProvider>
+      <RealtimeProvider>
       <Routes>
         <Route element={<PublicLayout />}>
           <Route path="/" element={<LandingPage />} />
@@ -128,6 +130,7 @@ export default function App() {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </RealtimeProvider>
     </AuthProvider>
   )
 }

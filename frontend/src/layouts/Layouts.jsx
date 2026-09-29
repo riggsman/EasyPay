@@ -1,6 +1,7 @@
 import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { useRealtime } from '../contexts/RealtimeContext'
 import { api } from '../api/client'
 
 export function PublicLayout() {
@@ -40,6 +41,7 @@ export function PublicLayout() {
 
 function OpsShell({ title, links, contextLabel, basePath, showOpsChrome = true, tenantOptions = [] }) {
   const { logout, session } = useAuth()
+  const realtime = useRealtime()
   const navigate = useNavigate()
   const [alerts, setAlerts] = useState(null)
   const [q, setQ] = useState('')
@@ -52,8 +54,24 @@ function OpsShell({ title, links, contextLabel, basePath, showOpsChrome = true, 
   }, [showOpsChrome])
 
   useEffect(() => {
+    if (!showOpsChrome) return undefined
+    function onRealtime(e) {
+      const msg = e.detail
+      if (msg?.type === 'alerts.updated') {
+        if (session?.user_type === 'STAFF' && msg.tenant_id && msg.tenant_id !== session?.tenant_id) return
+        if (session?.user_type === 'PLATFORM_ADMIN' && tenantFilter && msg.tenant_id && msg.tenant_id !== tenantFilter) return
+        const { digest: _d, ...snapshot } = msg.payload || {}
+        setAlerts(snapshot)
+      }
+    }
+    window.addEventListener('ep:realtime', onRealtime)
+    return () => window.removeEventListener('ep:realtime', onRealtime)
+  }, [showOpsChrome, session?.user_type, session?.tenant_id, tenantFilter])
+
+  useEffect(() => {
     if (tenantFilter) localStorage.setItem('ep_tenant_filter', tenantFilter)
     else localStorage.removeItem('ep_tenant_filter')
+    window.dispatchEvent(new CustomEvent('ep:tenant-filter', { detail: tenantFilter || null }))
   }, [tenantFilter])
 
   useEffect(() => {
@@ -115,6 +133,12 @@ function OpsShell({ title, links, contextLabel, basePath, showOpsChrome = true, 
             <Link to={`${basePath}/alerts`} className="ops-alert-chip" title="Operational alerts">
               Alerts{alertCount ? ` · ${alertCount}` : ''}
             </Link>
+          )}
+          {showOpsChrome && (
+            <span className="muted" title={realtime?.connected ? 'Realtime connected' : 'Realtime offline'}>
+              <span className={`ops-live-dot ${realtime?.connected ? 'on' : ''}`} />
+              Live
+            </span>
           )}
           <span className="ops-user">{session?.full_name}</span>
           <button className="btn btn-ghost" type="button" onClick={logout}>Sign out</button>

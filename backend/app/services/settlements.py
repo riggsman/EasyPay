@@ -69,6 +69,9 @@ def calculate_settlement(db: Session, tenant_id: str, period_start: datetime, pe
     settlement.status = "PENDING_APPROVAL"
     db.commit()
     db.refresh(settlement)
+    from app.realtime.publisher import publish_settlement_event
+
+    publish_settlement_event(db, settlement, "settlement.pending_approval")
     return settlement
 
 
@@ -85,6 +88,9 @@ def approve_settlement(db: Session, settlement_id: str, approver_id: str) -> Set
 
     notify_settlement_approved(db, s, approver_id)
     db.commit()
+    from app.realtime.publisher import publish_settlement_event
+
+    publish_settlement_event(db, s, "settlement.approved", {"approved_by": approver_id})
     return s
 
 
@@ -98,4 +104,7 @@ def process_settlement(db: Session, settlement_id: str) -> Settlement:
     s.processed_at = utcnow()
     db.commit()
     db.refresh(s)
+    from app.realtime.publisher import publish_settlement_event
+
+    publish_settlement_event(db, s, "settlement.completed")
     return s

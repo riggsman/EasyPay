@@ -1,5 +1,7 @@
+import asyncio
 from contextlib import asynccontextmanager
 
+import socketio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -7,11 +9,14 @@ from app.api.v1 import api_router
 from app.core.config import get_settings
 from app.db.models import Base
 from app.db.session import engine
+from app.realtime.publisher import bind_event_loop
+from app.realtime.server import init_socket_server
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    bind_event_loop(asyncio.get_running_loop())
     yield
 
 
@@ -29,9 +34,18 @@ def create_app() -> FastAPI:
 
     @app.get("/health")
     def health():
-        return {"status": "ok", "app": settings.APP_NAME}
+        return {"status": "ok", "app": settings.APP_NAME, "realtime": settings.SOCKETIO_ENABLED}
 
     return app
 
 
-app = create_app()
+fastapi_app = create_app()
+
+if get_settings().SOCKETIO_ENABLED:
+    sio = init_socket_server()
+    asgi_app = socketio.ASGIApp(sio, other_asgi_app=fastapi_app, socketio_path=get_settings().SOCKETIO_PATH)
+else:
+    asgi_app = fastapi_app
+
+# Uvicorn entrypoint: app.main:asgi_app
+app = asgi_app

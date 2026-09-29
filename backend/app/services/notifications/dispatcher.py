@@ -25,21 +25,25 @@ def _log_delivery(
     error: Optional[str],
     entity_type: Optional[str],
     entity_id: Optional[str],
-) -> None:
-    db.add(
-        NotificationDelivery(
-            tenant_id=tenant_id,
-            channel=channel,
-            event_type=event_type,
-            recipient=recipient,
-            subject=subject,
-            body_preview=body[:2000],
-            status=status,
-            error_message=error,
-            entity_type=entity_type,
-            entity_id=entity_id,
-        )
+) -> NotificationDelivery:
+    row = NotificationDelivery(
+        tenant_id=tenant_id,
+        channel=channel,
+        event_type=event_type,
+        recipient=recipient,
+        subject=subject,
+        body_preview=body[:2000],
+        status=status,
+        error_message=error,
+        entity_type=entity_type,
+        entity_id=entity_id,
     )
+    db.add(row)
+    db.flush()
+    from app.realtime.publisher import publish_notification_delivery
+
+    publish_notification_delivery(row)
+    return row
 
 
 def _dispatch_channel(
