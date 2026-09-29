@@ -1,8 +1,25 @@
-import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, Link, useNavigate, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useRealtime } from '../contexts/RealtimeContext'
 import { api } from '../api/client'
+
+const DROPDOWN_NAV_LABELS = new Set([
+  'Platform / Tenant',
+  'Configuration',
+  'Operations',
+  'Finance',
+  'Governance',
+])
+
+function pathMatchesItem(pathname, item) {
+  if (item.end) return pathname === item.to
+  return pathname === item.to || pathname.startsWith(`${item.to}/`)
+}
+
+function groupContainsPath(group, pathname) {
+  return group.items.some((item) => pathMatchesItem(pathname, item))
+}
 
 export function PublicLayout() {
   const { isAuthenticated, userType, logout } = useAuth()
@@ -43,10 +60,30 @@ function OpsShell({ title, links, contextLabel, basePath, showOpsChrome = true, 
   const { logout, session } = useAuth()
   const realtime = useRealtime()
   const navigate = useNavigate()
+  const location = useLocation()
   const [alerts, setAlerts] = useState(null)
   const [q, setQ] = useState('')
   const [searchResults, setSearchResults] = useState(null)
   const [tenantFilter, setTenantFilter] = useState(localStorage.getItem('ep_tenant_filter') || '')
+  const [openGroups, setOpenGroups] = useState(() => {
+    const initial = {}
+    for (const group of links) {
+      if (!(group.dropdown || DROPDOWN_NAV_LABELS.has(group.label))) continue
+      if (groupContainsPath(group, window.location.pathname)) initial[group.label] = true
+    }
+    return initial
+  })
+
+  useEffect(() => {
+    setOpenGroups((prev) => {
+      const next = { ...prev }
+      for (const group of links) {
+        if (!(group.dropdown || DROPDOWN_NAV_LABELS.has(group.label))) continue
+        if (groupContainsPath(group, location.pathname)) next[group.label] = true
+      }
+      return next
+    })
+  }, [location.pathname, links])
 
   useEffect(() => {
     if (!showOpsChrome) return
@@ -148,14 +185,43 @@ function OpsShell({ title, links, contextLabel, basePath, showOpsChrome = true, 
         <aside className="ops-aside">
           <p className="ops-aside-title">{title}</p>
           <nav>
-            {links.map((group) => (
-              <div key={group.label} className="ops-nav-group">
-                <div className="ops-nav-label">{group.label}</div>
-                {group.items.map((l) => (
-                  <NavLink key={l.to} to={l.to} end={l.end}>{l.label}</NavLink>
-                ))}
-              </div>
-            ))}
+            {links.map((group) => {
+              const isDropdown = group.dropdown || DROPDOWN_NAV_LABELS.has(group.label)
+              const isOpen = !isDropdown || openGroups[group.label] === true
+              const activeInGroup = groupContainsPath(group, location.pathname)
+              return (
+                <div
+                  key={group.label}
+                  className={`ops-nav-group${isDropdown ? ' ops-nav-dropdown' : ''}${isOpen ? ' is-open' : ''}${activeInGroup ? ' has-active' : ''}`}
+                >
+                  {isDropdown ? (
+                    <button
+                      type="button"
+                      className="ops-nav-label ops-nav-toggle"
+                      aria-expanded={isOpen}
+                      onClick={() =>
+                        setOpenGroups((prev) => ({
+                          ...prev,
+                          [group.label]: !prev[group.label],
+                        }))
+                      }
+                    >
+                      <span>{group.label}</span>
+                      <span className="ops-nav-chevron" aria-hidden="true" />
+                    </button>
+                  ) : (
+                    <div className="ops-nav-label">{group.label}</div>
+                  )}
+                  {isOpen && (
+                    <div className="ops-nav-items">
+                      {group.items.map((l) => (
+                        <NavLink key={l.to} to={l.to} end={l.end}>{l.label}</NavLink>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </nav>
         </aside>
         <main className="ops-main">
@@ -182,6 +248,7 @@ function tenantLinks(base = '/tenant') {
     },
     {
       label: 'Configuration',
+      dropdown: true,
       items: [
         { to: `${base}/revenue`, label: 'Revenue Types' },
         { to: `${base}/fees`, label: 'Fees' },
@@ -191,6 +258,7 @@ function tenantLinks(base = '/tenant') {
     },
     {
       label: 'Operations',
+      dropdown: true,
       items: [
         { to: `${base}/payers`, label: 'Payers' },
         { to: `${base}/obligations`, label: 'Obligations' },
@@ -200,6 +268,7 @@ function tenantLinks(base = '/tenant') {
     },
     {
       label: 'Finance',
+      dropdown: true,
       items: [
         { to: `${base}/ledger`, label: 'Ledger' },
         { to: `${base}/receipts`, label: 'Receipts' },
@@ -211,6 +280,7 @@ function tenantLinks(base = '/tenant') {
     },
     {
       label: 'Governance',
+      dropdown: true,
       items: [{ to: `${base}/audit`, label: 'Audit Trail' }],
     },
   ]
@@ -264,6 +334,7 @@ export function PlatformLayout() {
     },
     {
       label: 'Platform / Tenant',
+      dropdown: true,
       items: [
         { to: '/platform/tenants', label: 'Tenants' },
         { to: '/platform/geography', label: 'Geography' },
@@ -272,6 +343,7 @@ export function PlatformLayout() {
     },
     {
       label: 'Configuration',
+      dropdown: true,
       items: [
         { to: '/platform/providers', label: 'Providers (Campay / Email / WA / SMS)' },
         { to: '/platform/fees', label: 'Fees' },
@@ -281,6 +353,7 @@ export function PlatformLayout() {
     },
     {
       label: 'Operations',
+      dropdown: true,
       items: [
         { to: '/platform/payers', label: 'Payers' },
         { to: '/platform/obligations', label: 'Obligations' },
@@ -290,6 +363,7 @@ export function PlatformLayout() {
     },
     {
       label: 'Finance',
+      dropdown: true,
       items: [
         { to: '/platform/ledger', label: 'Ledger' },
         { to: '/platform/receipts', label: 'Receipts' },
@@ -301,6 +375,7 @@ export function PlatformLayout() {
     },
     {
       label: 'Governance',
+      dropdown: true,
       items: [{ to: '/platform/audit', label: 'Audit Trail' }],
     },
   ]

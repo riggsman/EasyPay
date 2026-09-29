@@ -333,6 +333,49 @@ button.linkish {
   color: rgba(237,245,240,0.55);
   margin: 0 0 0.35rem 0.5rem;
 }
+.ops-nav-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin: 0 0 0.2rem;
+  padding: 0.45rem 0.55rem 0.45rem 0.65rem;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(237,245,240,0.72);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  text-align: left;
+}
+.ops-nav-toggle:hover,
+.ops-nav-dropdown.has-active > .ops-nav-toggle {
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+}
+.ops-nav-chevron {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 160ms ease;
+  opacity: 0.85;
+  flex-shrink: 0;
+  margin-left: 0.35rem;
+}
+.ops-nav-dropdown.is-open > .ops-nav-toggle .ops-nav-chevron {
+  transform: rotate(45deg);
+}
+.ops-nav-items {
+  display: grid;
+  gap: 0.05rem;
+  padding-left: 0.15rem;
+}
 .ops-aside nav a {
   display: block;
   padding: 0.55rem 0.75rem;
@@ -419,6 +462,7 @@ button.linkish {
     gap: 0.25rem;
   }
   .ops-nav-group { margin-bottom: 0.5rem; width: 100%; }
+  .ops-nav-toggle { width: 100%; }
   .ops-aside nav a { margin: 0; }
   .ops-search { min-width: 0; width: 100%; }
   .public-nav { gap: 0.75rem; }
