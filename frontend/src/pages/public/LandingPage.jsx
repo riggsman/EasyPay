@@ -1,0 +1,48 @@
+import { Link } from 'react-router-dom'
+
+export default function LandingPage() {
+  return (
+    <>
+      <div className="container">
+        <section className="hero">
+          <div className="brand-hero rise">EasyPay</div>
+          <h1 className="rise rise-delay-1">Pay your council levies</h1>
+          <p className="rise rise-delay-2">
+            Simple, secure, traceable, and verifiable payments from your registered operating area.
+          </p>
+          <div className="hero-actions rise rise-delay-3">
+            <Link className="btn btn-sun" to="/register">Create Payer Account</Link>
+            <Link className="btn btn-ghost" style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.45)' }} to="/login">Sign In</Link>
+            <Link className="btn btn-ghost" style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.45)' }} to="/verify">Verify Receipt</Link>
+          </div>
+        </section>
+      </div>
+
+      <section className="section" id="how">
+        <div className="container">
+          <h2>How it works</h2>
+          <p>Register, select your council zone, view levies, pay, and verify your official receipt.</p>
+          <ol className="steps">
+            <li>Create Account</li>
+            <li>Select Operating Council</li>
+            <li>View Obligations</li>
+            <li>Make Payment</li>
+            <li>Receive Verified Receipt</li>
+          </ol>
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="container">
+          <h2>Supported councils</h2>
+          <p>Start with Southwest Region councils — including Kumba 1, Kumba 2, and Kumba 3.</p>
+          <div className="row" style={{ marginTop: '1rem' }}>
+            <span className="pill">Kumba 1</span>
+            <span className="pill">Kumba 2</span>
+            <span className="pill">Kumba 3</span>
+          </div>
+        </div>
+      </section>
+    </>
+  )
+}
