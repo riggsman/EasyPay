@@ -167,6 +167,9 @@ def advance_transaction(db: Session, txn: Transaction, to_status: str, actor_use
         _post_ledger(db, txn)
         _update_obligation(db, txn)
         _issue_receipt(db, txn)
+        from app.services.notifications.dispatcher import notify_payment_settled
+
+        notify_payment_settled(db, txn)
         if txn.collection_id:
             col = db.get(Collection, txn.collection_id)
             if col:

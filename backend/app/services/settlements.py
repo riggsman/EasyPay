@@ -81,6 +81,10 @@ def approve_settlement(db: Session, settlement_id: str, approver_id: str) -> Set
     s.approved_at = utcnow()
     db.commit()
     db.refresh(s)
+    from app.services.notifications.dispatcher import notify_settlement_approved
+
+    notify_settlement_approved(db, s, approver_id)
+    db.commit()
     return s
 
 

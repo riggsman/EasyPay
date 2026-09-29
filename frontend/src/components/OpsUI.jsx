@@ -64,3 +64,29 @@ export function EmptyRow({ cols, text = 'No records.' }) {
     </tr>
   )
 }
+
+export function PaginationBar({ page, totalPages, total, pageSize, onPageChange, onPageSizeChange }) {
+  if (!total && page === 1) return null
+  return (
+    <div className="row" style={{ justifyContent: 'space-between', marginTop: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+      <span className="muted">
+        Page {page} of {Math.max(totalPages, 1)} · {total} total
+      </span>
+      <div className="row">
+        {onPageSizeChange && (
+          <select value={pageSize} onChange={(e) => onPageSizeChange(Number(e.target.value))} aria-label="Page size">
+            {[10, 25, 50, 100].map((n) => (
+              <option key={n} value={n}>{n} / page</option>
+            ))}
+          </select>
+        )}
+        <button className="btn btn-ghost" type="button" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
+          Previous
+        </button>
+        <button className="btn btn-ghost" type="button" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)}>
+          Next
+        </button>
+      </div>
+    </div>
+  )
+}

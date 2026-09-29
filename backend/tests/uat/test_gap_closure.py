@@ -18,7 +18,7 @@ def test_uat_search_and_drill_and_exports(client):
 
     payments = client.get("/api/v1/payments", headers=headers)
     assert payments.status_code == 200
-    rows = payments.json()
+    rows = payments.json().get("items", payments.json())
     if rows:
         drill = client.get(f"/api/v1/ops/drill/transaction/{rows[0]['transaction_id']}", headers=headers)
         assert drill.status_code == 200, drill.text
@@ -47,7 +47,7 @@ def test_uat_payer_statement_and_own_drill(client):
     stmt = client.get("/api/v1/ops/payer-statement", headers=headers)
     assert stmt.status_code == 200
     payments = client.get("/api/v1/payments", headers=headers)
-    rows = payments.json()
+    rows = payments.json().get("items", payments.json())
     if rows:
         drill = client.get(f"/api/v1/ops/drill/transaction/{rows[0]['transaction_id']}", headers=headers)
         assert drill.status_code == 200

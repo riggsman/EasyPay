@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { api, formatMoney } from '../../api/client'
+import { api, formatMoney, listItems } from '../../api/client'
 import { Disclosure, EmptyRow, PageHeader, StatLink } from '../../components/OpsUI'
 
 export default function PayerStatements() {
@@ -43,9 +43,9 @@ export function PayerNotifications() {
   const [payments, setPayments] = useState([])
   const [area, setArea] = useState(null)
   useEffect(() => {
-    Promise.all([api.payments(), api.operatingArea()])
+    Promise.all([api.payments({ page: 1, page_size: 10 }), api.operatingArea()])
       .then(([p, a]) => {
-        setPayments(p.slice(0, 10))
+        setPayments(listItems(p))
         setArea(a)
       })
       .catch(() => {})

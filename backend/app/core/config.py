@@ -17,6 +17,20 @@ class Settings(BaseSettings):
     DEFAULT_CURRENCY: str = "XAF"
     ALGORITHM: str = "HS256"
 
+    NOTIFICATIONS_EMAIL_ENABLED: bool = True
+    NOTIFICATIONS_SMS_ENABLED: bool = False
+    NOTIFICATIONS_WHATSAPP_ENABLED: bool = True
+    SMTP_HOST: str | None = None
+    SMTP_PORT: int = 587
+    SMTP_USER: str | None = None
+    SMTP_PASSWORD: str | None = None
+    SMTP_FROM: str | None = None
+    SMTP_USE_TLS: bool = True
+    SMS_API_URL: str | None = None
+    SMS_API_KEY: str | None = None
+    WHATSAPP_API_URL: str | None = None
+    WHATSAPP_API_KEY: str | None = None
+
     @property
     def cors_origin_list(self) -> List[str]:
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]

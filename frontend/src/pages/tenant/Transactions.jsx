@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api, formatMoney } from '../../api/client'
+import { api, formatMoney, listItems } from '../../api/client'
 
 export default function TenantTransactions() {
   const [rows, setRows] = useState([])
@@ -8,7 +8,7 @@ export default function TenantTransactions() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    api.payments().then(setRows).catch((e) => setError(e.message))
+    api.payments({ page: 1, page_size: 100 }).then((res) => setRows(listItems(res))).catch((e) => setError(e.message))
   }, [])
 
   async function openDetail(id) {

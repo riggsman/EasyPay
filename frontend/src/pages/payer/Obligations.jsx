@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { api, formatMoney } from '../../api/client'
+import { api, formatMoney, listItems } from '../../api/client'
 
 export default function ObligationsPage() {
   const [rows, setRows] = useState([])
   const [error, setError] = useState('')
 
   useEffect(() => {
-    api.obligations().then(setRows).catch((e) => setError(e.message))
+    api.obligations({ page: 1, page_size: 100 }).then((res) => setRows(listItems(res))).catch((e) => setError(e.message))
   }, [])
 
   return (

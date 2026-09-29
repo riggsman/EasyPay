@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { api, formatMoney } from '../../api/client'
+import { api, formatMoney, listItems } from '../../api/client'
 
 export default function PaymentHistory() {
   const [rows, setRows] = useState([])
   const [error, setError] = useState('')
 
   useEffect(() => {
-    api.payments().then(setRows).catch((e) => setError(e.message))
+    api.payments({ page: 1, page_size: 100 }).then((res) => setRows(listItems(res))).catch((e) => setError(e.message))
   }, [])
 
   return (

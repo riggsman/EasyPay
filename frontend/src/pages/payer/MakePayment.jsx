@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api, formatMoney } from '../../api/client'
+import { api, formatMoney, listItems } from '../../api/client'
 
 function newIdempotencyKey() {
   return `pay-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
@@ -17,7 +17,8 @@ export default function MakePaymentPage() {
   const due = useMemo(() => obligations.filter((o) => Number(o.balance) > 0), [obligations])
 
   useEffect(() => {
-    api.obligations().then((rows) => {
+    api.obligations({ page: 1, page_size: 100 }).then((res) => {
+      const rows = listItems(res)
       setObligations(rows)
       const first = rows.find((o) => Number(o.balance) > 0)
       if (first) setObligationId(first.obligation_id)

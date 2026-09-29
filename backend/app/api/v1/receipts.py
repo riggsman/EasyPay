@@ -1,11 +1,13 @@
-from typing import List, Optional
+from datetime import datetime
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
 from app.core.deps import DbDep, UserDep, require_permissions
 from app.models.receipt import Receipt
 from app.schemas.common import PublicVerifyOut, ReceiptOut
+from app.schemas.pagination import PaginatedResponse, paginate_query
 from app.services.payer import get_payer_by_user
 
 router = APIRouter()
@@ -29,15 +31,37 @@ def _mask_name(name: str) -> str:
     return " ".join(masked)
 
 
-@router.get("/receipts", response_model=List[ReceiptOut])
-def list_receipts(db: DbDep, current: UserDep):
-    q = db.query(Receipt)
+@router.get("/receipts", response_model=PaginatedResponse[ReceiptOut])
+def list_receipts(
+    db: DbDep,
+    current: UserDep,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(25, ge=1, le=200),
+    status: Optional[str] = None,
+    date_from: Optional[datetime] = None,
+    date_to: Optional[datetime] = None,
+):
+    query = db.query(Receipt)
     if current.user_type == "PAYER":
         payer = get_payer_by_user(db, current.user_id)
-        q = q.filter(Receipt.payer_id == payer.payer_id)
+        query = query.filter(Receipt.payer_id == payer.payer_id)
     elif current.user_type != "PLATFORM_ADMIN":
-        q = q.filter(Receipt.tenant_id == current.tenant_id)
-    return q.order_by(Receipt.payment_date.desc()).limit(100).all()
+        query = query.filter(Receipt.tenant_id == current.tenant_id)
+    if status:
+        query = query.filter(Receipt.status == status)
+    if date_from:
+        query = query.filter(Receipt.payment_date >= date_from)
+    if date_to:
+        query = query.filter(Receipt.payment_date <= date_to)
+    query = query.order_by(Receipt.payment_date.desc())
+    items, total, total_pages = paginate_query(query, page, page_size)
+    return PaginatedResponse(
+        items=[ReceiptOut.model_validate(i) for i in items],
+        page=page,
+        page_size=page_size,
+        total=total,
+        total_pages=total_pages,
+    )
 
 
 @router.get("/receipts/{receipt_id}", response_model=ReceiptOut)

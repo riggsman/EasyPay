@@ -1,4 +1,5 @@
 """Admin / financial operations read APIs supporting the ops console."""
+from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional
 
@@ -6,6 +7,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict
 
 from app.core.deps import DbDep, UserDep, require_permissions  # noqa: F401
+from app.models.notification import NotificationDelivery
+from app.schemas.pagination import PaginatedResponse, paginate_query
+from app.services.notifications import config as notification_config
 from app.models.audit import AuditEvent
 from app.models.config import SystemConfiguration
 from app.models.ledger import FinancialAccount, LedgerEntry, LedgerPosting
@@ -148,47 +152,146 @@ def _tenant_scope(current: UserDep) -> Optional[str]:
     return current.tenant_id
 
 
-@router.get("/payers", response_model=List[PayerListOut])
-def list_payers(db: DbDep, current = Depends(require_permissions("tenants:read", "obligations:write", "dashboards:read"))):
-    q = db.query(Payer)
+@router.get("/payers", response_model=PaginatedResponse[PayerListOut])
+def list_payers(
+    db: DbDep,
+    current=Depends(require_permissions("tenants:read", "obligations:write", "dashboards:read")),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(25, ge=1, le=200),
+    q: Optional[str] = None,
+    status: Optional[str] = None,
+    tenant_id: Optional[str] = None,
+    geographic_unit_id: Optional[str] = None,
+):
+    query = db.query(Payer)
     tid = _tenant_scope(current)
     if tid:
-        q = q.filter(Payer.tenant_id == tid)
-    return q.order_by(Payer.created_at.desc()).limit(200).all()
+        query = query.filter(Payer.tenant_id == tid)
+    elif tenant_id:
+        query = query.filter(Payer.tenant_id == tenant_id)
+    if status:
+        query = query.filter(Payer.status == status)
+    if geographic_unit_id:
+        query = query.filter(Payer.current_geographic_unit_id == geographic_unit_id)
+    if q:
+        like = f"%{q.strip()}%"
+        query = query.filter(
+            (Payer.payer_reference.like(like))
+            | (Payer.full_name.like(like))
+            | (Payer.business_name.like(like))
+            | (Payer.email.like(like))
+        )
+    query = query.order_by(Payer.created_at.desc())
+    items, total, total_pages = paginate_query(query, page, page_size)
+    return PaginatedResponse(
+        items=[PayerListOut.model_validate(i) for i in items],
+        page=page,
+        page_size=page_size,
+        total=total,
+        total_pages=total_pages,
+    )
 
 
-@router.get("/collections", response_model=List[CollectionOut])
-def list_collections(db: DbDep, current = Depends(require_permissions("dashboards:read", "reports:read"))):
-    q = db.query(Collection)
+@router.get("/collections", response_model=PaginatedResponse[CollectionOut])
+def list_collections(
+    db: DbDep,
+    current=Depends(require_permissions("dashboards:read", "reports:read")),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(25, ge=1, le=200),
+    status: Optional[str] = None,
+    payer_id: Optional[str] = None,
+    tenant_id: Optional[str] = None,
+    date_from: Optional[datetime] = None,
+    date_to: Optional[datetime] = None,
+):
+    query = db.query(Collection)
     tid = _tenant_scope(current)
     if tid:
-        q = q.filter(Collection.tenant_id == tid)
-    return q.order_by(Collection.created_at.desc()).limit(200).all()
+        query = query.filter(Collection.tenant_id == tid)
+    elif tenant_id:
+        query = query.filter(Collection.tenant_id == tenant_id)
+    if status:
+        query = query.filter(Collection.status == status)
+    if payer_id:
+        query = query.filter(Collection.payer_id == payer_id)
+    if date_from:
+        query = query.filter(Collection.created_at >= date_from)
+    if date_to:
+        query = query.filter(Collection.created_at <= date_to)
+    query = query.order_by(Collection.created_at.desc())
+    items, total, total_pages = paginate_query(query, page, page_size)
+    return PaginatedResponse(
+        items=[CollectionOut.model_validate(i) for i in items],
+        page=page,
+        page_size=page_size,
+        total=total,
+        total_pages=total_pages,
+    )
 
 
-@router.get("/audit", response_model=List[AuditOut])
+@router.get("/audit", response_model=PaginatedResponse[AuditOut])
 def list_audit(
     db: DbDep,
-    current = Depends(require_permissions("dashboards:platform", "tenants:read", "reports:read")),
+    current=Depends(require_permissions("dashboards:platform", "tenants:read", "reports:read")),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
     entity_type: Optional[str] = None,
-    limit: int = Query(100, le=500),
+    action: Optional[str] = None,
+    date_from: Optional[datetime] = None,
+    date_to: Optional[datetime] = None,
 ):
-    q = db.query(AuditEvent)
+    query = db.query(AuditEvent)
     tid = _tenant_scope(current)
     if tid:
-        q = q.filter(AuditEvent.tenant_id == tid)
+        query = query.filter(AuditEvent.tenant_id == tid)
     if entity_type:
-        q = q.filter(AuditEvent.entity_type == entity_type)
-    return q.order_by(AuditEvent.created_at.desc()).limit(limit).all()
+        query = query.filter(AuditEvent.entity_type == entity_type)
+    if action:
+        query = query.filter(AuditEvent.action == action)
+    if date_from:
+        query = query.filter(AuditEvent.created_at >= date_from)
+    if date_to:
+        query = query.filter(AuditEvent.created_at <= date_to)
+    query = query.order_by(AuditEvent.created_at.desc())
+    items, total, total_pages = paginate_query(query, page, page_size)
+    return PaginatedResponse(
+        items=[AuditOut.model_validate(i) for i in items],
+        page=page,
+        page_size=page_size,
+        total=total,
+        total_pages=total_pages,
+    )
 
 
-@router.get("/ledger/postings", response_model=List[LedgerPostingOut])
-def list_postings(db: DbDep, current = Depends(require_permissions("reports:read", "settlements:read"))):
-    q = db.query(LedgerPosting)
+@router.get("/ledger/postings", response_model=PaginatedResponse[LedgerPostingOut])
+def list_postings(
+    db: DbDep,
+    current=Depends(require_permissions("reports:read", "settlements:read")),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(25, ge=1, le=200),
+    posting_type: Optional[str] = None,
+    date_from: Optional[datetime] = None,
+    date_to: Optional[datetime] = None,
+):
+    query = db.query(LedgerPosting)
     tid = _tenant_scope(current)
     if tid:
-        q = q.filter(LedgerPosting.tenant_id == tid)
-    return q.order_by(LedgerPosting.created_at.desc()).limit(200).all()
+        query = query.filter(LedgerPosting.tenant_id == tid)
+    if posting_type:
+        query = query.filter(LedgerPosting.posting_type == posting_type)
+    if date_from:
+        query = query.filter(LedgerPosting.created_at >= date_from)
+    if date_to:
+        query = query.filter(LedgerPosting.created_at <= date_to)
+    query = query.order_by(LedgerPosting.created_at.desc())
+    items, total, total_pages = paginate_query(query, page, page_size)
+    return PaginatedResponse(
+        items=[LedgerPostingOut.model_validate(i) for i in items],
+        page=page,
+        page_size=page_size,
+        total=total,
+        total_pages=total_pages,
+    )
 
 
 @router.get("/ledger/postings/{posting_id}/entries", response_model=List[LedgerEntryOut])
@@ -1041,3 +1144,106 @@ def payer_statement(db: DbDep, current: UserDep):
             for t in txns
         ],
     }
+
+
+class NotificationSettingsOut(BaseModel):
+    email_enabled: bool
+    sms_enabled: bool
+    whatsapp_enabled: bool
+    sms_master_switch: bool
+    email_master_switch: bool
+    whatsapp_master_switch: bool
+
+
+class NotificationSettingsIn(BaseModel):
+    email_enabled: Optional[bool] = None
+    sms_enabled: Optional[bool] = None
+    whatsapp_enabled: Optional[bool] = None
+
+
+class NotificationDeliveryOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    notification_id: str
+    tenant_id: Optional[str] = None
+    channel: str
+    event_type: str
+    recipient: str
+    subject: Optional[str] = None
+    body_preview: Optional[str] = None
+    status: str
+    error_message: Optional[str] = None
+    entity_type: Optional[str] = None
+    entity_id: Optional[str] = None
+    created_at: object
+
+
+@router.get("/notifications/settings", response_model=NotificationSettingsOut)
+def get_notification_settings(db: DbDep, current=Depends(require_permissions("platforms:write", "tenants:write", "reports:read"))):
+    tid = current.tenant_id if current.user_type != "PLATFORM_ADMIN" else None
+    return NotificationSettingsOut(**notification_config.notification_settings_snapshot(db, tid))
+
+
+@router.put("/notifications/settings", response_model=NotificationSettingsOut)
+def update_notification_settings(
+    body: NotificationSettingsIn,
+    db: DbDep,
+    current=Depends(require_permissions("platforms:write", "tenants:write")),
+):
+    tid = current.tenant_id if current.user_type != "PLATFORM_ADMIN" else None
+    if body.email_enabled is not None:
+        notification_config.upsert_channel_toggle(
+            db,
+            tid,
+            notification_config.CONFIG_EMAIL,
+            body.email_enabled,
+            "Enable outbound email notifications",
+        )
+    if body.sms_enabled is not None:
+        notification_config.upsert_channel_toggle(
+            db,
+            tid,
+            notification_config.CONFIG_SMS,
+            body.sms_enabled,
+            "Enable outbound SMS notifications (requires NOTIFICATIONS_SMS_ENABLED env)",
+        )
+    if body.whatsapp_enabled is not None:
+        notification_config.upsert_channel_toggle(
+            db,
+            tid,
+            notification_config.CONFIG_WHATSAPP,
+            body.whatsapp_enabled,
+            "Enable outbound WhatsApp notifications",
+        )
+    db.commit()
+    return NotificationSettingsOut(**notification_config.notification_settings_snapshot(db, tid))
+
+
+@router.get("/notifications/delivery-log", response_model=PaginatedResponse[NotificationDeliveryOut])
+def list_notification_deliveries(
+    db: DbDep,
+    current=Depends(require_permissions("reports:read", "dashboards:read")),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
+    channel: Optional[str] = None,
+    status: Optional[str] = None,
+    event_type: Optional[str] = None,
+):
+    query = db.query(NotificationDelivery)
+    tid = _tenant_scope(current)
+    if tid:
+        query = query.filter(NotificationDelivery.tenant_id == tid)
+    if channel:
+        query = query.filter(NotificationDelivery.channel == channel.upper())
+    if status:
+        query = query.filter(NotificationDelivery.status == status.upper())
+    if event_type:
+        query = query.filter(NotificationDelivery.event_type == event_type)
+    query = query.order_by(NotificationDelivery.created_at.desc())
+    items, total, total_pages = paginate_query(query, page, page_size)
+    return PaginatedResponse(
+        items=[NotificationDeliveryOut.model_validate(i) for i in items],
+        page=page,
+        page_size=page_size,
+        total=total,
+        total_pages=total_pages,
+    )

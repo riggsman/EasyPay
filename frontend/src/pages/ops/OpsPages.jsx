@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom'
-import { api, formatMoney } from '../../api/client'
-import { ChainSteps, Disclosure, EmptyRow, MoneyCells, PageHeader, StatLink } from '../../components/OpsUI'
+import { api, formatMoney, listItems } from '../../api/client'
+import { ChainSteps, Disclosure, EmptyRow, MoneyCells, PageHeader, PaginationBar, StatLink } from '../../components/OpsUI'
 
 function useCtx() {
   return useOutletContext() || {}
@@ -183,19 +183,27 @@ export function OpsPayers() {
   const navigate = useNavigate()
   const { searchQuery, tenantFilter } = useCtx()
   const [rows, setRows] = useState([])
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(25)
+  const [meta, setMeta] = useState({ total: 0, total_pages: 1 })
   const [error, setError] = useState('')
   useEffect(() => {
-    api.opsPayers().then(setRows).catch((e) => setError(e.message))
-  }, [])
-  const filtered = useMemo(
-    () =>
-      rows.filter(
-        (r) =>
-          (!tenantFilter || r.tenant_id === tenantFilter) &&
-          matches(searchQuery, r.payer_reference, r.full_name, r.business_name, r.email),
-      ),
-    [rows, searchQuery, tenantFilter],
-  )
+    setPage(1)
+  }, [searchQuery, tenantFilter])
+  useEffect(() => {
+    api
+      .opsPayers({
+        page,
+        page_size: pageSize,
+        q: searchQuery || undefined,
+        tenant_id: tenantFilter || undefined,
+      })
+      .then((res) => {
+        setRows(listItems(res))
+        setMeta({ total: res.total ?? 0, total_pages: res.total_pages ?? 1 })
+      })
+      .catch((e) => setError(e.message))
+  }, [page, pageSize, searchQuery, tenantFilter])
   return (
     <div className="rise">
       <PageHeader title="Payers" subtitle="Tenant scope from session. Click a row for obligations → payments → receipts." />
@@ -204,7 +212,7 @@ export function OpsPayers() {
         <table className="data">
           <thead><tr><th>Reference</th><th>Name</th><th>Business</th><th>Contact</th><th>Status</th></tr></thead>
           <tbody>
-            {filtered.map((p) => (
+            {rows.map((p) => (
               <tr key={p.payer_id} style={{ cursor: 'pointer' }} onClick={() => navigate(`${base}/payers/${p.payer_id}`)}>
                 <td>{p.payer_reference}</td>
                 <td>{p.full_name}</td>
@@ -213,9 +221,17 @@ export function OpsPayers() {
                 <td><span className="pill">{p.status}</span></td>
               </tr>
             ))}
-            {!filtered.length && <EmptyRow cols={5} />}
+            {!rows.length && <EmptyRow cols={5} />}
           </tbody>
         </table>
+        <PaginationBar
+          page={page}
+          totalPages={meta.total_pages}
+          total={meta.total}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={(n) => { setPageSize(n); setPage(1) }}
+        />
       </div>
     </div>
   )
@@ -292,14 +308,20 @@ export function OpsPayerDetail() {
 export function OpsCollections() {
   const base = useBase()
   const navigate = useNavigate()
-  const { searchQuery, tenantFilter } = useCtx()
+  const { tenantFilter } = useCtx()
   const [rows, setRows] = useState([])
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(25)
+  const [meta, setMeta] = useState({ total: 0, total_pages: 1 })
   useEffect(() => {
-    api.opsCollections().then(setRows).catch(() => {})
-  }, [])
-  const filtered = rows.filter(
-    (r) => (!tenantFilter || r.tenant_id === tenantFilter) && matches(searchQuery, r.collection_id, r.payer_id, r.obligation_id),
-  )
+    api
+      .opsCollections({ page, page_size: pageSize, tenant_id: tenantFilter || undefined })
+      .then((res) => {
+        setRows(listItems(res))
+        setMeta({ total: res.total ?? 0, total_pages: res.total_pages ?? 1 })
+      })
+      .catch(() => {})
+  }, [page, pageSize, tenantFilter])
   return (
     <div className="rise">
       <PageHeader title="Collections" subtitle="Each collection preserves geographic and tenant snapshots." />
@@ -307,7 +329,7 @@ export function OpsCollections() {
         <table className="data">
           <thead><tr><th>Collection</th><th>Payer</th><th>Amount</th><th>Zone snapshot</th><th>Status</th></tr></thead>
           <tbody>
-            {filtered.map((c) => (
+            {rows.map((c) => (
               <tr key={c.collection_id} style={{ cursor: 'pointer' }} onClick={() => navigate(`${base}/collections/${c.collection_id}`)}>
                 <td>{c.collection_id.slice(0, 14)}…</td>
                 <td className="muted">{c.payer_id.slice(0, 12)}…</td>
@@ -316,9 +338,17 @@ export function OpsCollections() {
                 <td><span className="pill">{c.status}</span></td>
               </tr>
             ))}
-            {!filtered.length && <EmptyRow cols={5} />}
+            {!rows.length && <EmptyRow cols={5} />}
           </tbody>
         </table>
+        <PaginationBar
+          page={page}
+          totalPages={meta.total_pages}
+          total={meta.total}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={(n) => { setPageSize(n); setPage(1) }}
+        />
       </div>
     </div>
   )
@@ -427,17 +457,28 @@ export function OpsObligationDetail() {
 export function OpsTransactions() {
   const base = useBase()
   const navigate = useNavigate()
-  const { searchQuery, tenantFilter } = useCtx()
+  const { searchQuery } = useCtx()
   const [rows, setRows] = useState([])
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(25)
+  const [meta, setMeta] = useState({ total: 0, total_pages: 1 })
   const [error, setError] = useState('')
   useEffect(() => {
-    api.payments().then(setRows).catch((e) => setError(e.message))
-  }, [])
-  const filtered = rows.filter(
-    (t) =>
-      (!tenantFilter || t.transaction_tenant_id === tenantFilter) &&
-      matches(searchQuery, t.transaction_reference, t.transaction_id, t.status, t.payment_channel),
-  )
+    setPage(1)
+  }, [searchQuery])
+  useEffect(() => {
+    api
+      .payments({ page, page_size: pageSize, status: searchQuery?.startsWith('status:') ? searchQuery.slice(7) : undefined })
+      .then((res) => {
+        let items = listItems(res)
+        if (searchQuery && !searchQuery.startsWith('status:')) {
+          items = items.filter((t) => matches(searchQuery, t.transaction_reference, t.transaction_id, t.status, t.payment_channel))
+        }
+        setRows(items)
+        setMeta({ total: res.total ?? 0, total_pages: res.total_pages ?? 1 })
+      })
+      .catch((e) => setError(e.message))
+  }, [page, pageSize, searchQuery])
   return (
     <div className="rise">
       <PageHeader title="Transactions" subtitle="Click a row for full progressive disclosure and drill chain." />
@@ -446,7 +487,7 @@ export function OpsTransactions() {
         <table className="data">
           <thead><tr><th>Reference</th><th>Amount</th><th>Status</th><th>Channel</th><th>Date</th></tr></thead>
           <tbody>
-            {filtered.map((t) => (
+            {rows.map((t) => (
               <tr key={t.transaction_id} style={{ cursor: 'pointer' }} onClick={() => navigate(`${base}/transactions/${t.transaction_id}`)}>
                 <td><strong>{t.transaction_reference}</strong></td>
                 <td>{formatMoney(t.amount)}</td>
@@ -455,9 +496,17 @@ export function OpsTransactions() {
                 <td>{new Date(t.initiated_at).toLocaleString()}</td>
               </tr>
             ))}
-            {!filtered.length && <EmptyRow cols={5} />}
+            {!rows.length && <EmptyRow cols={5} />}
           </tbody>
         </table>
+        <PaginationBar
+          page={page}
+          totalPages={meta.total_pages}
+          total={meta.total}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={(n) => { setPageSize(n); setPage(1) }}
+        />
       </div>
     </div>
   )
@@ -639,7 +688,7 @@ export function OpsReceipts() {
   const [rows, setRows] = useState([])
   const [selected, setSelected] = useState(null)
   useEffect(() => {
-    api.receipts().then(setRows).catch(() => {})
+    api.receipts({ page: 1, page_size: 100 }).then((res) => setRows(listItems(res))).catch(() => {})
   }, [])
   const filtered = rows.filter((r) => matches(searchQuery, r.receipt_number, r.council_name, r.revenue_name, r.payer_display_name))
   return (
@@ -902,15 +951,30 @@ export function OpsUsersRoles() {
 
 export function OpsConfig() {
   const [rows, setRows] = useState([])
+  const [notif, setNotif] = useState(null)
+  const [logPage, setLogPage] = useState({ items: [], total: 0, total_pages: 1 })
   const [form, setForm] = useState({ config_key: '', config_value: '', description: '' })
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   async function load() {
     setRows(await api.opsConfig())
+    setNotif(await api.opsNotificationSettings())
+    const log = await api.opsNotificationLog({ page: 1, page_size: 20 })
+    setLogPage(log)
   }
   useEffect(() => {
     load().catch((e) => setError(e.message))
   }, [])
+  async function toggleChannel(key, value) {
+    setError('')
+    try {
+      await api.opsUpdateNotificationSettings({ [key]: value })
+      setMessage('Notification channels updated')
+      setNotif(await api.opsNotificationSettings())
+    } catch (err) {
+      setError(err.message)
+    }
+  }
   async function save(e) {
     e.preventDefault()
     setError('')
@@ -929,6 +993,49 @@ export function OpsConfig() {
       <PageHeader title="System Configuration" />
       {error && <div className="alert">{error}</div>}
       {message && <div className="alert ok">{message}</div>}
+      {notif && (
+        <Disclosure title="Notification channels (email, SMS, WhatsApp)" open>
+          <p className="muted">
+            SMS requires the server env <code>NOTIFICATIONS_SMS_ENABLED=true</code> before the toggle takes effect.
+          </p>
+          <div className="row" style={{ gap: '1rem', flexWrap: 'wrap' }}>
+            <label className="row">
+              <input type="checkbox" checked={notif.email_enabled} onChange={(e) => toggleChannel('email_enabled', e.target.checked)} />
+              Email
+            </label>
+            <label className="row">
+              <input
+                type="checkbox"
+                checked={notif.sms_enabled}
+                disabled={!notif.sms_master_switch}
+                onChange={(e) => toggleChannel('sms_enabled', e.target.checked)}
+              />
+              SMS {notif.sms_master_switch ? '' : '(disabled on server)'}
+            </label>
+            <label className="row">
+              <input type="checkbox" checked={notif.whatsapp_enabled} onChange={(e) => toggleChannel('whatsapp_enabled', e.target.checked)} />
+              WhatsApp
+            </label>
+          </div>
+        </Disclosure>
+      )}
+      <Disclosure title="Recent notification deliveries">
+        <table className="data">
+          <thead><tr><th>When</th><th>Channel</th><th>Event</th><th>Recipient</th><th>Status</th></tr></thead>
+          <tbody>
+            {listItems(logPage).map((n) => (
+              <tr key={n.notification_id}>
+                <td>{new Date(n.created_at).toLocaleString()}</td>
+                <td>{n.channel}</td>
+                <td>{n.event_type}</td>
+                <td className="muted">{n.recipient || '—'}</td>
+                <td><span className="pill">{n.status}</span></td>
+              </tr>
+            ))}
+            {!listItems(logPage).length && <EmptyRow cols={5} text="No deliveries yet." />}
+          </tbody>
+        </table>
+      </Disclosure>
       <form className="panel" onSubmit={save} style={{ maxWidth: 560 }}>
         <div className="field"><label>Key</label><input required value={form.config_key} onChange={(e) => setForm({ ...form, config_key: e.target.value })} /></div>
         <div className="field"><label>Value</label><input required value={form.config_value} onChange={(e) => setForm({ ...form, config_value: e.target.value })} /></div>
@@ -1040,11 +1147,19 @@ export function OpsStatements() {
 export function OpsAudit() {
   const { searchQuery } = useCtx()
   const [rows, setRows] = useState([])
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(50)
+  const [meta, setMeta] = useState({ total: 0, total_pages: 1 })
   const [selected, setSelected] = useState(null)
   useEffect(() => {
-    api.opsAudit().then(setRows).catch(() => {})
-  }, [])
-  const filtered = rows.filter((r) => matches(searchQuery, r.entity_type, r.entity_id, r.action, r.reason))
+    setPage(1)
+  }, [searchQuery])
+  useEffect(() => {
+    api.opsAudit({ page, page_size: pageSize, entity_type: searchQuery || undefined }).then((res) => {
+      setRows(listItems(res))
+      setMeta({ total: res.total ?? 0, total_pages: res.total_pages ?? 1 })
+    }).catch(() => {})
+  }, [page, pageSize, searchQuery])
   return (
     <div className="rise stack">
       <PageHeader title="Audit Trail" subtitle="Governance record of sensitive mutations." />
@@ -1052,7 +1167,7 @@ export function OpsAudit() {
         <table className="data">
           <thead><tr><th>When</th><th>Entity</th><th>Action</th><th>Reason</th></tr></thead>
           <tbody>
-            {filtered.map((a) => (
+            {rows.map((a) => (
               <tr key={a.audit_event_id} style={{ cursor: 'pointer' }} onClick={() => setSelected(a)}>
                 <td>{new Date(a.created_at).toLocaleString()}</td>
                 <td>{a.entity_type} · {a.entity_id.slice(0, 10)}…</td>
@@ -1060,9 +1175,17 @@ export function OpsAudit() {
                 <td className="muted">{a.reason || '—'}</td>
               </tr>
             ))}
-            {!filtered.length && <EmptyRow cols={4} />}
+            {!rows.length && <EmptyRow cols={4} />}
           </tbody>
         </table>
+        <PaginationBar
+          page={page}
+          totalPages={meta.total_pages}
+          total={meta.total}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={(n) => { setPageSize(n); setPage(1) }}
+        />
       </div>
       {selected && (
         <Disclosure title="Advanced audit detail" open>
@@ -1083,7 +1206,8 @@ export function OpsSettlements() {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   async function load() {
-    setRows(await api.settlements())
+    const res = await api.settlements({ page: 1, page_size: 100 })
+    setRows(listItems(res))
   }
   useEffect(() => {
     load().catch((e) => setError(e.message))

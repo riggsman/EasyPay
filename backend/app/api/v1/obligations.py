@@ -1,8 +1,9 @@
-from typing import List, Optional
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.core.deps import DbDep, UserDep, require_permissions
+from app.schemas.pagination import PaginatedResponse, paginate_query
 from app.models.obligation import Obligation
 from app.models.payer import Payer
 from app.models.revenue import RevenueType
@@ -12,22 +13,34 @@ from app.services.payer import get_payer_by_user
 router = APIRouter(prefix="/obligations")
 
 
-@router.get("", response_model=List[ObligationOut])
-def list_obligations(db: DbDep, current: UserDep, payer_id: Optional[str] = None):
+@router.get("", response_model=PaginatedResponse[ObligationOut])
+def list_obligations(
+    db: DbDep,
+    current: UserDep,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(25, ge=1, le=200),
+    payer_id: Optional[str] = None,
+    status: Optional[str] = None,
+):
+    query = db.query(Obligation)
     if current.user_type == "PAYER":
         payer = get_payer_by_user(db, current.user_id)
-        return (
-            db.query(Obligation)
-            .filter(Obligation.payer_id == payer.payer_id)
-            .order_by(Obligation.created_at.desc())
-            .all()
-        )
-    q = db.query(Obligation)
-    if current.user_type != "PLATFORM_ADMIN":
-        q = q.filter(Obligation.tenant_id == current.tenant_id)
+        query = query.filter(Obligation.payer_id == payer.payer_id)
+    elif current.user_type != "PLATFORM_ADMIN":
+        query = query.filter(Obligation.tenant_id == current.tenant_id)
     if payer_id:
-        q = q.filter(Obligation.payer_id == payer_id)
-    return q.order_by(Obligation.created_at.desc()).all()
+        query = query.filter(Obligation.payer_id == payer_id)
+    if status:
+        query = query.filter(Obligation.status == status)
+    query = query.order_by(Obligation.created_at.desc())
+    items, total, total_pages = paginate_query(query, page, page_size)
+    return PaginatedResponse(
+        items=[ObligationOut.model_validate(i) for i in items],
+        page=page,
+        page_size=page_size,
+        total=total,
+        total_pages=total_pages,
+    )
 
 
 @router.post("", response_model=ObligationOut)

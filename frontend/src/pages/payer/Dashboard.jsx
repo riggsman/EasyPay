@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { api, formatMoney } from '../../api/client'
+import { api, formatMoney, listItems } from '../../api/client'
 
 export default function PayerDashboard() {
   const [payer, setPayer] = useState(null)
@@ -15,7 +15,7 @@ export default function PayerDashboard() {
         setPayer(p)
         setArea(a)
         setStats(s)
-        setObligations(o.slice(0, 5))
+        setObligations(listItems(o).slice(0, 5))
       })
       .catch((e) => setError(e.message))
   }, [])

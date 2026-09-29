@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { api, formatMoney } from '../../api/client'
+import { api, formatMoney, listItems } from '../../api/client'
 import { Disclosure, EmptyRow, PageHeader, StatLink } from '../../components/OpsUI'
 
 export default function TenantObligations() {
@@ -12,8 +12,8 @@ export default function TenantObligations() {
   const [message, setMessage] = useState('')
 
   async function load() {
-    const [o, r] = await Promise.all([api.obligations(), api.revenueTypes()])
-    setRows(o)
+    const [o, r] = await Promise.all([api.obligations({ page: 1, page_size: 200 }), api.revenueTypes()])
+    setRows(listItems(o))
     setRevenues(r)
     if (r[0]) setForm((f) => ({ ...f, revenue_type_id: f.revenue_type_id || r[0].revenue_type_id }))
   }

@@ -115,6 +115,21 @@ function withTenant(path, tenantId) {
   return `${path}${join}tenant_id=${encodeURIComponent(tenantId)}`
 }
 
+export function queryString(params = {}) {
+  const sp = new URLSearchParams()
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') sp.set(key, String(value))
+  })
+  const qs = sp.toString()
+  return qs ? `?${qs}` : ''
+}
+
+export function listItems(page) {
+  if (page && Array.isArray(page.items)) return page.items
+  if (Array.isArray(page)) return page
+  return []
+}
+
 export const api = {
   get: (path) => request(path),
   post: (path, body) => request(path, { method: 'POST', body: JSON.stringify(body) }),
@@ -127,13 +142,13 @@ export const api = {
   mePayer: () => request('/api/v1/payers/me'),
   operatingArea: () => request('/api/v1/payers/me/operating-area'),
   changeZone: (body) => request('/api/v1/payers/me/operating-area/change', { method: 'POST', body: JSON.stringify(body) }),
-  obligations: () => request('/api/v1/obligations'),
+  obligations: (params) => request(`/api/v1/obligations${queryString(params)}`),
   resolvePayment: (body) => request('/api/v1/payments/resolve', { method: 'POST', body: JSON.stringify(body) }),
   initiatePayment: (body) => request('/api/v1/payments/initiate', { method: 'POST', body: JSON.stringify(body) }),
   confirmPayment: (id) => request(`/api/v1/payments/${id}/confirm`, { method: 'POST' }),
-  payments: () => request('/api/v1/payments'),
+  payments: (params) => request(`/api/v1/payments${queryString(params)}`),
   payment: (id) => request(`/api/v1/payments/${id}`),
-  receipts: () => request('/api/v1/receipts'),
+  receipts: (params) => request(`/api/v1/receipts${queryString(params)}`),
   receipt: (id) => request(`/api/v1/receipts/${id}`),
   verify: (body) => request('/api/v1/public/verify', { method: 'POST', body: JSON.stringify(body) }, false),
   verifyToken: (token) => request(`/api/v1/public/verify/${token}`, {}, false),
@@ -143,7 +158,7 @@ export const api = {
   tenants: () => request('/api/v1/tenants'),
   revenueTypes: (tenantId) => request(withTenant('/api/v1/revenue-types', tenantId)),
   collectionsReport: (params = '') => request(`/api/v1/reports/collections${params}`),
-  settlements: () => request('/api/v1/settlements'),
+  settlements: (params) => request(`/api/v1/settlements${queryString(params)}`),
   calculateSettlement: (body, tenantId) =>
     request(withTenant('/api/v1/settlements/calculate', tenantId), { method: 'POST', body: JSON.stringify(body) }),
   approveSettlement: (id) => request(`/api/v1/settlements/${id}/approve`, { method: 'POST' }),
@@ -153,14 +168,18 @@ export const api = {
   createRevenueType: (body) => request('/api/v1/revenue-types', { method: 'POST', body: JSON.stringify(body) }),
   createFee: (body) => request('/api/v1/fees', { method: 'POST', body: JSON.stringify(body) }),
 
-  opsPayers: () => request('/api/v1/ops/payers'),
+  opsPayers: (params) => request(`/api/v1/ops/payers${queryString(params)}`),
   opsPayerDetail: (id) => request(`/api/v1/ops/payers/${id}/detail`),
-  opsCollections: () => request('/api/v1/ops/collections'),
+  opsCollections: (params) => request(`/api/v1/ops/collections${queryString(params)}`),
   opsCollectionDetail: (id) => request(`/api/v1/ops/collections/${id}/detail`),
   opsObligationDetail: (id) => request(`/api/v1/ops/obligations/${id}/detail`),
   opsSettlementDetail: (id) => request(`/api/v1/ops/settlements/${id}/detail`),
   opsDrillTransaction: (id) => request(`/api/v1/ops/drill/transaction/${id}`),
-  opsAudit: (entityType) => request(`/api/v1/ops/audit${entityType ? `?entity_type=${entityType}` : ''}`),
+  opsAudit: (params = {}) => request(`/api/v1/ops/audit${queryString(params)}`),
+  opsNotificationSettings: () => request('/api/v1/ops/notifications/settings'),
+  opsUpdateNotificationSettings: (body) =>
+    request('/api/v1/ops/notifications/settings', { method: 'PUT', body: JSON.stringify(body) }),
+  opsNotificationLog: (params) => request(`/api/v1/ops/notifications/delivery-log${queryString(params)}`),
   opsLedgerPostings: () => request('/api/v1/ops/ledger/postings'),
   opsLedgerEntries: (id) => request(`/api/v1/ops/ledger/postings/${id}/entries`),
   opsLedgerByTxn: (id) => request(`/api/v1/ops/ledger/by-transaction/${id}`),

@@ -222,4 +222,10 @@ def review_zone_change(db: Session, request_id: str, approve: bool, reviewer_id:
         req.status = "REJECTED"
     db.commit()
     db.refresh(req)
+    payer = db.get(Payer, req.payer_id)
+    if payer:
+        from app.services.notifications.dispatcher import notify_zone_change_decision
+
+        notify_zone_change_decision(db, payer, approve, notes)
+        db.commit()
     return req

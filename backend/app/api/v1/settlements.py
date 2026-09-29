@@ -1,8 +1,9 @@
-from typing import List
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.core.deps import DbDep, UserDep, require_permissions
+from app.schemas.pagination import PaginatedResponse, paginate_query
 from app.models.settlement import Settlement, SettlementLine
 from app.schemas.common import SettlementCreateRequest, SettlementOut
 from app.services.settlements import approve_settlement, calculate_settlement, process_settlement
@@ -10,12 +11,28 @@ from app.services.settlements import approve_settlement, calculate_settlement, p
 router = APIRouter(prefix="/settlements")
 
 
-@router.get("", response_model=List[SettlementOut])
-def list_settlements(db: DbDep, current = Depends(require_permissions("settlements:read"))):
-    q = db.query(Settlement)
+@router.get("", response_model=PaginatedResponse[SettlementOut])
+def list_settlements(
+    db: DbDep,
+    current=Depends(require_permissions("settlements:read")),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(25, ge=1, le=200),
+    status: Optional[str] = None,
+):
+    query = db.query(Settlement)
     if current.user_type != "PLATFORM_ADMIN":
-        q = q.filter(Settlement.tenant_id == current.tenant_id)
-    return q.order_by(Settlement.created_at.desc()).all()
+        query = query.filter(Settlement.tenant_id == current.tenant_id)
+    if status:
+        query = query.filter(Settlement.status == status)
+    query = query.order_by(Settlement.created_at.desc())
+    items, total, total_pages = paginate_query(query, page, page_size)
+    return PaginatedResponse(
+        items=[SettlementOut.model_validate(i) for i in items],
+        page=page,
+        page_size=page_size,
+        total=total,
+        total_pages=total_pages,
+    )
 
 
 @router.post("/calculate", response_model=SettlementOut)

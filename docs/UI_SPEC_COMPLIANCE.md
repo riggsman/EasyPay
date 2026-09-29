@@ -24,4 +24,13 @@
 ## Remaining future (out of current SRS shell scope)
 
 - Live payment provider webhook UI / fraud monitoring (Advanced Services Phase 10)
-- Email/SMS notification delivery adapters
+- Production SMTP / SMS / WhatsApp provider credentials (modules ship with env + ops toggles; deliveries logged)
+
+## Pagination & list filters
+
+| Area | Status |
+|------|--------|
+| Ops payers, collections, audit, ledger postings | Server `page` / `page_size` + filters |
+| Payments, obligations, receipts, settlements APIs | Paginated responses `{ items, total, … }` |
+| Ops console tables | Pagination controls on primary lists |
+| Notification delivery log | Paginated under System Configuration |
