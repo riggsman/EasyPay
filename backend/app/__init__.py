@@ -1,0 +1,1 @@
+"""EasyPay backend application."""
