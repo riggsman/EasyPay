@@ -36,74 +36,101 @@ export function PublicLayout() {
   )
 }
 
-function SideNav({ links, title }) {
+function OpsShell({ title, links, contextLabel }) {
   const { logout, session } = useAuth()
   return (
-    <aside>
-      <Link to="/" className="brand">EasyPay</Link>
-      <p className="muted" style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '1rem' }}>
-        {title}<br />
-        <small>{session?.full_name}</small>
-      </p>
-      <nav>
-        {links.map((l) => (
-          <NavLink key={l.to} to={l.to} end={l.end}>
-            {l.label}
-          </NavLink>
-        ))}
-      </nav>
-      <button className="btn btn-ghost" style={{ marginTop: '1.5rem', color: '#fff', borderColor: 'rgba(255,255,255,0.3)' }} type="button" onClick={logout}>
-        Sign out
-      </button>
-    </aside>
+    <div className="ops-shell">
+      <header className="ops-topbar">
+        <div className="ops-top-left">
+          <Link to="/" className="brand">EasyPay</Link>
+          <span className="ops-context">{contextLabel || title}</span>
+        </div>
+        <div className="ops-top-right">
+          <input className="ops-search" type="search" placeholder="Search reference, payer, receipt…" aria-label="Search" />
+          <span className="ops-user">{session?.full_name}</span>
+          <button className="btn btn-ghost" type="button" onClick={logout}>Sign out</button>
+        </div>
+      </header>
+      <div className="ops-body">
+        <aside className="ops-aside">
+          <p className="ops-aside-title">{title}</p>
+          <nav>
+            {links.map((group) => (
+              <div key={group.label} className="ops-nav-group">
+                <div className="ops-nav-label">{group.label}</div>
+                {group.items.map((l) => (
+                  <NavLink key={l.to} to={l.to} end={l.end}>{l.label}</NavLink>
+                ))}
+              </div>
+            ))}
+          </nav>
+        </aside>
+        <main className="ops-main"><Outlet /></main>
+      </div>
+    </div>
   )
 }
 
 export function PayerLayout() {
   const links = [
-    { to: '/payer', label: 'Dashboard', end: true },
-    { to: '/payer/obligations', label: 'My Obligations' },
-    { to: '/payer/pay', label: 'Make Payment' },
-    { to: '/payer/history', label: 'Payment History' },
-    { to: '/payer/receipts', label: 'Receipts' },
-    { to: '/payer/area', label: 'Operating Area' },
-    { to: '/payer/profile', label: 'My Profile' },
+    {
+      label: 'Portal',
+      items: [
+        { to: '/payer', label: 'Dashboard', end: true },
+        { to: '/payer/obligations', label: 'Obligations' },
+        { to: '/payer/pay', label: 'Make Payment' },
+        { to: '/payer/history', label: 'Transactions' },
+        { to: '/payer/receipts', label: 'Receipts' },
+        { to: '/payer/area', label: 'Operating Area' },
+        { to: '/payer/profile', label: 'Profile' },
+      ],
+    },
   ]
-  return (
-    <div className="app-shell">
-      <SideNav links={links} title="Payer Portal" />
-      <main className="app-main"><Outlet /></main>
-    </div>
-  )
+  return <OpsShell title="Payer Portal" links={links} contextLabel="Payer session" />
 }
 
 export function TenantLayout() {
+  const { session } = useAuth()
   const links = [
-    { to: '/tenant', label: 'Dashboard', end: true },
-    { to: '/tenant/obligations', label: 'Obligations' },
-    { to: '/tenant/transactions', label: 'Transactions' },
-    { to: '/tenant/settlements', label: 'Settlements' },
-    { to: '/tenant/reports', label: 'Reports' },
+    {
+      label: 'Operations',
+      items: [
+        { to: '/tenant', label: 'Dashboard', end: true },
+        { to: '/tenant/obligations', label: 'Obligations' },
+        { to: '/tenant/transactions', label: 'Transactions' },
+      ],
+    },
+    {
+      label: 'Finance',
+      items: [
+        { to: '/tenant/settlements', label: 'Settlements' },
+        { to: '/tenant/reports', label: 'Reports' },
+      ],
+    },
   ]
   return (
-    <div className="app-shell">
-      <SideNav links={links} title="Council Admin" />
-      <main className="app-main"><Outlet /></main>
-    </div>
+    <OpsShell
+      title="Council Console"
+      links={links}
+      contextLabel={session?.tenant_id ? 'Tenant context locked' : 'Council Admin'}
+    />
   )
 }
 
 export function PlatformLayout() {
   const links = [
-    { to: '/platform', label: 'Dashboard', end: true },
-    { to: '/platform/tenants', label: 'Tenants' },
-    { to: '/platform/geography', label: 'Geography' },
-    { to: '/platform/reports', label: 'Reports' },
+    {
+      label: 'Platform',
+      items: [
+        { to: '/platform', label: 'Dashboard', end: true },
+        { to: '/platform/tenants', label: 'Tenants' },
+        { to: '/platform/geography', label: 'Geography' },
+      ],
+    },
+    {
+      label: 'Finance',
+      items: [{ to: '/platform/reports', label: 'Reports' }],
+    },
   ]
-  return (
-    <div className="app-shell">
-      <SideNav links={links} title="Platform Admin" />
-      <main className="app-main"><Outlet /></main>
-    </div>
-  )
+  return <OpsShell title="Platform Console" links={links} contextLabel="All tenants" />
 }

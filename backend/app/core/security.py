@@ -2,19 +2,40 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
 import jwt
+from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError, InvalidHashError
 from passlib.context import CryptContext
 
 from app.core.config import get_settings
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+_argon2 = PasswordHasher()
+_bcrypt_legacy = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    return _argon2.hash(password)
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    if hashed.startswith("$argon2"):
+        try:
+            return _argon2.verify(hashed, plain)
+        except (VerifyMismatchError, InvalidHashError):
+            return False
+    # Legacy bcrypt hashes from earlier seeds
+    try:
+        return _bcrypt_legacy.verify(plain, hashed)
+    except Exception:
+        return False
+
+
+def needs_rehash(hashed: str) -> bool:
+    if not hashed.startswith("$argon2"):
+        return True
+    try:
+        return _argon2.check_needs_rehash(hashed)
+    except Exception:
+        return True
 
 
 def create_token(subject: str, claims: dict[str, Any], expires_delta: timedelta, token_type: str = "access") -> str:

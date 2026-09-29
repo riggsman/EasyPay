@@ -4,7 +4,14 @@ from fastapi import APIRouter, HTTPException
 from sqlalchemy import or_
 
 from app.core.deps import DbDep
-from app.core.security import create_access_token, create_refresh_token, decode_token, verify_password
+from app.core.security import (
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+    hash_password,
+    needs_rehash,
+    verify_password,
+)
 from app.core.deps import get_user_permissions
 from app.models.user import User
 from app.schemas.common import LoginRequest, RefreshRequest, TokenResponse
@@ -46,6 +53,9 @@ def login(body: LoginRequest, db: DbDep):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     if not user.is_active:
         raise HTTPException(status_code=401, detail="User inactive")
+    if needs_rehash(user.password_hash):
+        user.password_hash = hash_password(body.password)
+        db.commit()
     return _token_for(db, user)
 
 
