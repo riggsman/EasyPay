@@ -38,14 +38,21 @@ export function PublicLayout() {
   )
 }
 
-function OpsShell({ title, links, contextLabel, basePath }) {
+function OpsShell({ title, links, contextLabel, basePath, showOpsChrome = true, tenantOptions = [] }) {
   const { logout, session } = useAuth()
   const [alerts, setAlerts] = useState(null)
   const [q, setQ] = useState('')
+  const [tenantFilter, setTenantFilter] = useState(localStorage.getItem('ep_tenant_filter') || '')
 
   useEffect(() => {
+    if (!showOpsChrome) return
     api.opsAlerts().then(setAlerts).catch(() => {})
-  }, [])
+  }, [showOpsChrome])
+
+  useEffect(() => {
+    if (tenantFilter) localStorage.setItem('ep_tenant_filter', tenantFilter)
+    else localStorage.removeItem('ep_tenant_filter')
+  }, [tenantFilter])
 
   const alertCount = alerts
     ? (alerts.pending_transactions || 0) + (alerts.rejected_transactions || 0) + (alerts.settlements_awaiting_approval || 0)
@@ -57,6 +64,19 @@ function OpsShell({ title, links, contextLabel, basePath }) {
         <div className="ops-top-left">
           <Link to="/" className="brand">EasyPay</Link>
           <span className="ops-context">{contextLabel || title}</span>
+          {showOpsChrome && tenantOptions.length > 0 && (
+            <select
+              className="ops-tenant-select"
+              aria-label="Tenant selector"
+              value={tenantFilter}
+              onChange={(e) => setTenantFilter(e.target.value)}
+            >
+              <option value="">All tenants</option>
+              {tenantOptions.map((t) => (
+                <option key={t.tenant_id} value={t.tenant_id}>{t.organization_name}</option>
+              ))}
+            </select>
+          )}
         </div>
         <div className="ops-top-right">
           <input
@@ -67,9 +87,11 @@ function OpsShell({ title, links, contextLabel, basePath }) {
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
-          <Link to={`${basePath}/alerts`} className="ops-alert-chip" title="Operational alerts">
-            Alerts{alertCount ? ` · ${alertCount}` : ''}
-          </Link>
+          {showOpsChrome && (
+            <Link to={`${basePath}/alerts`} className="ops-alert-chip" title="Operational alerts">
+              Alerts{alertCount ? ` · ${alertCount}` : ''}
+            </Link>
+          )}
           <span className="ops-user">{session?.full_name}</span>
           <button className="btn btn-ghost" type="button" onClick={logout}>Sign out</button>
         </div>
@@ -89,7 +111,7 @@ function OpsShell({ title, links, contextLabel, basePath }) {
           </nav>
         </aside>
         <main className="ops-main">
-          <Outlet context={{ searchQuery: q }} />
+          <Outlet context={{ searchQuery: q, tenantFilter }} />
         </main>
       </div>
     </div>
@@ -157,7 +179,7 @@ export function PayerLayout() {
       ],
     },
   ]
-  return <OpsShell title="Payer Portal" links={links} contextLabel="Payer session" basePath="/payer" />
+  return <OpsShell title="Payer Portal" links={links} contextLabel="Payer session" basePath="/payer" showOpsChrome={false} />
 }
 
 export function TenantLayout() {
@@ -167,11 +189,16 @@ export function TenantLayout() {
       links={tenantLinks('/tenant')}
       contextLabel="Tenant context locked"
       basePath="/tenant"
+      showOpsChrome
     />
   )
 }
 
 export function PlatformLayout() {
+  const [tenants, setTenants] = useState([])
+  useEffect(() => {
+    api.tenants().then(setTenants).catch(() => {})
+  }, [])
   const links = [
     {
       label: 'Overview',
@@ -217,5 +244,14 @@ export function PlatformLayout() {
       items: [{ to: '/platform/audit', label: 'Audit Trail' }],
     },
   ]
-  return <OpsShell title="Platform Console" links={links} contextLabel="All tenants" basePath="/platform" />
+  return (
+    <OpsShell
+      title="Platform Console"
+      links={links}
+      contextLabel="Platform scope"
+      basePath="/platform"
+      showOpsChrome
+      tenantOptions={tenants}
+    />
+  )
 }

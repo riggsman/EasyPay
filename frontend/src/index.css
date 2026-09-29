@@ -274,6 +274,15 @@ table.data th {
   white-space: nowrap;
 }
 .ops-alert-chip:hover { background: rgba(232, 184, 74, 0.35); }
+.ops-tenant-select {
+  border: 1px solid rgba(255,255,255,0.22);
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.4rem 0.75rem;
+  max-width: 200px;
+}
+.ops-tenant-select option { color: #14231c; }
 a.panel.stat.drill {
   display: block;
   transition: border-color 160ms ease, transform 160ms ease;

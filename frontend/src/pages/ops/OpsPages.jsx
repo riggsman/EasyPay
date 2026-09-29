@@ -7,6 +7,11 @@ function useSearch() {
   return (ctx.searchQuery || '').trim().toLowerCase()
 }
 
+function useTenantFilter() {
+  const ctx = useOutletContext() || {}
+  return ctx.tenantFilter || ''
+}
+
 function matches(q, ...parts) {
   if (!q) return true
   return parts.some((p) => String(p || '').toLowerCase().includes(q))
@@ -93,14 +98,20 @@ export function OpsAlerts() {
 
 export function OpsPayers() {
   const q = useSearch()
+  const tenantFilter = useTenantFilter()
   const [rows, setRows] = useState([])
   const [error, setError] = useState('')
   useEffect(() => {
     api.opsPayers().then(setRows).catch((e) => setError(e.message))
   }, [])
   const filtered = useMemo(
-    () => rows.filter((r) => matches(q, r.payer_reference, r.full_name, r.business_name, r.email)),
-    [rows, q],
+    () =>
+      rows.filter(
+        (r) =>
+          (!tenantFilter || r.tenant_id === tenantFilter) &&
+          matches(q, r.payer_reference, r.full_name, r.business_name, r.email),
+      ),
+    [rows, q, tenantFilter],
   )
   return (
     <div className="rise">
@@ -131,11 +142,16 @@ export function OpsPayers() {
 
 export function OpsCollections() {
   const q = useSearch()
+  const tenantFilter = useTenantFilter()
   const [rows, setRows] = useState([])
   useEffect(() => {
     api.opsCollections().then(setRows).catch(() => {})
   }, [])
-  const filtered = rows.filter((r) => matches(q, r.collection_id, r.payer_id, r.obligation_id))
+  const filtered = rows.filter(
+    (r) =>
+      (!tenantFilter || r.tenant_id === tenantFilter) &&
+      matches(q, r.collection_id, r.payer_id, r.obligation_id),
+  )
   return (
     <div className="rise">
       <h2>Collections</h2>
@@ -165,6 +181,7 @@ export function OpsCollections() {
 
 export function OpsTransactions() {
   const q = useSearch()
+  const tenantFilter = useTenantFilter()
   const [rows, setRows] = useState([])
   const [selected, setSelected] = useState(null)
   const [detail, setDetail] = useState(null)
@@ -189,7 +206,11 @@ export function OpsTransactions() {
     }
   }
 
-  const filtered = rows.filter((t) => matches(q, t.transaction_reference, t.transaction_id, t.status, t.payment_channel))
+  const filtered = rows.filter(
+    (t) =>
+      (!tenantFilter || t.transaction_tenant_id === tenantFilter) &&
+      matches(q, t.transaction_reference, t.transaction_id, t.status, t.payment_channel),
+  )
 
   return (
     <div className="rise stack">
