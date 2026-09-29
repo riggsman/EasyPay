@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 from app.core.deps import DbDep, UserDep, require_permissions
 from app.core.security import hash_password
@@ -22,6 +22,7 @@ class UserCreate(BaseModel):
 
 
 class UserOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     user_id: str
     username: str
     email: Optional[str] = None
@@ -29,9 +30,6 @@ class UserOut(BaseModel):
     user_type: str
     tenant_id: Optional[str] = None
     is_active: bool
-
-    class Config:
-        from_attributes = True
 
 
 @router.get("/me", response_model=UserOut)

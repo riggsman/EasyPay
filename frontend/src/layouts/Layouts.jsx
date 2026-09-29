@@ -1,5 +1,7 @@
 import { NavLink, Outlet, Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { api } from '../api/client'
 
 export function PublicLayout() {
   const { isAuthenticated, userType, logout } = useAuth()
@@ -36,8 +38,19 @@ export function PublicLayout() {
   )
 }
 
-function OpsShell({ title, links, contextLabel }) {
+function OpsShell({ title, links, contextLabel, basePath }) {
   const { logout, session } = useAuth()
+  const [alerts, setAlerts] = useState(null)
+  const [q, setQ] = useState('')
+
+  useEffect(() => {
+    api.opsAlerts().then(setAlerts).catch(() => {})
+  }, [])
+
+  const alertCount = alerts
+    ? (alerts.pending_transactions || 0) + (alerts.rejected_transactions || 0) + (alerts.settlements_awaiting_approval || 0)
+    : 0
+
   return (
     <div className="ops-shell">
       <header className="ops-topbar">
@@ -46,7 +59,17 @@ function OpsShell({ title, links, contextLabel }) {
           <span className="ops-context">{contextLabel || title}</span>
         </div>
         <div className="ops-top-right">
-          <input className="ops-search" type="search" placeholder="Search reference, payer, receipt…" aria-label="Search" />
+          <input
+            className="ops-search"
+            type="search"
+            placeholder="Search reference, payer, receipt…"
+            aria-label="Search"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+          <Link to={`${basePath}/alerts`} className="ops-alert-chip" title="Operational alerts">
+            Alerts{alertCount ? ` · ${alertCount}` : ''}
+          </Link>
           <span className="ops-user">{session?.full_name}</span>
           <button className="btn btn-ghost" type="button" onClick={logout}>Sign out</button>
         </div>
@@ -65,10 +88,58 @@ function OpsShell({ title, links, contextLabel }) {
             ))}
           </nav>
         </aside>
-        <main className="ops-main"><Outlet /></main>
+        <main className="ops-main">
+          <Outlet context={{ searchQuery: q }} />
+        </main>
       </div>
     </div>
   )
+}
+
+function tenantLinks(base = '/tenant') {
+  return [
+    {
+      label: 'Overview',
+      items: [{ to: base, label: 'Dashboard', end: true }, { to: `${base}/alerts`, label: 'Alerts' }],
+    },
+    {
+      label: 'Identity & Access',
+      items: [{ to: `${base}/users`, label: 'Users & Roles' }],
+    },
+    {
+      label: 'Configuration',
+      items: [
+        { to: `${base}/revenue`, label: 'Revenue Types' },
+        { to: `${base}/fees`, label: 'Fees' },
+        { to: `${base}/commissions`, label: 'Commissions' },
+        { to: `${base}/config`, label: 'System Config' },
+      ],
+    },
+    {
+      label: 'Operations',
+      items: [
+        { to: `${base}/payers`, label: 'Payers' },
+        { to: `${base}/obligations`, label: 'Obligations' },
+        { to: `${base}/collections`, label: 'Collections' },
+        { to: `${base}/transactions`, label: 'Transactions' },
+      ],
+    },
+    {
+      label: 'Finance',
+      items: [
+        { to: `${base}/ledger`, label: 'Ledger' },
+        { to: `${base}/receipts`, label: 'Receipts' },
+        { to: `${base}/settlements`, label: 'Settlements' },
+        { to: `${base}/reconciliation`, label: 'Reconciliation' },
+        { to: `${base}/statements`, label: 'Statements' },
+        { to: `${base}/reports`, label: 'Reports' },
+      ],
+    },
+    {
+      label: 'Governance',
+      items: [{ to: `${base}/audit`, label: 'Audit Trail' }],
+    },
+  ]
 }
 
 export function PayerLayout() {
@@ -86,39 +157,16 @@ export function PayerLayout() {
       ],
     },
   ]
-  return <OpsShell title="Payer Portal" links={links} contextLabel="Payer session" />
+  return <OpsShell title="Payer Portal" links={links} contextLabel="Payer session" basePath="/payer" />
 }
 
 export function TenantLayout() {
-  const { session } = useAuth()
-  const links = [
-    {
-      label: 'Operations',
-      items: [
-        { to: '/tenant', label: 'Dashboard', end: true },
-        { to: '/tenant/obligations', label: 'Obligations' },
-        { to: '/tenant/transactions', label: 'Transactions' },
-      ],
-    },
-    {
-      label: 'Configuration',
-      items: [
-        { to: '/tenant/revenue', label: 'Revenue Setup' },
-      ],
-    },
-    {
-      label: 'Finance',
-      items: [
-        { to: '/tenant/settlements', label: 'Settlements' },
-        { to: '/tenant/reports', label: 'Reports' },
-      ],
-    },
-  ]
   return (
     <OpsShell
       title="Council Console"
-      links={links}
-      contextLabel={session?.tenant_id ? 'Tenant context locked' : 'Council Admin'}
+      links={tenantLinks('/tenant')}
+      contextLabel="Tenant context locked"
+      basePath="/tenant"
     />
   )
 }
@@ -126,17 +174,48 @@ export function TenantLayout() {
 export function PlatformLayout() {
   const links = [
     {
-      label: 'Platform',
+      label: 'Overview',
       items: [
         { to: '/platform', label: 'Dashboard', end: true },
+        { to: '/platform/alerts', label: 'Alerts' },
+      ],
+    },
+    {
+      label: 'Platform / Tenant',
+      items: [
         { to: '/platform/tenants', label: 'Tenants' },
         { to: '/platform/geography', label: 'Geography' },
+        { to: '/platform/users', label: 'Users & Roles' },
+      ],
+    },
+    {
+      label: 'Configuration',
+      items: [
+        { to: '/platform/config', label: 'System Config' },
+      ],
+    },
+    {
+      label: 'Operations',
+      items: [
+        { to: '/platform/payers', label: 'Payers' },
+        { to: '/platform/transactions', label: 'Transactions' },
+        { to: '/platform/collections', label: 'Collections' },
       ],
     },
     {
       label: 'Finance',
-      items: [{ to: '/platform/reports', label: 'Reports' }],
+      items: [
+        { to: '/platform/ledger', label: 'Ledger' },
+        { to: '/platform/receipts', label: 'Receipts' },
+        { to: '/platform/settlements', label: 'Settlements' },
+        { to: '/platform/reconciliation', label: 'Reconciliation' },
+        { to: '/platform/reports', label: 'Reports' },
+      ],
+    },
+    {
+      label: 'Governance',
+      items: [{ to: '/platform/audit', label: 'Audit Trail' }],
     },
   ]
-  return <OpsShell title="Platform Console" links={links} contextLabel="All tenants" />
+  return <OpsShell title="Platform Console" links={links} contextLabel="All tenants" basePath="/platform" />
 }

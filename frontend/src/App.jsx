@@ -13,16 +13,28 @@ import PaymentDetail from './pages/payer/PaymentDetail'
 import ReceiptsPage from './pages/payer/Receipts'
 import OperatingAreaPage from './pages/payer/OperatingArea'
 import ProfilePage from './pages/payer/Profile'
-import TenantDashboard from './pages/tenant/Dashboard'
-import TenantTransactions from './pages/tenant/Transactions'
-import TenantSettlements from './pages/tenant/Settlements'
-import TenantReports from './pages/tenant/Reports'
 import TenantObligations from './pages/tenant/Obligations'
 import TenantRevenue from './pages/tenant/Revenue'
-import PlatformDashboard from './pages/platform/Dashboard'
 import PlatformTenants from './pages/platform/Tenants'
 import PlatformGeography from './pages/platform/Geography'
-import PlatformReports from './pages/platform/Reports'
+import {
+  OpsDashboard,
+  OpsAlerts,
+  OpsPayers,
+  OpsCollections,
+  OpsTransactions,
+  OpsLedger,
+  OpsReceipts,
+  OpsFees,
+  OpsCommissions,
+  OpsUsersRoles,
+  OpsConfig,
+  OpsReconciliation,
+  OpsStatements,
+  OpsAudit,
+  OpsSettlements,
+  OpsReports,
+} from './pages/ops/OpsPages'
 
 function RequireAuth({ allow }) {
   const { isAuthenticated, userType } = useAuth()
@@ -33,6 +45,53 @@ function RequireAuth({ allow }) {
     return <Navigate to="/tenant" replace />
   }
   return <Outlet />
+}
+
+function tenantOpsRoutes() {
+  return (
+    <>
+      <Route path="/tenant" element={<OpsDashboard mode="tenant" />} />
+      <Route path="/tenant/alerts" element={<OpsAlerts />} />
+      <Route path="/tenant/users" element={<OpsUsersRoles />} />
+      <Route path="/tenant/revenue" element={<TenantRevenue />} />
+      <Route path="/tenant/fees" element={<OpsFees />} />
+      <Route path="/tenant/commissions" element={<OpsCommissions />} />
+      <Route path="/tenant/config" element={<OpsConfig />} />
+      <Route path="/tenant/payers" element={<OpsPayers />} />
+      <Route path="/tenant/obligations" element={<TenantObligations />} />
+      <Route path="/tenant/collections" element={<OpsCollections />} />
+      <Route path="/tenant/transactions" element={<OpsTransactions />} />
+      <Route path="/tenant/ledger" element={<OpsLedger />} />
+      <Route path="/tenant/receipts" element={<OpsReceipts />} />
+      <Route path="/tenant/settlements" element={<OpsSettlements />} />
+      <Route path="/tenant/reconciliation" element={<OpsReconciliation />} />
+      <Route path="/tenant/statements" element={<OpsStatements />} />
+      <Route path="/tenant/reports" element={<OpsReports />} />
+      <Route path="/tenant/audit" element={<OpsAudit />} />
+    </>
+  )
+}
+
+function platformOpsRoutes() {
+  return (
+    <>
+      <Route path="/platform" element={<OpsDashboard mode="platform" />} />
+      <Route path="/platform/alerts" element={<OpsAlerts />} />
+      <Route path="/platform/tenants" element={<PlatformTenants />} />
+      <Route path="/platform/geography" element={<PlatformGeography />} />
+      <Route path="/platform/users" element={<OpsUsersRoles />} />
+      <Route path="/platform/config" element={<OpsConfig />} />
+      <Route path="/platform/payers" element={<OpsPayers />} />
+      <Route path="/platform/transactions" element={<OpsTransactions />} />
+      <Route path="/platform/collections" element={<OpsCollections />} />
+      <Route path="/platform/ledger" element={<OpsLedger />} />
+      <Route path="/platform/receipts" element={<OpsReceipts />} />
+      <Route path="/platform/settlements" element={<OpsSettlements />} />
+      <Route path="/platform/reconciliation" element={<OpsReconciliation />} />
+      <Route path="/platform/reports" element={<OpsReports />} />
+      <Route path="/platform/audit" element={<OpsAudit />} />
+    </>
+  )
 }
 
 export default function App() {
@@ -60,23 +119,11 @@ export default function App() {
         </Route>
 
         <Route element={<RequireAuth allow={['STAFF', 'PLATFORM_ADMIN']} />}>
-          <Route element={<TenantLayout />}>
-            <Route path="/tenant" element={<TenantDashboard />} />
-            <Route path="/tenant/obligations" element={<TenantObligations />} />
-            <Route path="/tenant/revenue" element={<TenantRevenue />} />
-            <Route path="/tenant/transactions" element={<TenantTransactions />} />
-            <Route path="/tenant/settlements" element={<TenantSettlements />} />
-            <Route path="/tenant/reports" element={<TenantReports />} />
-          </Route>
+          <Route element={<TenantLayout />}>{tenantOpsRoutes()}</Route>
         </Route>
 
         <Route element={<RequireAuth allow={['PLATFORM_ADMIN']} />}>
-          <Route element={<PlatformLayout />}>
-            <Route path="/platform" element={<PlatformDashboard />} />
-            <Route path="/platform/tenants" element={<PlatformTenants />} />
-            <Route path="/platform/geography" element={<PlatformGeography />} />
-            <Route path="/platform/reports" element={<PlatformReports />} />
-          </Route>
+          <Route element={<PlatformLayout />}>{platformOpsRoutes()}</Route>
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

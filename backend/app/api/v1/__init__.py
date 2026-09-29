@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1 import auth, geography, tenants, platforms, payers, revenue, obligations, payments, receipts, settlements, reports, users
+from app.api.v1 import auth, geography, tenants, platforms, payers, revenue, obligations, payments, receipts, settlements, reports, users, ops
 
 api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(auth.router, tags=["auth"])
@@ -15,3 +15,5 @@ api_router.include_router(payments.router, tags=["payments"])
 api_router.include_router(receipts.router, tags=["receipts"])
 api_router.include_router(settlements.router, tags=["settlements"])
 api_router.include_router(reports.router, tags=["reports"])
+api_router.include_router(ops.router, prefix="/ops", tags=["ops"])
+

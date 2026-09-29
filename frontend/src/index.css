@@ -264,6 +264,24 @@ table.data th {
 }
 .ops-search::placeholder { color: rgba(255,255,255,0.55); }
 .ops-user { font-size: 0.9rem; color: rgba(237,245,240,0.85); }
+.ops-alert-chip {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(232, 184, 74, 0.2);
+  color: #f6d98a;
+  white-space: nowrap;
+}
+.ops-alert-chip:hover { background: rgba(232, 184, 74, 0.35); }
+a.panel.stat.drill {
+  display: block;
+  transition: border-color 160ms ease, transform 160ms ease;
+}
+a.panel.stat.drill:hover {
+  border-color: rgba(31, 107, 74, 0.35);
+  transform: translateY(-2px);
+}
 .ops-body {
   display: grid;
   grid-template-columns: 220px 1fr;
