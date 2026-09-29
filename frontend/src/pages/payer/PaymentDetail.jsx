@@ -1,14 +1,21 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api, formatMoney } from '../../api/client'
+import { ChainSteps, Disclosure, MoneyCells, PageHeader } from '../../components/OpsUI'
 
 export default function PaymentDetail() {
   const { id } = useParams()
   const [txn, setTxn] = useState(null)
+  const [drill, setDrill] = useState(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    api.payment(id).then(setTxn).catch((e) => setError(e.message))
+    Promise.all([api.payment(id), api.opsDrillTransaction(id).catch(() => null)])
+      .then(([t, d]) => {
+        setTxn(t)
+        setDrill(d)
+      })
+      .catch((e) => setError(e.message))
   }, [id])
 
   if (error) return <div className="alert">{error}</div>
@@ -16,17 +23,17 @@ export default function PaymentDetail() {
 
   return (
     <div className="rise stack">
-      <div className="app-top">
-        <div>
-          <h2>{txn.transaction_reference}</h2>
-          <span className="pill">{txn.status}</span>
-        </div>
-        {txn.receipt_id && <Link className="btn btn-primary" to={`/payer/receipts`}>View Receipts</Link>}
-      </div>
-      <div className="panel stack">
-        <div><strong>{formatMoney(txn.total_amount, txn.currency)}</strong> total (incl. {formatMoney(txn.service_fee, txn.currency)} fee)</div>
-        {txn.receipt_number && <div>Receipt: {txn.receipt_number}</div>}
-        <h3>Transaction timeline</h3>
+      <PageHeader
+        title={txn.transaction_reference}
+        subtitle="Payment confirmation and full status timeline"
+        actions={txn.receipt_id ? <Link className="btn btn-primary" to="/payer/receipts">Receipts</Link> : null}
+      />
+      <div className="row"><span className="pill">{txn.status}</span></div>
+      <MoneyCells amount={txn.amount} fee={txn.service_fee} commission={txn.commission_amount} total={txn.total_amount} currency={txn.currency} />
+      {txn.receipt_number && <p>Receipt: <strong>{txn.receipt_number}</strong></p>}
+      {drill?.geography && <p className="muted">Zone at payment (immutable): {drill.geography.name}</p>}
+
+      <Disclosure title="Transaction timeline" open>
         <div className="timeline">
           {(txn.events || []).map((e, i) => (
             <div className="item" key={i}>
@@ -35,9 +42,23 @@ export default function PaymentDetail() {
             </div>
           ))}
         </div>
-        {txn.receipt_number && (
-          <Link to="/verify">Verify Receipt</Link>
-        )}
+      </Disclosure>
+
+      {drill && (
+        <>
+          <ChainSteps steps={drill.chain} active="transaction" />
+          <Disclosure title="Fee breakdown">
+            <p>
+              Amount {formatMoney(drill.fee_commission ? txn.amount : txn.amount)} + service fee{' '}
+              {formatMoney(txn.service_fee)} = total {formatMoney(txn.total_amount)}.
+            </p>
+          </Disclosure>
+        </>
+      )}
+
+      <div className="row">
+        <Link className="btn btn-ghost" to="/verify">Verify Receipt</Link>
+        <Link className="btn btn-ghost" to="/payer/history">Payment history</Link>
       </div>
     </div>
   )

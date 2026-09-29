@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { api, formatMoney } from '../../api/client'
-import { useAuth } from '../../contexts/AuthContext'
+import { Disclosure, EmptyRow, PageHeader, StatLink } from '../../components/OpsUI'
 
 export default function TenantObligations() {
-  const { tenantId } = useAuth()
+  const navigate = useNavigate()
   const [rows, setRows] = useState([])
   const [revenues, setRevenues] = useState([])
   const [form, setForm] = useState({ payer_id: '', revenue_type_id: '', amount: '', description: '' })
@@ -32,7 +33,7 @@ export default function TenantObligations() {
         amount: form.amount,
         description: form.description || undefined,
       })
-      setMessage('Obligation created. Geographic/tenant snapshot taken from the payer’s current zone.')
+      setMessage('Obligation created with payer zone/tenant snapshot')
       await load()
     } catch (err) {
       setError(err.message)
@@ -41,13 +42,7 @@ export default function TenantObligations() {
 
   return (
     <div className="rise stack">
-      <div>
-        <h2>Obligations</h2>
-        <p className="muted">
-          Creating an obligation snapshots the payer’s current council/zone. Tenant context: locked from session
-          {tenantId ? ` (${tenantId.slice(0, 12)}…)` : ''}.
-        </p>
-      </div>
+      <PageHeader title="Obligations" subtitle="Creating an obligation snapshots the payer’s current council/zone. tenant_id is session-scoped." />
       {error && <div className="alert">{error}</div>}
       {message && <div className="alert ok">{message}</div>}
       <form className="panel" onSubmit={create} style={{ maxWidth: 560 }}>
@@ -69,7 +64,7 @@ export default function TenantObligations() {
           </thead>
           <tbody>
             {rows.map((o) => (
-              <tr key={o.obligation_id}>
+              <tr key={o.obligation_id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/tenant/obligations/${o.obligation_id}`)}>
                 <td>{o.description}</td>
                 <td className="muted">{o.payer_id.slice(0, 12)}…</td>
                 <td>{formatMoney(o.amount)}</td>
@@ -77,9 +72,13 @@ export default function TenantObligations() {
                 <td><span className="pill">{o.status}</span></td>
               </tr>
             ))}
+            {!rows.length && <EmptyRow cols={5} />}
           </tbody>
         </table>
       </div>
+      <Disclosure title="How to find a payer ID">
+        <p>Open <Link to="/tenant/payers">Payers</Link>, select a payer, copy the payer_id from the detail URL, then create the obligation.</p>
+      </Disclosure>
     </div>
   )
 }

@@ -19,10 +19,18 @@ def list_settlements(db: DbDep, current = Depends(require_permissions("settlemen
 
 
 @router.post("/calculate", response_model=SettlementOut)
-def calc(body: SettlementCreateRequest, db: DbDep, current = Depends(require_permissions("settlements:write"))):
-    if not current.tenant_id:
+def calc(
+    body: SettlementCreateRequest,
+    db: DbDep,
+    current = Depends(require_permissions("settlements:write")),
+    tenant_id: str | None = None,
+):
+    tid = current.tenant_id
+    if current.user_type == "PLATFORM_ADMIN":
+        tid = tenant_id or tid
+    if not tid:
         raise HTTPException(status_code=422, detail="tenant context required")
-    return calculate_settlement(db, current.tenant_id, body.period_start, body.period_end)
+    return calculate_settlement(db, tid, body.period_start, body.period_end)
 
 
 @router.post("/{settlement_id}/approve", response_model=SettlementOut)

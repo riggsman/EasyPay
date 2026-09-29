@@ -1,4 +1,4 @@
-import { NavLink, Outlet, Link } from 'react-router-dom'
+import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { api } from '../api/client'
@@ -40,8 +40,10 @@ export function PublicLayout() {
 
 function OpsShell({ title, links, contextLabel, basePath, showOpsChrome = true, tenantOptions = [] }) {
   const { logout, session } = useAuth()
+  const navigate = useNavigate()
   const [alerts, setAlerts] = useState(null)
   const [q, setQ] = useState('')
+  const [searchResults, setSearchResults] = useState(null)
   const [tenantFilter, setTenantFilter] = useState(localStorage.getItem('ep_tenant_filter') || '')
 
   useEffect(() => {
@@ -54,9 +56,30 @@ function OpsShell({ title, links, contextLabel, basePath, showOpsChrome = true, 
     else localStorage.removeItem('ep_tenant_filter')
   }, [tenantFilter])
 
+  useEffect(() => {
+    if (!showOpsChrome) return
+    const term = q.trim()
+    if (term.length < 2) {
+      setSearchResults(null)
+      return undefined
+    }
+    const handle = setTimeout(() => {
+      api.opsSearch(term, tenantFilter || undefined)
+        .then(setSearchResults)
+        .catch(() => setSearchResults({ query: term, results: [] }))
+    }, 300)
+    return () => clearTimeout(handle)
+  }, [q, tenantFilter, showOpsChrome])
+
   const alertCount = alerts
     ? (alerts.pending_transactions || 0) + (alerts.rejected_transactions || 0) + (alerts.settlements_awaiting_approval || 0)
     : 0
+
+  function onSearchKey(e) {
+    if (e.key === 'Enter' && q.trim().length >= 2) {
+      navigate(`${basePath}/search`)
+    }
+  }
 
   return (
     <div className="ops-shell">
@@ -86,6 +109,7 @@ function OpsShell({ title, links, contextLabel, basePath, showOpsChrome = true, 
             aria-label="Search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
+            onKeyDown={onSearchKey}
           />
           {showOpsChrome && (
             <Link to={`${basePath}/alerts`} className="ops-alert-chip" title="Operational alerts">
@@ -111,7 +135,7 @@ function OpsShell({ title, links, contextLabel, basePath, showOpsChrome = true, 
           </nav>
         </aside>
         <main className="ops-main">
-          <Outlet context={{ searchQuery: q, tenantFilter }} />
+          <Outlet context={{ searchQuery: q, tenantFilter, basePath, searchResults }} />
         </main>
       </div>
     </div>
@@ -122,7 +146,11 @@ function tenantLinks(base = '/tenant') {
   return [
     {
       label: 'Overview',
-      items: [{ to: base, label: 'Dashboard', end: true }, { to: `${base}/alerts`, label: 'Alerts' }],
+      items: [
+        { to: base, label: 'Dashboard', end: true },
+        { to: `${base}/alerts`, label: 'Alerts' },
+        { to: `${base}/search`, label: 'Search' },
+      ],
     },
     {
       label: 'Identity & Access',
@@ -174,6 +202,8 @@ export function PayerLayout() {
         { to: '/payer/pay', label: 'Make Payment' },
         { to: '/payer/history', label: 'Transactions' },
         { to: '/payer/receipts', label: 'Receipts' },
+        { to: '/payer/statements', label: 'Statements' },
+        { to: '/payer/notifications', label: 'Notifications' },
         { to: '/payer/area', label: 'Operating Area' },
         { to: '/payer/profile', label: 'Profile' },
       ],
@@ -205,6 +235,7 @@ export function PlatformLayout() {
       items: [
         { to: '/platform', label: 'Dashboard', end: true },
         { to: '/platform/alerts', label: 'Alerts' },
+        { to: '/platform/search', label: 'Search' },
       ],
     },
     {
@@ -217,16 +248,14 @@ export function PlatformLayout() {
     },
     {
       label: 'Configuration',
-      items: [
-        { to: '/platform/config', label: 'System Config' },
-      ],
+      items: [{ to: '/platform/config', label: 'System Config' }],
     },
     {
       label: 'Operations',
       items: [
         { to: '/platform/payers', label: 'Payers' },
-        { to: '/platform/transactions', label: 'Transactions' },
         { to: '/platform/collections', label: 'Collections' },
+        { to: '/platform/transactions', label: 'Transactions' },
       ],
     },
     {
@@ -236,6 +265,7 @@ export function PlatformLayout() {
         { to: '/platform/receipts', label: 'Receipts' },
         { to: '/platform/settlements', label: 'Settlements' },
         { to: '/platform/reconciliation', label: 'Reconciliation' },
+        { to: '/platform/statements', label: 'Statements' },
         { to: '/platform/reports', label: 'Reports' },
       ],
     },
