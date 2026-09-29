@@ -468,7 +468,7 @@ export function OpsObligationDetail() {
 export function OpsTransactions() {
   const base = useBase()
   const navigate = useNavigate()
-  const { searchQuery } = useCtx()
+  const { searchQuery, tenantFilter } = useCtx()
   const [rows, setRows] = useState([])
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
@@ -476,27 +476,30 @@ export function OpsTransactions() {
   const [error, setError] = useState('')
   useEffect(() => {
     setPage(1)
-  }, [searchQuery])
+  }, [searchQuery, tenantFilter])
   useEffect(() => {
+    const statusOnly = searchQuery?.startsWith('status:') ? searchQuery.slice(7) : undefined
     api
-      .payments({ page, page_size: pageSize, status: searchQuery?.startsWith('status:') ? searchQuery.slice(7) : undefined })
+      .payments({
+        page,
+        page_size: pageSize,
+        status: statusOnly,
+        q: statusOnly ? undefined : (searchQuery || undefined),
+        tenant_id: tenantFilter || undefined,
+      })
       .then((res) => {
-        let items = listItems(res)
-        if (searchQuery && !searchQuery.startsWith('status:')) {
-          items = items.filter((t) => matches(searchQuery, t.transaction_reference, t.transaction_id, t.status, t.payment_channel))
-        }
-        setRows(items)
+        setRows(listItems(res))
         setMeta({ total: res.total ?? 0, total_pages: res.total_pages ?? 1 })
       })
       .catch((e) => setError(e.message))
-  }, [page, pageSize, searchQuery])
+  }, [page, pageSize, searchQuery, tenantFilter])
   return (
     <div className="rise">
-      <PageHeader title="Transactions" subtitle="Click a row for full progressive disclosure and drill chain." />
+      <PageHeader title="Transactions" subtitle="Server-filtered list. Click a row for progressive disclosure and drill chain." />
       {error && <div className="alert">{error}</div>}
       <div className="panel table-wrap">
         <table className="data">
-          <thead><tr><th>Reference</th><th>Amount</th><th>Status</th><th>Channel</th><th>Date</th></tr></thead>
+          <thead><tr><th>Reference</th><th>Amount</th><th>Status</th><th>Channel</th><th>Provider</th><th>Date</th></tr></thead>
           <tbody>
             {rows.map((t) => (
               <tr key={t.transaction_id} style={{ cursor: 'pointer' }} onClick={() => navigate(`${base}/transactions/${t.transaction_id}`)}>
@@ -504,10 +507,11 @@ export function OpsTransactions() {
                 <td>{formatMoney(t.amount)}</td>
                 <td><span className="pill">{t.status}</span></td>
                 <td>{t.payment_channel}</td>
+                <td className="muted">{t.payment_provider || '—'}</td>
                 <td>{new Date(t.initiated_at).toLocaleString()}</td>
               </tr>
             ))}
-            {!rows.length && <EmptyRow cols={5} />}
+            {!rows.length && <EmptyRow cols={6} />}
           </tbody>
         </table>
         <PaginationBar
@@ -645,19 +649,39 @@ export function OpsTransactionDetail() {
 }
 
 export function OpsLedger() {
+  const base = useBase()
+  const navigate = useNavigate()
+  const { searchQuery, tenantFilter } = useCtx()
   const [rows, setRows] = useState([])
   const [entries, setEntries] = useState([])
   const [selected, setSelected] = useState(null)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(25)
+  const [meta, setMeta] = useState({ total: 0, total_pages: 1 })
   useEffect(() => {
-    api.opsLedgerPostings().then(setRows).catch(() => {})
-  }, [])
+    setPage(1)
+  }, [searchQuery, tenantFilter])
+  useEffect(() => {
+    api
+      .opsLedgerPostings({
+        page,
+        page_size: pageSize,
+        q: searchQuery || undefined,
+        tenant_id: tenantFilter || undefined,
+      })
+      .then((res) => {
+        setRows(listItems(res))
+        setMeta({ total: res.total ?? 0, total_pages: res.total_pages ?? 1 })
+      })
+      .catch(() => {})
+  }, [page, pageSize, searchQuery, tenantFilter])
   async function open(id) {
     setSelected(id)
     setEntries(await api.opsLedgerEntries(id))
   }
   return (
     <div className="rise stack">
-      <PageHeader title="Ledger" subtitle="Immutable double-entry postings. Drill into balanced lines." />
+      <PageHeader title="Ledger" subtitle="Immutable double-entry postings. Expand lines, drill to transaction." />
       <div className="panel table-wrap">
         <table className="data">
           <thead><tr><th>Posting</th><th>Type</th><th>Transaction</th><th>Description</th></tr></thead>
@@ -666,16 +690,38 @@ export function OpsLedger() {
               <tr key={p.ledger_posting_id} style={{ cursor: 'pointer' }} onClick={() => open(p.ledger_posting_id)}>
                 <td>{p.ledger_posting_id.slice(0, 12)}…</td>
                 <td><span className="pill">{p.posting_type}</span></td>
-                <td className="muted">{p.transaction_id ? `${p.transaction_id.slice(0, 12)}…` : '—'}</td>
+                <td>
+                  {p.transaction_id ? (
+                    <button
+                      className="linkish"
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        navigate(`${base}/transactions/${p.transaction_id}`)
+                      }}
+                    >
+                      {p.transaction_id.slice(0, 12)}…
+                    </button>
+                  ) : '—'}
+                </td>
                 <td>{p.description}</td>
               </tr>
             ))}
             {!rows.length && <EmptyRow cols={4} />}
           </tbody>
         </table>
+        <PaginationBar
+          page={page}
+          totalPages={meta.total_pages}
+          total={meta.total}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={(n) => { setPageSize(n); setPage(1) }}
+        />
       </div>
       {selected && (
-        <Disclosure title="Entries" open>
+        <Disclosure title="Advanced — balanced entries" open>
+          <ChainSteps steps={['Transaction', 'Fee/Commission', 'Ledger', 'Settlement']} active="Ledger" />
           <table className="data">
             <thead><tr><th>Debit</th><th>Credit</th><th>Narrative</th></tr></thead>
             <tbody>
@@ -695,21 +741,39 @@ export function OpsLedger() {
 }
 
 export function OpsReceipts() {
-  const { searchQuery } = useCtx()
+  const base = useBase()
+  const navigate = useNavigate()
+  const { searchQuery, tenantFilter } = useCtx()
   const [rows, setRows] = useState([])
   const [selected, setSelected] = useState(null)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(25)
+  const [meta, setMeta] = useState({ total: 0, total_pages: 1 })
   useEffect(() => {
-    api.receipts({ page: 1, page_size: 100 }).then((res) => setRows(listItems(res))).catch(() => {})
-  }, [])
-  const filtered = rows.filter((r) => matches(searchQuery, r.receipt_number, r.council_name, r.revenue_name, r.payer_display_name))
+    setPage(1)
+  }, [searchQuery, tenantFilter])
+  useEffect(() => {
+    api
+      .receipts({
+        page,
+        page_size: pageSize,
+        q: searchQuery || undefined,
+        tenant_id: tenantFilter || undefined,
+      })
+      .then((res) => {
+        setRows(listItems(res))
+        setMeta({ total: res.total ?? 0, total_pages: res.total_pages ?? 1 })
+      })
+      .catch(() => {})
+  }, [page, pageSize, searchQuery, tenantFilter])
   return (
     <div className="rise stack">
-      <PageHeader title="Receipts" subtitle="Summary list with expandable verification details." />
+      <PageHeader title="Receipts" subtitle="Server-filtered summary → verification details → transaction drill." />
       <div className="panel table-wrap">
         <table className="data">
           <thead><tr><th>Receipt</th><th>Council</th><th>Revenue</th><th>Total</th><th>Status</th></tr></thead>
           <tbody>
-            {filtered.map((r) => (
+            {rows.map((r) => (
               <tr key={r.receipt_id} style={{ cursor: 'pointer' }} onClick={() => setSelected(r)}>
                 <td>{r.receipt_number}</td>
                 <td>{r.council_name}</td>
@@ -718,19 +782,33 @@ export function OpsReceipts() {
                 <td><span className="pill">{r.status}</span></td>
               </tr>
             ))}
-            {!filtered.length && <EmptyRow cols={5} />}
+            {!rows.length && <EmptyRow cols={5} />}
           </tbody>
         </table>
+        <PaginationBar
+          page={page}
+          totalPages={meta.total_pages}
+          total={meta.total}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={(n) => { setPageSize(n); setPage(1) }}
+        />
       </div>
       {selected && (
-        <div className="panel stack">
-          <h3>{selected.receipt_number}</h3>
+        <Disclosure title={`Details — ${selected.receipt_number}`} open>
+          <ChainSteps steps={['Payer', 'Transaction', 'Receipt', 'Settlement']} active="Receipt" />
           <MoneyCells amount={selected.amount} fee={selected.service_fee} commission={0} total={selected.total_amount} currency={selected.currency} />
           <p>Payer display: {selected.payer_display_name}</p>
           <p>Council: {selected.council_name}</p>
-          <p className="muted">Verification token stored opaquely for public verify.</p>
-          <Link className="btn btn-primary" to="/verify">Open public verification</Link>
-        </div>
+          <div className="row">
+            {selected.transaction_id && (
+              <button className="btn btn-ghost" type="button" onClick={() => navigate(`${base}/transactions/${selected.transaction_id}`)}>
+                Drill to transaction
+              </button>
+            )}
+            <Link className="btn btn-primary" to="/verify">Open public verification</Link>
+          </div>
+        </Disclosure>
       )}
     </div>
   )
@@ -1412,7 +1490,8 @@ export function OpsReports() {
   const [report, setReport] = useState(null)
   const [error, setError] = useState('')
   useEffect(() => {
-    api.collectionsReport().then(setReport).catch((e) => setError(e.message))
+    const params = tenantFilter ? `?tenant_id=${encodeURIComponent(tenantFilter)}` : ''
+    api.collectionsReport(params).then(setReport).catch((e) => setError(e.message))
   }, [tenantFilter])
   return (
     <div className="rise stack">
@@ -1421,8 +1500,10 @@ export function OpsReports() {
         subtitle="Aggregates use transaction location snapshots — never the payer’s current zone."
         actions={(
           <>
-            <button className="btn btn-ghost" type="button" onClick={() => api.exportCollectionsCsv(tenantFilter || undefined).catch((e) => setError(e.message))}>Export CSV</button>
-            <button className="btn btn-primary" type="button" onClick={() => api.exportCollectionsXlsx(tenantFilter || undefined).catch((e) => setError(e.message))}>Export Excel</button>
+            <button className="btn btn-ghost" type="button" onClick={() => api.exportCollectionsCsv(tenantFilter || undefined).catch((e) => setError(e.message))}>Collections CSV</button>
+            <button className="btn btn-ghost" type="button" onClick={() => api.exportSettlementsCsv(tenantFilter || undefined).catch((e) => setError(e.message))}>Settlements CSV</button>
+            <button className="btn btn-ghost" type="button" onClick={() => api.exportAuditCsv(tenantFilter || undefined).catch((e) => setError(e.message))}>Audit CSV</button>
+            <button className="btn btn-primary" type="button" onClick={() => api.exportCollectionsXlsx(tenantFilter || undefined).catch((e) => setError(e.message))}>Collections Excel</button>
           </>
         )}
       />

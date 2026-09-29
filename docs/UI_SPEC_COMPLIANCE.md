@@ -1,50 +1,38 @@
-# UI Specification Compliance Matrix (updated)
+# UI Specification Compliance Matrix
 
 | Spec area | Screen / behavior | Status | Notes |
 |---|---|---|---|
-| Financial-first dashboard | Council/Platform dashboard | Met | Drillable stats |
-| Progressive disclosure | Transactions, settlements, receipts, obligations, collections, payers | Met | Summary → details → advanced → audit |
-| Full drill chain | Transaction drill API + UI | Met | Payer→Obligation→Collection→Txn→Fee→Ledger→Receipt→Settlement |
-| App shell | Logo, context, search, alerts, user | Met | Server search + tenant selector (platform) |
-| Alerts queue | Alerts page | Met | Pending/rejected/settlement action lists |
-| Settlement geo lines | Settlement detail | Met | Line breakdown + approve/process |
-| Statements | Tenant + Platform + Payer | Met | Platform uses tenant selector |
-| Reports exports | CSV + Excel | Met | |
-| Fees/commissions CRUD | Forms + lists | Met | tenant_id from session |
+| Financial-first dashboard | Council/Platform dashboard | Met | Drillable stats → lists |
+| Progressive disclosure | Txn, settlement, receipt, payer, obligation, collection, ledger entries | Met | Summary → details → advanced → audit on money path |
+| Full drill chain | Transaction drill API + UI + ledger/receipt links | Met | Payer→Obligation→Collection→Txn→Fee→Ledger→Receipt→Settlement |
+| App shell | Logo, context, search, alerts, user, Live | Met | |
+| Alerts queue | Alerts page + realtime refresh | Met | |
+| Settlement geo lines + MoMo/Bank payout | Settlement detail | Met | Campay disburse / bank |
+| Statements | Tenant + Platform + Payer | Met | |
+| Reports exports | Collections CSV/XLSX, settlements CSV, audit CSV | Met | |
+| Fees/commissions CRUD | Forms + lists | Met | Platform nav includes fees/commissions |
 | Users/roles CRUD | Create staff + role list | Met | |
-| Audit trail | List + per-txn audit | Met | |
-| Payer portal | Dashboard, obligations, pay, history, receipts, statements, notifications, area, profile | Met | |
-| Tenant console | Full ops nav | Met | |
-| Platform console | Full ops nav + geography/tenants | Met | |
-| Session refresh | API client | Met | |
-| Argon2 | Backend | Met | |
+| Audit trail | List + per-txn audit + CSV export | Met | |
+| Payer portal | Full set including real notification inbox | Met | `/ops/my-notifications` delivery log |
+| Tenant console | Full dependency-first ops nav | Met | |
+| Platform console | Ops + revenue config + obligations + providers | Met | Parity with tenant operations |
+| Server list search | Payers, transactions, receipts, ledger, audit | Met | `q` / filters on APIs |
+| Pagination | Primary ops lists | Met | `{items,page,total,…}` + PaginationBar |
+| Email/SMS/WhatsApp modules | Dispatcher + encrypted provider UI | Met | Platform Providers page |
+| SMS toggleable | Env master + ops toggle + encrypted SMS credentials | Met | |
+| Socket.IO realtime | Events for txn/alerts/notifications | Met | |
+| Campay MoMo | All MOBILE_MONEY via Campay | Met | |
+| Encrypted provider config | Campay / Email / WhatsApp / SMS | Met | System/super admin only |
+| Argon2 + refresh sessions | Auth | Met | |
 | Mobile layout | CSS | Met | |
 | Tests folders | regression + uat | Met | |
 
-## Remaining future (out of current SRS shell scope)
+## Explicitly out of current shell scope
 
-- Live payment provider webhook UI / fraud monitoring (Advanced Services Phase 10)
-- Production SMTP / SMS / WhatsApp provider credentials (modules ship with env + ops toggles; deliveries logged)
+- Live payment-provider fraud monitoring console (Advanced Services)
+- Geographic Region→Town→Council heatmap dashboard (future analytics)
 
-## Pagination & list filters
+## Verification
 
-| Area | Status |
-|------|--------|
-| Ops payers, collections, audit, ledger postings | Server `page` / `page_size` + filters |
-| Payments, obligations, receipts, settlements APIs | Paginated responses `{ items, total, … }` |
-| Ops console tables | Pagination controls on primary lists |
-| Notification delivery log | Paginated under System Configuration |
-
-## Realtime (Socket.IO)
-
-| Capability | Status |
-|------------|--------|
-| JWT-authenticated WebSocket (`/socket.io`) | Implemented |
-| Room isolation (`user:`, `tenant:`, `platform:ops`) | Implemented |
-| Transaction status stream | `transaction.status_changed` on initiate + each transition |
-| Alert queue refresh | `alerts.updated` after txn/settlement changes |
-| Email/SMS/WhatsApp delivery monitor | `notification.delivery` per channel attempt |
-| Horizontal scale | Optional `SOCKETIO_REDIS_URL` message queue |
-| Ops UI | Live indicator, toast on outbound notification, alerts auto-refresh |
-
-Run API with `uvicorn app.main:asgi_app` (not `app` alone) so Socket.IO mounts correctly.
+- Backend: `pytest backend/tests`
+- Frontend: `npm run build`

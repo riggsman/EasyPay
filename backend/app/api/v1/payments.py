@@ -59,6 +59,8 @@ def list_payments(
     page_size: int = Query(25, ge=1, le=200),
     status: Optional[str] = None,
     payer_id: Optional[str] = None,
+    tenant_id: Optional[str] = None,
+    q: Optional[str] = None,
     date_from: Optional[datetime] = None,
     date_to: Optional[datetime] = None,
 ):
@@ -66,12 +68,24 @@ def list_payments(
     if current.user_type == "PAYER":
         payer = get_payer_by_user(db, current.user_id)
         query = query.filter(Transaction.payer_id == payer.payer_id)
-    elif current.user_type != "PLATFORM_ADMIN":
+    elif current.user_type in ("PLATFORM_ADMIN", "SUPER_ADMIN"):
+        if tenant_id:
+            query = query.filter(Transaction.transaction_tenant_id == tenant_id)
+    else:
         query = query.filter(Transaction.transaction_tenant_id == current.tenant_id)
     if status:
         query = query.filter(Transaction.status == status)
     if payer_id and current.user_type != "PAYER":
         query = query.filter(Transaction.payer_id == payer_id)
+    if q:
+        like = f"%{q.strip()}%"
+        query = query.filter(
+            (Transaction.transaction_reference.like(like))
+            | (Transaction.transaction_id.like(like))
+            | (Transaction.payment_channel.like(like))
+            | (Transaction.provider_reference.like(like))
+            | (Transaction.status.like(like))
+        )
     if date_from:
         query = query.filter(Transaction.initiated_at >= date_from)
     if date_to:

@@ -38,6 +38,8 @@ def list_receipts(
     page: int = Query(1, ge=1),
     page_size: int = Query(25, ge=1, le=200),
     status: Optional[str] = None,
+    tenant_id: Optional[str] = None,
+    q: Optional[str] = None,
     date_from: Optional[datetime] = None,
     date_to: Optional[datetime] = None,
 ):
@@ -45,10 +47,21 @@ def list_receipts(
     if current.user_type == "PAYER":
         payer = get_payer_by_user(db, current.user_id)
         query = query.filter(Receipt.payer_id == payer.payer_id)
-    elif current.user_type != "PLATFORM_ADMIN":
+    elif current.user_type in ("PLATFORM_ADMIN", "SUPER_ADMIN"):
+        if tenant_id:
+            query = query.filter(Receipt.tenant_id == tenant_id)
+    else:
         query = query.filter(Receipt.tenant_id == current.tenant_id)
     if status:
         query = query.filter(Receipt.status == status)
+    if q:
+        like = f"%{q.strip()}%"
+        query = query.filter(
+            (Receipt.receipt_number.like(like))
+            | (Receipt.council_name.like(like))
+            | (Receipt.revenue_name.like(like))
+            | (Receipt.payer_display_name.like(like))
+        )
     if date_from:
         query = query.filter(Receipt.payment_date >= date_from)
     if date_to:

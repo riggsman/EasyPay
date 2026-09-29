@@ -273,7 +273,9 @@ export function PlatformLayout() {
     {
       label: 'Configuration',
       items: [
-        { to: '/platform/providers', label: 'Providers (Campay / Email / WA)' },
+        { to: '/platform/providers', label: 'Providers (Campay / Email / WA / SMS)' },
+        { to: '/platform/fees', label: 'Fees' },
+        { to: '/platform/commissions', label: 'Commissions' },
         { to: '/platform/config', label: 'System Config' },
       ],
     },
@@ -281,6 +283,7 @@ export function PlatformLayout() {
       label: 'Operations',
       items: [
         { to: '/platform/payers', label: 'Payers' },
+        { to: '/platform/obligations', label: 'Obligations' },
         { to: '/platform/collections', label: 'Collections' },
         { to: '/platform/transactions', label: 'Transactions' },
       ],

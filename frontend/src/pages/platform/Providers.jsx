@@ -37,6 +37,11 @@ export default function PlatformProviders() {
     api_url: '',
     api_key: '',
   })
+  const [sms, setSms] = useState({
+    enabled: false,
+    api_url: '',
+    api_key: '',
+  })
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [meta, setMeta] = useState({})
@@ -71,6 +76,13 @@ export default function PlatformProviders() {
       ...prev,
       enabled: Boolean(byCode.WHATSAPP?.enabled),
       api_url: w.api_url || '',
+      api_key: '',
+    }))
+    const s = byCode.SMS?.settings || {}
+    setSms((prev) => ({
+      ...prev,
+      enabled: Boolean(byCode.SMS?.enabled),
+      api_url: s.api_url || '',
       api_key: '',
     }))
   }
@@ -146,6 +158,26 @@ export default function PlatformProviders() {
         },
       })
       setMessage('WhatsApp configuration saved (encrypted at rest)')
+      await load()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  async function saveSms(e) {
+    e.preventDefault()
+    setError('')
+    setMessage('')
+    try {
+      await api.upsertSmsProvider({
+        enabled: sms.enabled,
+        display_name: 'SMS',
+        settings: {
+          api_url: sms.api_url,
+          api_key: sms.api_key,
+        },
+      })
+      setMessage('SMS configuration saved (encrypted at rest)')
       await load()
     } catch (err) {
       setError(err.message)
@@ -252,6 +284,28 @@ export default function PlatformProviders() {
             />
           </Field>
           <button className="btn btn-primary" type="submit">Save WhatsApp (encrypt)</button>
+        </form>
+      </Disclosure>
+
+      <Disclosure title="SMS — encrypted credentials (also toggleable)" open>
+        <p className="muted">
+          SMS remains gated by <code>NOTIFICATIONS_SMS_ENABLED</code> on the server plus the channel toggle under System Config.
+        </p>
+        <form className="panel stack" onSubmit={saveSms} style={{ maxWidth: 640 }}>
+          <label className="row">
+            <input type="checkbox" checked={sms.enabled} onChange={(e) => setSms({ ...sms, enabled: e.target.checked })} />
+            Enable SMS provider credentials
+          </label>
+          <Field label="API URL"><input value={sms.api_url} onChange={(e) => setSms({ ...sms, api_url: e.target.value })} /></Field>
+          <Field label="API key">
+            <input
+              type="password"
+              value={sms.api_key}
+              onChange={(e) => setSms({ ...sms, api_key: e.target.value })}
+              placeholder={meta.SMS?.settings?.api_key_configured ? '•••• stored' : ''}
+            />
+          </Field>
+          <button className="btn btn-primary" type="submit">Save SMS (encrypt)</button>
         </form>
       </Disclosure>
 

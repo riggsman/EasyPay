@@ -46,10 +46,14 @@
 - [x] Tenant selector
 - [x] Tenants + geography
 - [x] Shared ops screens with tenant filter
+- [x] Fees / commissions / obligations nav parity
+- [x] Providers page (Campay / Email / WhatsApp / SMS encrypted)
 - [x] Statements (requires tenant selection)
 - [x] Settlements calculate with tenant context
+- [x] Server search on transactions / receipts / ledger
+- [x] Exports: collections, settlements, audit
 
 ## Demo credentials
-- admin / admin123
+- admin / admin123 (system/super admin)
 - kumba1_admin / council123
 - abctrading / payer123

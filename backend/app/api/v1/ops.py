@@ -145,7 +145,7 @@ class StatementLine(BaseModel):
 
 
 def _tenant_scope(current: UserDep) -> Optional[str]:
-    if current.user_type == "PLATFORM_ADMIN":
+    if current.user_type in ("PLATFORM_ADMIN", "SUPER_ADMIN"):
         return None
     if not current.tenant_id:
         raise HTTPException(status_code=403, detail="Tenant context required")
@@ -270,6 +270,8 @@ def list_postings(
     page: int = Query(1, ge=1),
     page_size: int = Query(25, ge=1, le=200),
     posting_type: Optional[str] = None,
+    q: Optional[str] = None,
+    tenant_id: Optional[str] = None,
     date_from: Optional[datetime] = None,
     date_to: Optional[datetime] = None,
 ):
@@ -277,8 +279,18 @@ def list_postings(
     tid = _tenant_scope(current)
     if tid:
         query = query.filter(LedgerPosting.tenant_id == tid)
+    elif tenant_id:
+        query = query.filter(LedgerPosting.tenant_id == tenant_id)
     if posting_type:
         query = query.filter(LedgerPosting.posting_type == posting_type)
+    if q:
+        like = f"%{q.strip()}%"
+        query = query.filter(
+            (LedgerPosting.description.like(like))
+            | (LedgerPosting.transaction_id.like(like))
+            | (LedgerPosting.posting_type.like(like))
+            | (LedgerPosting.ledger_posting_id.like(like))
+        )
     if date_from:
         query = query.filter(LedgerPosting.created_at >= date_from)
     if date_to:
@@ -969,7 +981,7 @@ def export_collections_csv(
     import csv
 
     tid = _tenant_scope(current)
-    if current.user_type == "PLATFORM_ADMIN" and tenant_id:
+    if current.user_type in ("PLATFORM_ADMIN", "SUPER_ADMIN") and tenant_id:
         tid = tenant_id
     q = db.query(Transaction).filter(Transaction.status == "SETTLED")
     if tid:
@@ -1023,7 +1035,7 @@ def export_collections_xlsx(
     from openpyxl import Workbook
 
     tid = _tenant_scope(current)
-    if current.user_type == "PLATFORM_ADMIN" and tenant_id:
+    if current.user_type in ("PLATFORM_ADMIN", "SUPER_ADMIN") and tenant_id:
         tid = tenant_id
     q = db.query(Transaction).filter(Transaction.status == "SETTLED")
     if tid:
@@ -1066,6 +1078,106 @@ def export_collections_xlsx(
         out,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": "attachment; filename=collections.xlsx"},
+    )
+
+
+@router.get("/exports/audit.csv")
+def export_audit_csv(
+    db: DbDep,
+    current=Depends(require_permissions("reports:read", "dashboards:platform")),
+    tenant_id: Optional[str] = None,
+):
+    from fastapi.responses import StreamingResponse
+    import csv
+    import io
+
+    tid = _tenant_scope(current)
+    if current.user_type in ("PLATFORM_ADMIN", "SUPER_ADMIN") and tenant_id:
+        tid = tenant_id
+    q = db.query(AuditEvent)
+    if tid:
+        q = q.filter(AuditEvent.tenant_id == tid)
+    rows = q.order_by(AuditEvent.created_at.desc()).limit(5000).all()
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["created_at", "entity_type", "entity_id", "action", "actor_user_id", "tenant_id", "reason"])
+    for a in rows:
+        w.writerow(
+            [
+                a.created_at.isoformat() if a.created_at else "",
+                a.entity_type,
+                a.entity_id,
+                a.action,
+                a.actor_user_id or "",
+                a.tenant_id or "",
+                a.reason or "",
+            ]
+        )
+    buf.seek(0)
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=audit.csv"},
+    )
+
+
+@router.get("/exports/settlements.csv")
+def export_settlements_csv(
+    db: DbDep,
+    current=Depends(require_permissions("reports:read", "settlements:read")),
+    tenant_id: Optional[str] = None,
+):
+    from fastapi.responses import StreamingResponse
+    import csv
+    import io
+
+    tid = _tenant_scope(current)
+    if current.user_type in ("PLATFORM_ADMIN", "SUPER_ADMIN") and tenant_id:
+        tid = tenant_id
+    q = db.query(Settlement)
+    if tid:
+        q = q.filter(Settlement.tenant_id == tid)
+    rows = q.order_by(Settlement.created_at.desc()).limit(2000).all()
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(
+        [
+            "settlement_reference",
+            "tenant_id",
+            "status",
+            "gross_amount",
+            "service_fees",
+            "commission_amount",
+            "net_amount",
+            "payout_method",
+            "payout_status",
+            "payout_provider_reference",
+            "period_start",
+            "period_end",
+        ]
+    )
+    for s in rows:
+        w.writerow(
+            [
+                s.settlement_reference,
+                s.tenant_id,
+                s.status,
+                s.gross_amount,
+                s.service_fees,
+                s.commission_amount,
+                s.net_amount,
+                s.payout_method or "",
+                s.payout_status or "",
+                s.payout_provider_reference or "",
+                s.period_start.isoformat() if s.period_start else "",
+                s.period_end.isoformat() if s.period_end else "",
+            ]
+        )
+    buf.seek(0)
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=settlements.csv"},
     )
 
 
@@ -1174,6 +1286,50 @@ def update_notification_settings(
         )
     db.commit()
     return NotificationSettingsOut(**notification_config.notification_settings_snapshot(db, tid))
+
+
+@router.get("/my-notifications", response_model=PaginatedResponse[NotificationDeliveryOut])
+def my_notifications(
+    db: DbDep,
+    current: UserDep,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(25, ge=1, le=100),
+):
+    """Payer inbox: deliveries addressed to the payer or tied to their transactions."""
+    from app.services.payer import get_payer_by_user
+
+    if current.user_type != "PAYER":
+        raise HTTPException(status_code=403, detail="Payer only")
+    payer = get_payer_by_user(db, current.user_id)
+    txn_ids = [
+        row[0]
+        for row in db.query(Transaction.transaction_id).filter(Transaction.payer_id == payer.payer_id).all()
+    ]
+    query = db.query(NotificationDelivery)
+    clauses = []
+    if payer.email:
+        clauses.append(NotificationDelivery.recipient == payer.email)
+    if payer.phone_number:
+        clauses.append(NotificationDelivery.recipient == payer.phone_number)
+        clauses.append(NotificationDelivery.recipient.like(f"%{payer.phone_number[-9:]}"))
+    if txn_ids:
+        clauses.append(
+            (NotificationDelivery.entity_type == "transaction") & (NotificationDelivery.entity_id.in_(txn_ids))
+        )
+    clauses.append((NotificationDelivery.entity_type == "payer") & (NotificationDelivery.entity_id == payer.payer_id))
+    if not clauses:
+        return PaginatedResponse(items=[], page=page, page_size=page_size, total=0, total_pages=0)
+    from sqlalchemy import or_
+
+    query = query.filter(or_(*clauses)).order_by(NotificationDelivery.created_at.desc())
+    items, total, total_pages = paginate_query(query, page, page_size)
+    return PaginatedResponse(
+        items=[NotificationDeliveryOut.model_validate(i) for i in items],
+        page=page,
+        page_size=page_size,
+        total=total,
+        total_pages=total_pages,
+    )
 
 
 @router.get("/notifications/delivery-log", response_model=PaginatedResponse[NotificationDeliveryOut])

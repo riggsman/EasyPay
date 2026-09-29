@@ -179,7 +179,10 @@ export const api = {
   opsUpdateNotificationSettings: (body) =>
     request('/api/v1/ops/notifications/settings', { method: 'PUT', body: JSON.stringify(body) }),
   opsNotificationLog: (params) => request(`/api/v1/ops/notifications/delivery-log${queryString(params)}`),
-  opsLedgerPostings: () => request('/api/v1/ops/ledger/postings'),
+  opsLedgerPostings: (params) => request(`/api/v1/ops/ledger/postings${queryString(params)}`),
+  myNotifications: (params) => request(`/api/v1/ops/my-notifications${queryString(params)}`),
+  exportAuditCsv: (tenantId) => download(withTenant('/api/v1/ops/exports/audit.csv', tenantId), 'audit.csv'),
+  exportSettlementsCsv: (tenantId) => download(withTenant('/api/v1/ops/exports/settlements.csv', tenantId), 'settlements.csv'),
   opsLedgerEntries: (id) => request(`/api/v1/ops/ledger/postings/${id}/entries`),
   opsLedgerByTxn: (id) => request(`/api/v1/ops/ledger/by-transaction/${id}`),
   opsFees: () => request('/api/v1/ops/fees'),

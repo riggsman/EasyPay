@@ -45,15 +45,19 @@ def dash_platform(db: DbDep, current = Depends(require_permissions("dashboards:p
 @router.get("/reports/collections")
 def report_collections(
     db: DbDep,
-    current = Depends(require_permissions("reports:read")),
+    current=Depends(require_permissions("reports:read")),
     geographic_unit_id: Optional[str] = None,
     date_from: Optional[datetime] = None,
     date_to: Optional[datetime] = None,
+    tenant_id: Optional[str] = None,
 ):
-    tenant_id = None if current.user_type == "PLATFORM_ADMIN" else current.tenant_id
+    if current.user_type in ("PLATFORM_ADMIN", "SUPER_ADMIN"):
+        tid = tenant_id
+    else:
+        tid = current.tenant_id
     return collections_report(
         db,
-        tenant_id=tenant_id,
+        tenant_id=tid,
         geographic_unit_id=geographic_unit_id,
         date_from=date_from,
         date_to=date_to,

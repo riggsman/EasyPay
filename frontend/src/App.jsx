@@ -126,6 +126,7 @@ export default function App() {
             <Route path="/platform/tenants" element={<PlatformTenants />} />
             <Route path="/platform/geography" element={<PlatformGeography />} />
             <Route path="/platform/providers" element={<PlatformProviders />} />
+            <Route path="/platform/obligations" element={<TenantObligations />} />
             {sharedOpsRoutes('/platform')}
           </Route>
         </Route>
