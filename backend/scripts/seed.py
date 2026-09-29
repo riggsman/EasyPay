@@ -1,4 +1,16 @@
-"""Seed Cameroon / Southwest / Kumba councils + platform admin + sample data."""
+"""Seed EasyPay foundation + sample demo data currently used in the product.
+
+Creates:
+  - Platform, Cameroon/Southwest/Kumba geography, 3 council tenants
+  - SUPER ADMIN (wireitapp@gmail.com / 682835503), council admins, demo payers
+  - Revenue types, fees, commissions, payment channels
+  - Campay / Email / WhatsApp / SMS provider configs (Campay mock)
+  - Notification channel toggles
+  - Sample obligations + settled Mobile Money payments (via payment service)
+
+Safe to re-run: foundation is skipped when present; sample users/providers/payments
+are ensured idempotently.
+"""
 from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
@@ -17,6 +29,16 @@ from app.models.user import User, Role, Permission, RolePermission, UserRole
 from app.models.revenue import RevenueType, PaymentChannel, FeeConfiguration, CommissionAgreement
 from app.models.obligation import Obligation
 from app.models.payer import Payer, PayerGeographicHistory
+from app.models.transaction import Transaction
+from app.schemas.common import PaymentInitiateRequest
+from app.services.notifications.config import (
+    CONFIG_EMAIL,
+    CONFIG_SMS,
+    CONFIG_WHATSAPP,
+    upsert_channel_toggle,
+)
+from app.services.payments import complete_payment_happy_path, initiate_payment
+from app.services.providers import store as provider_store
 
 
 PERMISSIONS = [
@@ -40,287 +62,677 @@ PERMISSIONS = [
     "system:configure",
 ]
 
+DEFAULT_SUPER_ADMIN = {
+    "username": "admin",
+    "email": "wireitapp@gmail.com",
+    "phone_number": "682835503",
+    "password": "admin123",
+    "full_name": "Super Admin",
+}
 
-def seed():
-    Base.metadata.create_all(bind=engine)
-    db = SessionLocal()
-    try:
-        if db.query(Platform).first():
-            print("Already seeded — skipping")
-            return
+REVENUE_DEFS = [
+    ("BIZ_LICENSE", "Business License", Decimal("50000")),
+    ("WASTE_LEVY", "Waste Levy", Decimal("5000")),
+    ("MARKET_LEVY", "Market Levy", Decimal("5000")),
+    ("SIGNBOARD", "Signboard Fee", Decimal("10000")),
+]
 
-        platform = Platform(
-            platform_code="EASYPAY",
-            platform_name="EasyPay",
-            legal_name="EasyPay Collection Platform",
-            email="admin@easypay.local",
-            default_currency="XAF",
+# Curated sample payers matching the demo data used in the running system.
+SAMPLE_PAYERS = [
+    {
+        "username": "abctrading",
+        "password": "payer123",
+        "email": "abc@traders.local",
+        "phone_number": "670000001",
+        "full_name": "ABC Trading",
+        "owner_name": "ABC Trading Owner",
+        "business_name": "ABC Trading",
+        "address": "Kumba Main Market",
+        "tenant_code": "KUMBA1",
+        "payer_reference": "PYR-2026-000001",
+        "obligations": [
+            {
+                "revenue_code": "BIZ_LICENSE",
+                "description": "Business License — 2026",
+                "amount": Decimal("50000"),
+                "settle": False,
+            },
+            {
+                "revenue_code": "WASTE_LEVY",
+                "description": "Waste Levy — Sep 2026",
+                "amount": Decimal("5000"),
+                "settle": True,
+                "idempotency_key": "seed-abc-waste-levy-2026-09",
+            },
+        ],
+    },
+    {
+        "username": "mambagroceries",
+        "password": "payer123",
+        "email": "mamba@traders.local",
+        "phone_number": "670000002",
+        "full_name": "Mamba Groceries",
+        "owner_name": "Mamba Groceries Owner",
+        "business_name": "Mamba Groceries",
+        "address": "Fiango Market",
+        "tenant_code": "KUMBA1",
+        "payer_reference": "PYR-SEED-000002",
+        "obligations": [
+            {
+                "revenue_code": "MARKET_LEVY",
+                "description": "Market Levy — Sep 2026",
+                "amount": Decimal("5000"),
+                "settle": True,
+                "idempotency_key": "seed-mamba-market-2026-09",
+            },
+            {
+                "revenue_code": "SIGNBOARD",
+                "description": "Signboard Fee — 2026",
+                "amount": Decimal("10000"),
+                "settle": True,
+                "idempotency_key": "seed-mamba-signboard-2026",
+            },
+        ],
+    },
+    {
+        "username": "buearoasters",
+        "password": "payer123",
+        "email": "buea@traders.local",
+        "phone_number": "670000003",
+        "full_name": "Buea Roasters",
+        "owner_name": "Buea Roasters Owner",
+        "business_name": "Buea Roasters",
+        "address": "Kumba 2 Commercial Ave",
+        "tenant_code": "KUMBA2",
+        "payer_reference": "PYR-SEED-000003",
+        "obligations": [
+            {
+                "revenue_code": "BIZ_LICENSE",
+                "description": "Business License — 2026",
+                "amount": Decimal("50000"),
+                "settle": True,
+                "idempotency_key": "seed-buea-biz-2026",
+            },
+            {
+                "revenue_code": "WASTE_LEVY",
+                "description": "Waste Levy — Sep 2026",
+                "amount": Decimal("5000"),
+                "settle": True,
+                "idempotency_key": "seed-buea-waste-2026-09",
+            },
+        ],
+    },
+    {
+        "username": "threeconner",
+        "password": "payer123",
+        "email": "three@traders.local",
+        "phone_number": "670000004",
+        "full_name": "Three Corner Shop",
+        "owner_name": "Three Corner Owner",
+        "business_name": "Three Corner Shop",
+        "address": "Kumba 3 Junction",
+        "tenant_code": "KUMBA3",
+        "payer_reference": "PYR-SEED-000004",
+        "obligations": [
+            {
+                "revenue_code": "MARKET_LEVY",
+                "description": "Market Levy — Sep 2026",
+                "amount": Decimal("5000"),
+                "settle": True,
+                "idempotency_key": "seed-threecorner-market-2026-09",
+            },
+        ],
+    },
+]
+
+
+def ensure_super_admin_role(db) -> Role:
+    role = db.query(Role).filter(Role.role_code == "SUPER_ADMIN").first()
+    if not role:
+        role = Role(role_code="SUPER_ADMIN", role_name="Super Administrator", scope="PLATFORM")
+        db.add(role)
+        db.flush()
+
+    for code in PERMISSIONS:
+        perm = db.query(Permission).filter(Permission.permission_code == code).first()
+        if not perm:
+            perm = Permission(permission_code=code, description=code)
+            db.add(perm)
+            db.flush()
+        link = (
+            db.query(RolePermission)
+            .filter(
+                RolePermission.role_id == role.role_id,
+                RolePermission.permission_id == perm.permission_id,
+            )
+            .first()
         )
-        db.add(platform)
-        db.flush()
+        if not link:
+            db.add(RolePermission(role_id=role.role_id, permission_id=perm.permission_id))
+    return role
 
-        # Geography tree
-        cm = GeographicUnit(unit_code="CM", unit_name="Cameroon", unit_type="COUNTRY", country_code="CM")
-        db.add(cm)
-        db.flush()
-        sw = GeographicUnit(parent_id=cm.geographic_unit_id, unit_code="CM-SW", unit_name="Southwest", unit_type="REGION", country_code="CM")
-        db.add(sw)
-        db.flush()
-        meme = GeographicUnit(parent_id=sw.geographic_unit_id, unit_code="CM-SW-MEME", unit_name="Meme", unit_type="DIVISION", country_code="CM")
-        db.add(meme)
-        db.flush()
-        kumba = GeographicUnit(parent_id=meme.geographic_unit_id, unit_code="CM-SW-MEME-KUMBA", unit_name="Kumba", unit_type="TOWN", country_code="CM")
-        db.add(kumba)
-        db.flush()
 
-        councils = []
-        for code, name in [("KUMBA-01", "Kumba 1"), ("KUMBA-02", "Kumba 2"), ("KUMBA-03", "Kumba 3")]:
-            g = GeographicUnit(
-                parent_id=kumba.geographic_unit_id,
-                unit_code=code,
-                unit_name=name,
-                unit_type="COUNCIL",
-                country_code="CM",
-            )
-            db.add(g)
-            db.flush()
-            councils.append(g)
-
-        tenants = []
-        for g, tcode, tname in [
-            (councils[0], "KUMBA1", "Kumba 1 Council"),
-            (councils[1], "KUMBA2", "Kumba 2 Council"),
-            (councils[2], "KUMBA3", "Kumba 3 Council"),
-        ]:
-            t = Tenant(
-                tenant_code=tcode,
-                organization_name=tname,
-                organization_type="COUNCIL",
-                currency="XAF",
-                email=f"{tcode.lower()}@council.local",
-                zone_change_mode="IMMEDIATE",
-                verification="VERIFIED",
-                status="ACTIVE",
-            )
-            db.add(t)
-            db.flush()
-            db.add(
-                TenantGeographicUnit(
-                    tenant_id=t.tenant_id,
-                    geographic_unit_id=g.geographic_unit_id,
-                    relationship_type="PRIMARY_COUNCIL",
-                    is_primary=True,
-                    effective_from=utcnow(),
-                )
-            )
-            tenants.append((t, g))
-
-        # Permissions & roles
-        perm_map = {}
-        for code in PERMISSIONS:
-            p = Permission(permission_code=code, description=code)
-            db.add(p)
-            db.flush()
-            perm_map[code] = p
-
-        roles = {
-            "SUPER_ADMIN": ("Super Administrator", "PLATFORM", list(PERMISSIONS)),
-            "PLATFORM_ADMIN": ("Platform Administrator", "PLATFORM", list(PERMISSIONS)),
-            "TENANT_ADMIN": (
-                "Council Administrator",
-                "TENANT",
-                [
-                    "tenants:read",
-                    "revenue:write",
-                    "obligations:write",
-                    "zone_changes:review",
-                    "settlements:read",
-                    "settlements:write",
-                    "settlements:approve",
-                    "dashboards:read",
-                    "reports:read",
-                ],
-            ),
-            "PAYER": ("Payer", "PAYER", []),
-        }
-        role_objs = {}
-        for code, (name, scope, perms) in roles.items():
-            r = Role(role_code=code, role_name=name, scope=scope)
-            db.add(r)
-            db.flush()
-            role_objs[code] = r
-            for pc in perms:
-                db.add(RolePermission(role_id=r.role_id, permission_id=perm_map[pc].permission_id))
-
-        admin = User(
-            username="admin",
-            email="admin@easypay.local",
-            password_hash=hash_password("admin123"),
-            full_name="Super Admin",
+def ensure_default_super_admin(db) -> User:
+    role = ensure_super_admin_role(db)
+    user = (
+        db.query(User)
+        .filter(
+            (User.username == DEFAULT_SUPER_ADMIN["username"])
+            | (User.email == DEFAULT_SUPER_ADMIN["email"])
+            | (User.phone_number == DEFAULT_SUPER_ADMIN["phone_number"])
+        )
+        .first()
+    )
+    if user:
+        user.username = DEFAULT_SUPER_ADMIN["username"]
+        user.email = DEFAULT_SUPER_ADMIN["email"]
+        user.phone_number = DEFAULT_SUPER_ADMIN["phone_number"]
+        user.full_name = DEFAULT_SUPER_ADMIN["full_name"]
+        user.user_type = "SUPER_ADMIN"
+        user.is_active = True
+        user.password_hash = hash_password(DEFAULT_SUPER_ADMIN["password"])
+    else:
+        user = User(
+            username=DEFAULT_SUPER_ADMIN["username"],
+            email=DEFAULT_SUPER_ADMIN["email"],
+            phone_number=DEFAULT_SUPER_ADMIN["phone_number"],
+            password_hash=hash_password(DEFAULT_SUPER_ADMIN["password"]),
+            full_name=DEFAULT_SUPER_ADMIN["full_name"],
             user_type="SUPER_ADMIN",
         )
-        db.add(admin)
+        db.add(user)
         db.flush()
-        db.add(UserRole(user_id=admin.user_id, role_id=role_objs["SUPER_ADMIN"].role_id))
 
-        from app.services.providers import store as provider_store
+    link = (
+        db.query(UserRole)
+        .filter(UserRole.user_id == user.user_id, UserRole.role_id == role.role_id)
+        .first()
+    )
+    if not link:
+        db.add(UserRole(user_id=user.user_id, role_id=role.role_id))
+    return user
 
-        provider_store.upsert_provider_config(
-            db,
-            provider_code=provider_store.PROVIDER_CAMPAY,
-            display_name="Campay",
-            enabled=True,
-            secrets={
-                "username": "demo",
-                "password": "demo",
-                "base_url": "https://demo.campay.net/api",
-                "mock": True,
-                "bank_transfer_path": "/withdraw/",
-            },
-            public_meta={"environment": "sandbox", "mock": True},
-            updated_by=admin.user_id,
-        )
 
-        # Tenant admins
-        for t, g in tenants:
-            u = User(
-                username=f"{t.tenant_code.lower()}_admin",
-                email=t.email,
-                password_hash=hash_password("council123"),
-                full_name=f"{t.organization_name} Admin",
-                user_type="STAFF",
-                tenant_id=t.tenant_id,
-            )
-            db.add(u)
-            db.flush()
-            db.add(UserRole(user_id=u.user_id, role_id=role_objs["TENANT_ADMIN"].role_id, tenant_id=t.tenant_id))
+def ensure_providers(db, admin: User) -> None:
+    """Seed encrypted provider configs used by the running demo."""
+    provider_store.upsert_provider_config(
+        db,
+        provider_code=provider_store.PROVIDER_CAMPAY,
+        display_name="Campay",
+        enabled=True,
+        secrets={
+            "username": "demo",
+            "password": "demo",
+            "base_url": "https://demo.campay.net/api",
+            "mock": True,
+            "bank_transfer_path": "/withdraw/",
+        },
+        public_meta={"environment": "sandbox", "mock": True},
+        updated_by=admin.user_id,
+    )
+    provider_store.upsert_provider_config(
+        db,
+        provider_code=provider_store.PROVIDER_EMAIL,
+        display_name="Email SMTP",
+        enabled=True,
+        secrets={
+            "smtp_host": "smtp.example.com",
+            "smtp_port": 587,
+            "smtp_user": "ops@easypay.local",
+            "smtp_password": "demo-mail-secret",
+            "from_email": "noreply@easypay.local",
+            "mock": True,
+        },
+        public_meta={"mock": True},
+        updated_by=admin.user_id,
+    )
+    provider_store.upsert_provider_config(
+        db,
+        provider_code=provider_store.PROVIDER_WHATSAPP,
+        display_name="WhatsApp",
+        enabled=True,
+        secrets={
+            "api_url": "https://graph.facebook.com/v17.0",
+            "access_token": "demo-wa-token",
+            "phone_number_id": "000000000000000",
+            "mock": True,
+        },
+        public_meta={"mock": True},
+        updated_by=admin.user_id,
+    )
+    provider_store.upsert_provider_config(
+        db,
+        provider_code=provider_store.PROVIDER_SMS,
+        display_name="SMS",
+        enabled=True,
+        secrets={
+            "api_url": "https://sms.example.com/send",
+            "api_key": "demo-sms-key",
+            "sender_id": "EASYPAY",
+            "mock": True,
+        },
+        public_meta={"mock": True},
+        updated_by=admin.user_id,
+    )
 
-        # Payment channels
-        for code, name in [
-            ("MOBILE_MONEY", "Mobile Money"),
-            ("BANK", "Bank Transfer"),
-            ("CARD", "Card"),
-            ("OTHER", "Other"),
-        ]:
-            db.add(PaymentChannel(code=code, name=name))
 
-        # Revenue types + fees for each council
-        revenue_defs = [
-            ("BIZ_LICENSE", "Business License", Decimal("50000")),
-            ("WASTE_LEVY", "Waste Levy", Decimal("5000")),
-            ("MARKET_LEVY", "Market Levy", Decimal("5000")),
-            ("SIGNBOARD", "Signboard Fee", Decimal("10000")),
-        ]
-        for t, g in tenants:
-            for code, name, amt in revenue_defs:
-                rt = RevenueType(
-                    tenant_id=t.tenant_id,
-                    geographic_unit_id=g.geographic_unit_id,
-                    code=code,
-                    name=name,
-                    default_amount=amt,
-                    currency="XAF",
-                )
-                db.add(rt)
-                db.flush()
-                db.add(
-                    FeeConfiguration(
-                        tenant_id=t.tenant_id,
-                        geographic_unit_id=g.geographic_unit_id,
-                        revenue_type_id=rt.revenue_type_id,
-                        fee_type="FLAT",
-                        fee_value=Decimal("500"),
-                    )
-                )
-                db.add(
-                    CommissionAgreement(
-                        tenant_id=t.tenant_id,
-                        revenue_type_id=rt.revenue_type_id,
-                        commission_type="PERCENT",
-                        commission_value=Decimal("5"),
-                    )
-                )
+def ensure_notification_toggles(db) -> None:
+    """Match current platform notification defaults (email on, SMS off, WhatsApp on)."""
+    upsert_channel_toggle(db, None, CONFIG_EMAIL, True, "Platform email notifications")
+    upsert_channel_toggle(db, None, CONFIG_SMS, False, "Platform SMS notifications (toggleable)")
+    upsert_channel_toggle(db, None, CONFIG_WHATSAPP, True, "Platform WhatsApp notifications")
+    db.commit()
 
-        # Sample payer in Kumba 1
-        t1, g1 = tenants[0]
-        payer_user = User(
-            username="abctrading",
-            email="abc@traders.local",
-            phone_number="670000001",
-            password_hash=hash_password("payer123"),
-            full_name="ABC Trading",
+
+def _tenant_by_code(db, code: str) -> Tenant:
+    t = db.query(Tenant).filter(Tenant.tenant_code == code).first()
+    if not t:
+        raise RuntimeError(f"Tenant {code} missing — run full seed first")
+    return t
+
+
+def _primary_geo(db, tenant_id: str) -> GeographicUnit:
+    link = (
+        db.query(TenantGeographicUnit)
+        .filter(TenantGeographicUnit.tenant_id == tenant_id, TenantGeographicUnit.is_primary.is_(True))
+        .first()
+    )
+    if not link:
+        raise RuntimeError(f"Primary geography missing for tenant {tenant_id}")
+    return db.get(GeographicUnit, link.geographic_unit_id)
+
+
+def _revenue(db, tenant_id: str, code: str) -> RevenueType:
+    rt = (
+        db.query(RevenueType)
+        .filter(RevenueType.tenant_id == tenant_id, RevenueType.code == code)
+        .first()
+    )
+    if not rt:
+        raise RuntimeError(f"Revenue type {code} missing for tenant {tenant_id}")
+    return rt
+
+
+def ensure_sample_payer(db, admin: User, role_payer: Role, spec: dict) -> Payer:
+    tenant = _tenant_by_code(db, spec["tenant_code"])
+    geo = _primary_geo(db, tenant.tenant_id)
+
+    user = db.query(User).filter(User.username == spec["username"]).first()
+    if not user:
+        user = User(
+            username=spec["username"],
+            email=spec["email"],
+            phone_number=spec["phone_number"],
+            password_hash=hash_password(spec["password"]),
+            full_name=spec["full_name"],
             user_type="PAYER",
-            tenant_id=t1.tenant_id,
+            tenant_id=tenant.tenant_id,
         )
-        db.add(payer_user)
+        db.add(user)
         db.flush()
-        db.add(UserRole(user_id=payer_user.user_id, role_id=role_objs["PAYER"].role_id, tenant_id=t1.tenant_id))
+    else:
+        user.email = spec["email"]
+        user.phone_number = spec["phone_number"]
+        user.full_name = spec["full_name"]
+        user.user_type = "PAYER"
+        user.tenant_id = tenant.tenant_id
+        user.password_hash = hash_password(spec["password"])
+        user.is_active = True
+
+    if not db.query(UserRole).filter(UserRole.user_id == user.user_id, UserRole.role_id == role_payer.role_id).first():
+        db.add(UserRole(user_id=user.user_id, role_id=role_payer.role_id, tenant_id=tenant.tenant_id))
+
+    payer = db.query(Payer).filter(Payer.user_id == user.user_id).first()
+    if not payer:
+        payer = db.query(Payer).filter(Payer.payer_reference == spec["payer_reference"]).first()
+    if not payer:
         payer = Payer(
-            user_id=payer_user.user_id,
-            tenant_id=t1.tenant_id,
-            payer_reference="PYR-2026-000001",
+            user_id=user.user_id,
+            tenant_id=tenant.tenant_id,
+            payer_reference=spec["payer_reference"],
             payer_type="BUSINESS",
-            full_name="ABC Trading Owner",
-            business_name="ABC Trading",
-            email="abc@traders.local",
-            phone_number="670000001",
-            address="Kumba Main Market",
-            current_geographic_unit_id=g1.geographic_unit_id,
+            full_name=spec["owner_name"],
+            business_name=spec["business_name"],
+            email=spec["email"],
+            phone_number=spec["phone_number"],
+            address=spec["address"],
+            current_geographic_unit_id=geo.geographic_unit_id,
         )
         db.add(payer)
         db.flush()
         db.add(
             PayerGeographicHistory(
                 payer_id=payer.payer_id,
-                geographic_unit_id=g1.geographic_unit_id,
-                tenant_id=t1.tenant_id,
+                geographic_unit_id=geo.geographic_unit_id,
+                tenant_id=tenant.tenant_id,
                 effective_from=datetime(2026, 1, 1),
                 change_reason="Initial registration",
                 change_source="SEED",
                 changed_by=admin.user_id,
             )
         )
+    else:
+        payer.user_id = user.user_id
+        payer.tenant_id = tenant.tenant_id
+        payer.payer_reference = spec["payer_reference"]
+        payer.full_name = spec["owner_name"]
+        payer.business_name = spec["business_name"]
+        payer.email = spec["email"]
+        payer.phone_number = spec["phone_number"]
+        payer.address = spec["address"]
+        payer.current_geographic_unit_id = geo.geographic_unit_id
 
-        biz = (
-            db.query(RevenueType)
-            .filter(RevenueType.tenant_id == t1.tenant_id, RevenueType.code == "BIZ_LICENSE")
+    db.flush()
+    return payer
+
+
+def ensure_obligation(db, payer: Payer, spec: dict) -> Obligation:
+    revenue = _revenue(db, payer.tenant_id, spec["revenue_code"])
+    obl = (
+        db.query(Obligation)
+        .filter(
+            Obligation.payer_id == payer.payer_id,
+            Obligation.revenue_type_id == revenue.revenue_type_id,
+            Obligation.description == spec["description"],
+        )
+        .first()
+    )
+    if not obl:
+        obl = Obligation(
+            payer_id=payer.payer_id,
+            tenant_id=payer.tenant_id,
+            geographic_unit_id=payer.current_geographic_unit_id,
+            revenue_type_id=revenue.revenue_type_id,
+            description=spec["description"],
+            amount=spec["amount"],
+            balance=spec["amount"],
+            status="DUE",
+        )
+        db.add(obl)
+        db.flush()
+    return obl
+
+
+def settle_obligation_if_needed(db, payer: Payer, obl: Obligation, idempotency_key: str, actor_user_id: str) -> Transaction | None:
+    if obl.status == "PAID" or obl.balance <= 0:
+        return (
+            db.query(Transaction)
+            .filter(Transaction.obligation_id == obl.obligation_id, Transaction.status == "SETTLED")
             .first()
         )
-        waste = (
-            db.query(RevenueType)
-            .filter(RevenueType.tenant_id == t1.tenant_id, RevenueType.code == "WASTE_LEVY")
-            .first()
-        )
-        db.add(
-            Obligation(
-                payer_id=payer.payer_id,
-                tenant_id=t1.tenant_id,
-                geographic_unit_id=g1.geographic_unit_id,
-                revenue_type_id=biz.revenue_type_id,
-                description="Business License — 2026",
-                amount=Decimal("50000"),
-                balance=Decimal("50000"),
-                status="DUE",
-            )
-        )
-        db.add(
-            Obligation(
-                payer_id=payer.payer_id,
-                tenant_id=t1.tenant_id,
-                geographic_unit_id=g1.geographic_unit_id,
-                revenue_type_id=waste.revenue_type_id,
-                description="Waste Levy — Sep 2026",
-                amount=Decimal("5000"),
-                balance=Decimal("5000"),
-                status="DUE",
-            )
-        )
 
+    existing = (
+        db.query(Transaction)
+        .filter(Transaction.idempotency_key == idempotency_key)
+        .first()
+    )
+    if existing:
+        if existing.status != "SETTLED":
+            return complete_payment_happy_path(db, existing.transaction_id, actor_user_id)
+        return existing
+
+    txn = initiate_payment(
+        db,
+        payer,
+        PaymentInitiateRequest(
+            obligation_id=obl.obligation_id,
+            payment_channel="MOBILE_MONEY",
+            idempotency_key=idempotency_key,
+            phone_number=payer.phone_number,
+        ),
+        actor_user_id,
+    )
+    if txn.status != "SETTLED":
+        txn = complete_payment_happy_path(db, txn.transaction_id, actor_user_id)
+    return txn
+
+
+def ensure_sample_demo_data(db) -> dict:
+    """Ensure curated sample payers, obligations, and settled payments."""
+    admin = ensure_default_super_admin(db)
+    role_payer = db.query(Role).filter(Role.role_code == "PAYER").first()
+    if not role_payer:
+        raise RuntimeError("PAYER role missing — run full seed first")
+
+    ensure_providers(db, admin)
+    ensure_notification_toggles(db)
+
+    settled = 0
+    for spec in SAMPLE_PAYERS:
+        payer = ensure_sample_payer(db, admin, role_payer, spec)
         db.commit()
-        print("Seed complete.")
-        print("  admin / admin123 (platform)")
-        print("  kumba1_admin / council123 (tenant)")
-        print("  abctrading / payer123 (payer in Kumba 1)")
+        for obl_spec in spec["obligations"]:
+            obl = ensure_obligation(db, payer, obl_spec)
+            db.commit()
+            if obl_spec.get("settle"):
+                txn = settle_obligation_if_needed(
+                    db,
+                    payer,
+                    obl,
+                    obl_spec["idempotency_key"],
+                    admin.user_id,
+                )
+                if txn and txn.status == "SETTLED":
+                    settled += 1
+
+    return {
+        "payers": len(SAMPLE_PAYERS),
+        "settled_payments": settled,
+        "admin": admin,
+    }
+
+
+def seed_foundation(db) -> None:
+    """One-time platform / geography / roles / revenue foundation."""
+    platform = Platform(
+        platform_code="EASYPAY",
+        platform_name="EasyPay",
+        legal_name="EasyPay Collection Platform",
+        email=DEFAULT_SUPER_ADMIN["email"],
+        default_currency="XAF",
+    )
+    db.add(platform)
+    db.flush()
+
+    cm = GeographicUnit(unit_code="CM", unit_name="Cameroon", unit_type="COUNTRY", country_code="CM")
+    db.add(cm)
+    db.flush()
+    sw = GeographicUnit(
+        parent_id=cm.geographic_unit_id,
+        unit_code="CM-SW",
+        unit_name="Southwest",
+        unit_type="REGION",
+        country_code="CM",
+    )
+    db.add(sw)
+    db.flush()
+    meme = GeographicUnit(
+        parent_id=sw.geographic_unit_id,
+        unit_code="CM-SW-MEME",
+        unit_name="Meme",
+        unit_type="DIVISION",
+        country_code="CM",
+    )
+    db.add(meme)
+    db.flush()
+    kumba = GeographicUnit(
+        parent_id=meme.geographic_unit_id,
+        unit_code="CM-SW-MEME-KUMBA",
+        unit_name="Kumba",
+        unit_type="TOWN",
+        country_code="CM",
+    )
+    db.add(kumba)
+    db.flush()
+
+    councils = []
+    for code, name in [("KUMBA-01", "Kumba 1"), ("KUMBA-02", "Kumba 2"), ("KUMBA-03", "Kumba 3")]:
+        g = GeographicUnit(
+            parent_id=kumba.geographic_unit_id,
+            unit_code=code,
+            unit_name=name,
+            unit_type="COUNCIL",
+            country_code="CM",
+        )
+        db.add(g)
+        db.flush()
+        councils.append(g)
+
+    tenants = []
+    for g, tcode, tname in [
+        (councils[0], "KUMBA1", "Kumba 1 Council"),
+        (councils[1], "KUMBA2", "Kumba 2 Council"),
+        (councils[2], "KUMBA3", "Kumba 3 Council"),
+    ]:
+        t = Tenant(
+            tenant_code=tcode,
+            organization_name=tname,
+            organization_type="COUNCIL",
+            currency="XAF",
+            email=f"{tcode.lower()}@council.local",
+            zone_change_mode="IMMEDIATE",
+            verification="VERIFIED",
+            status="ACTIVE",
+        )
+        db.add(t)
+        db.flush()
+        db.add(
+            TenantGeographicUnit(
+                tenant_id=t.tenant_id,
+                geographic_unit_id=g.geographic_unit_id,
+                relationship_type="PRIMARY_COUNCIL",
+                is_primary=True,
+                effective_from=utcnow(),
+            )
+        )
+        tenants.append((t, g))
+
+    perm_map = {}
+    for code in PERMISSIONS:
+        p = Permission(permission_code=code, description=code)
+        db.add(p)
+        db.flush()
+        perm_map[code] = p
+
+    roles = {
+        "SUPER_ADMIN": ("Super Administrator", "PLATFORM", list(PERMISSIONS)),
+        "PLATFORM_ADMIN": ("Platform Administrator", "PLATFORM", list(PERMISSIONS)),
+        "TENANT_ADMIN": (
+            "Council Administrator",
+            "TENANT",
+            [
+                "tenants:read",
+                "revenue:write",
+                "obligations:write",
+                "zone_changes:review",
+                "settlements:read",
+                "settlements:write",
+                "settlements:approve",
+                "dashboards:read",
+                "reports:read",
+            ],
+        ),
+        "PAYER": ("Payer", "PAYER", []),
+    }
+    role_objs = {}
+    for code, (name, scope, perms) in roles.items():
+        r = Role(role_code=code, role_name=name, scope=scope)
+        db.add(r)
+        db.flush()
+        role_objs[code] = r
+        for pc in perms:
+            db.add(RolePermission(role_id=r.role_id, permission_id=perm_map[pc].permission_id))
+
+    admin = ensure_default_super_admin(db)
+    db.flush()
+
+    for t, _g in tenants:
+        existing = db.query(User).filter(User.username == f"{t.tenant_code.lower()}_admin").first()
+        if existing:
+            continue
+        u = User(
+            username=f"{t.tenant_code.lower()}_admin",
+            email=t.email,
+            password_hash=hash_password("council123"),
+            full_name=f"{t.organization_name} Admin",
+            user_type="STAFF",
+            tenant_id=t.tenant_id,
+        )
+        db.add(u)
+        db.flush()
+        db.add(UserRole(user_id=u.user_id, role_id=role_objs["TENANT_ADMIN"].role_id, tenant_id=t.tenant_id))
+
+    for code, name in [
+        ("MOBILE_MONEY", "Mobile Money"),
+        ("BANK", "Bank Transfer"),
+        ("CARD", "Card"),
+        ("OTHER", "Other"),
+    ]:
+        if not db.query(PaymentChannel).filter(PaymentChannel.code == code).first():
+            db.add(PaymentChannel(code=code, name=name))
+
+    for t, g in tenants:
+        for code, name, amt in REVENUE_DEFS:
+            if db.query(RevenueType).filter(RevenueType.tenant_id == t.tenant_id, RevenueType.code == code).first():
+                continue
+            rt = RevenueType(
+                tenant_id=t.tenant_id,
+                geographic_unit_id=g.geographic_unit_id,
+                code=code,
+                name=name,
+                default_amount=amt,
+                currency="XAF",
+            )
+            db.add(rt)
+            db.flush()
+            db.add(
+                FeeConfiguration(
+                    tenant_id=t.tenant_id,
+                    geographic_unit_id=g.geographic_unit_id,
+                    revenue_type_id=rt.revenue_type_id,
+                    fee_type="FLAT",
+                    fee_value=Decimal("500"),
+                )
+            )
+            db.add(
+                CommissionAgreement(
+                    tenant_id=t.tenant_id,
+                    revenue_type_id=rt.revenue_type_id,
+                    commission_type="PERCENT",
+                    commission_value=Decimal("5"),
+                )
+            )
+
+    db.commit()
+    ensure_providers(db, admin)
+    ensure_notification_toggles(db)
+
+
+def seed():
+    Base.metadata.create_all(bind=engine)
+    db = SessionLocal()
+    try:
+        fresh = db.query(Platform).first() is None
+        if fresh:
+            seed_foundation(db)
+            print("Foundation seed complete.")
+        else:
+            print("Foundation already present — ensuring sample data.")
+
+        stats = ensure_sample_demo_data(db)
+        admin = stats["admin"]
+        settled_count = db.query(Transaction).filter(Transaction.status == "SETTLED").count()
+        print("Sample data ready.")
+        print(
+            f"  SUPER ADMIN: {admin.username} / {DEFAULT_SUPER_ADMIN['password']} "
+            f"({admin.email} · {admin.phone_number})"
+        )
+        print("  Council: kumba1_admin / council123  (also kumba2_admin, kumba3_admin)")
+        print("  Payers: abctrading, mambagroceries, buearoasters, threeconner / payer123")
+        print(f"  Sample payers ensured: {stats['payers']}")
+        print(f"  Settled payments (total in DB): {settled_count}")
+        if fresh:
+            print("  Fresh install: ABC Trading has Business License DUE + Waste Levy PAID.")
     finally:
         db.close()
 

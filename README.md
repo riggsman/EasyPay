@@ -48,11 +48,20 @@ docker compose up --build
 
 ## Demo accounts (after seed)
 
+```bash
+cd backend && python scripts/seed.py
+```
+
 | User | Password | Role |
 |------|----------|------|
-| `admin` | `admin123` | Platform admin |
-| `kumba1_admin` | `council123` | Kumba 1 council admin |
-| `abctrading` | `payer123` | Payer in Kumba 1 |
+| `admin` (`wireitapp@gmail.com` / `682835503`) | `admin123` | Super admin |
+| `kumba1_admin` / `kumba2_admin` / `kumba3_admin` | `council123` | Council admins |
+| `abctrading` | `payer123` | Payer in Kumba 1 (Business License DUE, Waste Levy PAID) |
+| `mambagroceries` | `payer123` | Payer in Kumba 1 (Market Levy + Signboard PAID) |
+| `buearoasters` | `payer123` | Payer in Kumba 2 (Business License + Waste Levy PAID) |
+| `threeconner` | `payer123` | Payer in Kumba 3 (Market Levy PAID) |
+
+Seed is idempotent: re-running ensures providers (Campay mock, Email, WhatsApp, SMS), notification toggles, sample payers, and settled MoMo payments without duplicating foundation data.
 
 ## Architecture highlights
 

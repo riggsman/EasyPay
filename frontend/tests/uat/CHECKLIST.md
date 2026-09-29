@@ -54,6 +54,7 @@
 - [x] Exports: collections, settlements, audit
 
 ## Demo credentials
-- admin / admin123 (system/super admin)
+- admin / admin123 (system/super admin · wireitapp@gmail.com · 682835503)
+- Sample payers: abctrading, mambagroceries, buearoasters, threeconner / payer123
 - kumba1_admin / council123
 - abctrading / payer123
