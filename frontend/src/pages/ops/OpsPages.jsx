@@ -30,7 +30,7 @@ export function OpsDashboard({ mode = 'tenant' }) {
     Promise.all([
       mode === 'platform' ? api.platformDashboard() : api.tenantDashboard(),
       api.opsAlerts(),
-      api.collectionsReport(tenantFilter ? `?` : ''),
+      api.collectionsReport(tenantFilter ? `?tenant_id=${encodeURIComponent(tenantFilter)}` : ''),
     ])
       .then(([s, a, r]) => {
         setStats(s)
