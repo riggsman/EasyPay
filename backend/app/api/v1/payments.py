@@ -26,16 +26,31 @@ from app.services.payments import (
 router = APIRouter(prefix="/payments")
 
 
+def _hide_commission_for_payer(payload: dict, user_type: str) -> dict:
+    """Commission is internal — never expose to payers."""
+    if user_type == "PAYER":
+        payload = {**payload, "commission_amount": None}
+    return payload
+
+
+def _transaction_out(txn: Transaction, user_type: str) -> TransactionOut:
+    data = _hide_commission_for_payer(TransactionOut.model_validate(txn).model_dump(), user_type)
+    return TransactionOut(**data)
+
+
 @router.post("/resolve", response_model=PaymentResolveResponse)
 def resolve(body: PaymentResolveRequest, db: DbDep, current: UserDep):
     payer = get_payer_by_user(db, current.user_id)
-    return resolve_payment_context(db, payer, body)
+    resolved = resolve_payment_context(db, payer, body)
+    data = _hide_commission_for_payer(resolved.model_dump(), current.user_type)
+    return PaymentResolveResponse(**data)
 
 
 @router.post("/initiate", response_model=TransactionOut)
 def initiate(body: PaymentInitiateRequest, db: DbDep, current: UserDep):
     payer = get_payer_by_user(db, current.user_id)
-    return initiate_payment(db, payer, body, current.user_id)
+    txn = initiate_payment(db, payer, body, current.user_id)
+    return _transaction_out(txn, current.user_type)
 
 
 @router.post("/{transaction_id}/confirm", response_model=TransactionDetailOut)
@@ -48,7 +63,7 @@ def confirm(transaction_id: str, db: DbDep, current: UserDep):
         if txn.payer_id != payer.payer_id:
             raise HTTPException(status_code=403, detail="Forbidden")
     txn = complete_payment_happy_path(db, transaction_id, current.user_id)
-    return _detail(db, txn)
+    return _detail(db, txn, current.user_type)
 
 
 @router.get("", response_model=PaginatedResponse[TransactionOut])
@@ -93,7 +108,7 @@ def list_payments(
     query = query.order_by(Transaction.initiated_at.desc())
     items, total, total_pages = paginate_query(query, page, page_size)
     return PaginatedResponse(
-        items=[TransactionOut.model_validate(i) for i in items],
+        items=[_transaction_out(i, current.user_type) for i in items],
         page=page,
         page_size=page_size,
         total=total,
@@ -112,15 +127,15 @@ def get_payment(transaction_id: str, db: DbDep, current: UserDep):
             raise HTTPException(status_code=403, detail="Forbidden")
     elif current.user_type not in ("PLATFORM_ADMIN", "SUPER_ADMIN") and txn.transaction_tenant_id != current.tenant_id:
         raise HTTPException(status_code=403, detail="Tenant isolation")
-    return _detail(db, txn)
+    return _detail(db, txn, current.user_type)
 
 
-def _detail(db, txn: Transaction) -> TransactionDetailOut:
+def _detail(db, txn: Transaction, user_type: str) -> TransactionDetailOut:
     from app.services.receipts_pdf import receipt_pdf_path
 
     events = get_transaction_events(db, txn.transaction_id)
     receipt = db.query(Receipt).filter(Receipt.transaction_id == txn.transaction_id).first()
-    base = TransactionOut.model_validate(txn).model_dump()
+    base = _hide_commission_for_payer(TransactionOut.model_validate(txn).model_dump(), user_type)
     return TransactionDetailOut(
         **base,
         events=[TransactionEventOut.model_validate(e) for e in events],

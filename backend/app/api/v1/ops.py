@@ -717,11 +717,17 @@ def drill_transaction(transaction_id: str, db: DbDep, current: UserDep):
             "initiated_at": txn.initiated_at.isoformat() if txn.initiated_at else None,
             "settled_at": txn.settled_at.isoformat() if txn.settled_at else None,
         },
-        "fee_commission": {
-            "service_fee": str(txn.service_fee),
-            "commission_amount": str(txn.commission_amount),
-            "net_to_tenant": str(txn.amount - txn.commission_amount),
-        },
+        "fee_commission": (
+            {
+                "service_fee": str(txn.service_fee),
+            }
+            if current.user_type == "PAYER"
+            else {
+                "service_fee": str(txn.service_fee),
+                "commission_amount": str(txn.commission_amount),
+                "net_to_tenant": str(txn.amount - txn.commission_amount),
+            }
+        ),
         "events": [
             {
                 "from_status": e.from_status,

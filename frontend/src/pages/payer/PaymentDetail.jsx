@@ -53,7 +53,13 @@ export default function PaymentDetail() {
         )}
       />
       <div className="row"><span className="pill">{txn.status}</span></div>
-      <MoneyCells amount={txn.amount} fee={txn.service_fee} commission={txn.commission_amount} total={txn.total_amount} currency={txn.currency} />
+      <MoneyCells
+        amount={txn.amount}
+        fee={txn.service_fee}
+        total={txn.total_amount}
+        currency={txn.currency}
+        showCommission={false}
+      />
       {txn.receipt_number && <p>Receipt: <strong>{txn.receipt_number}</strong></p>}
       {drill?.geography && <p className="muted">Zone at payment (immutable): {drill.geography.name}</p>}
 
@@ -73,8 +79,8 @@ export default function PaymentDetail() {
           <ChainSteps steps={drill.chain} active="transaction" />
           <Disclosure title="Fee breakdown">
             <p>
-              Amount {formatMoney(drill.fee_commission ? txn.amount : txn.amount)} + service fee{' '}
-              {formatMoney(txn.service_fee)} = total {formatMoney(txn.total_amount)}.
+              Amount {formatMoney(txn.amount)} + service fee {formatMoney(txn.service_fee)} = total{' '}
+              {formatMoney(txn.total_amount)}.
             </p>
           </Disclosure>
         </>

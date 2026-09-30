@@ -213,7 +213,8 @@ class PaymentResolveResponse(BaseModel):
     revenue_name: str
     amount: Decimal
     service_fee: Decimal
-    commission_amount: Decimal
+    # Hidden from payers — only staff/platform see platform commission
+    commission_amount: Optional[Decimal] = None
     total_amount: Decimal
     currency: str
     payment_channel: str
@@ -236,7 +237,8 @@ class TransactionOut(ORMModel):
     obligation_id: Optional[str] = None
     amount: Decimal
     service_fee: Decimal
-    commission_amount: Decimal
+    # Omitted/null for PAYER responses — council/platform only
+    commission_amount: Optional[Decimal] = None
     total_amount: Decimal
     currency: str
     payment_channel: str
