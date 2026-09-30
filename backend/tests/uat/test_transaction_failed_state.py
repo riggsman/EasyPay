@@ -69,7 +69,8 @@ def test_processing_can_fail_instead_of_settle(client):
     statuses = [e["to_status"] for e in body.get("events") or []]
     assert statuses[-1] == "FAILED"
     failed_event = next(e for e in body["events"] if e["to_status"] == "FAILED")
-    assert failed_event.get("label") == "Payment failed"
+    # Failures from PROCESSING are payer-side debit declines
+    assert failed_event.get("label") == "Customer account debit failed"
 
 
 def test_legacy_rejected_alias_advances_as_failed(client):
