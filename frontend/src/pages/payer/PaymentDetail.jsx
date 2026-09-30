@@ -37,7 +37,20 @@ export default function PaymentDetail() {
       <PageHeader
         title={txn.transaction_reference}
         subtitle="Payment confirmation and full status timeline"
-        actions={txn.receipt_id ? <Link className="btn btn-primary" to="/payer/receipts">Receipts</Link> : null}
+        actions={(
+          <div className="row">
+            {txn.receipt_pdf_url && (
+              <button
+                className="btn btn-primary"
+                type="button"
+                onClick={() => api.downloadReceiptPdf(txn.receipt_id, `${txn.receipt_number || 'receipt'}.pdf`).catch((e) => setError(e.message))}
+              >
+                Download receipt
+              </button>
+            )}
+            {txn.receipt_id ? <Link className="btn btn-ghost" to="/payer/receipts">Receipts</Link> : null}
+          </div>
+        )}
       />
       <div className="row"><span className="pill">{txn.status}</span></div>
       <MoneyCells amount={txn.amount} fee={txn.service_fee} commission={txn.commission_amount} total={txn.total_amount} currency={txn.currency} />

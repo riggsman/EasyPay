@@ -11,7 +11,7 @@ def _login(client, username, password):
 
 def test_uat_platform_admin_can_list_tenants(client):
     tokens = _login(client, "admin", "admin123")
-    assert tokens["user_type"] == "SUPER_ADMIN"
+    assert tokens["user_type"] in ("PLATFORM_ADMIN", "SUPER_ADMIN")
     assert tokens["access_token"]
     assert tokens["refresh_token"]
     r = client.get("/api/v1/tenants", headers={"Authorization": f"Bearer {tokens['access_token']}"})

@@ -748,6 +748,7 @@ def drill_transaction(transaction_id: str, db: DbDep, current: UserDep):
             "receipt_number": receipt.receipt_number if receipt else None,
             "verification_token": receipt.verification_token if receipt else None,
             "status": receipt.status if receipt else None,
+            "pdf_download_url": f"/api/v1/receipts/{receipt.receipt_id}/pdf" if receipt else None,
         },
         "settlement": {
             "settlement_id": settlement.settlement_id if settlement else None,

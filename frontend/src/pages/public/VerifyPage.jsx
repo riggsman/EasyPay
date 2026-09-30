@@ -52,7 +52,6 @@ export default function VerifyPage() {
                 <div>Council: {result.council_name}</div>
                 <div>Revenue: {result.revenue_name}</div>
                 <div>Amount: {formatMoney(result.amount, result.currency)}</div>
-                <div>Service fee: {formatMoney(result.service_fee, result.currency)}</div>
                 <div>Total: {formatMoney(result.total_amount, result.currency)}</div>
                 <div>Payer: {result.payer_display}</div>
               </div>

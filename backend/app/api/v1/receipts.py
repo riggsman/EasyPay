@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import Response
 from pydantic import BaseModel
 
 from app.core.deps import DbDep, UserDep, require_permissions
@@ -9,6 +10,7 @@ from app.models.receipt import Receipt
 from app.schemas.common import PublicVerifyOut, ReceiptOut
 from app.schemas.pagination import PaginatedResponse, paginate_query
 from app.services.payer import get_payer_by_user
+from app.services.receipts_pdf import build_receipt_pdf, receipt_pdf_path
 
 router = APIRouter()
 
@@ -29,6 +31,21 @@ def _mask_name(name: str) -> str:
         else:
             masked.append(p[0] + "*" * (len(p) - 2) + p[-1])
     return " ".join(masked)
+
+
+def _assert_receipt_access(db, current, receipt: Receipt) -> None:
+    if current.user_type == "PAYER":
+        payer = get_payer_by_user(db, current.user_id)
+        if receipt.payer_id != payer.payer_id:
+            raise HTTPException(status_code=403, detail="Forbidden")
+    elif current.user_type not in ("PLATFORM_ADMIN", "SUPER_ADMIN") and receipt.tenant_id != current.tenant_id:
+        raise HTTPException(status_code=403, detail="Tenant isolation")
+
+
+def to_receipt_out(receipt: Receipt) -> ReceiptOut:
+    data = ReceiptOut.model_validate(receipt).model_dump()
+    data["pdf_download_url"] = receipt_pdf_path(receipt.receipt_id)
+    return ReceiptOut(**data)
 
 
 @router.get("/receipts", response_model=PaginatedResponse[ReceiptOut])
@@ -69,7 +86,7 @@ def list_receipts(
     query = query.order_by(Receipt.payment_date.desc())
     items, total, total_pages = paginate_query(query, page, page_size)
     return PaginatedResponse(
-        items=[ReceiptOut.model_validate(i) for i in items],
+        items=[to_receipt_out(i) for i in items],
         page=page,
         page_size=page_size,
         total=total,
@@ -82,17 +99,29 @@ def get_receipt(receipt_id: str, db: DbDep, current: UserDep):
     r = db.get(Receipt, receipt_id)
     if not r:
         raise HTTPException(status_code=404, detail="Not found")
-    if current.user_type == "PAYER":
-        payer = get_payer_by_user(db, current.user_id)
-        if r.payer_id != payer.payer_id:
-            raise HTTPException(status_code=403, detail="Forbidden")
-    elif current.user_type != "PLATFORM_ADMIN" and r.tenant_id != current.tenant_id:
-        raise HTTPException(status_code=403, detail="Tenant isolation")
-    return r
+    _assert_receipt_access(db, current, r)
+    return to_receipt_out(r)
+
+
+@router.get("/receipts/{receipt_id}/pdf")
+def download_receipt_pdf(receipt_id: str, db: DbDep, current: UserDep):
+    r = db.get(Receipt, receipt_id)
+    if not r:
+        raise HTTPException(status_code=404, detail="Not found")
+    _assert_receipt_access(db, current, r)
+    if r.status == "REVOKED":
+        raise HTTPException(status_code=409, detail="Receipt has been revoked")
+    pdf = build_receipt_pdf(r)
+    filename = f"{r.receipt_number}.pdf"
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.post("/receipts/{receipt_id}/revoke")
-def revoke_receipt(receipt_id: str, db: DbDep, current = Depends(require_permissions("receipts:revoke"))):
+def revoke_receipt(receipt_id: str, db: DbDep, current=Depends(require_permissions("receipts:revoke"))):
     r = db.get(Receipt, receipt_id)
     if not r:
         raise HTTPException(status_code=404, detail="Not found")
@@ -129,10 +158,10 @@ def _verify_result(r: Optional[Receipt]) -> PublicVerifyOut:
         council_name=r.council_name,
         revenue_name=r.revenue_name,
         amount=r.amount,
-        service_fee=r.service_fee,
         total_amount=r.total_amount,
         currency=r.currency,
         payment_date=r.payment_date,
         status=r.status,
         payer_display=_mask_name(r.payer_display_name),
+        pdf_download_url=None,
     )

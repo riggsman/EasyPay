@@ -567,6 +567,17 @@ export function OpsTransactionDetail() {
         <p>Zone snapshot: {drill.geography?.name} ({drill.geography?.code})</p>
         <p>Revenue: {drill.revenue?.name || '—'}</p>
         {drill.receipt?.receipt_number && <p>Receipt: {drill.receipt.receipt_number}</p>}
+        {drill.receipt?.pdf_download_url && drill.receipt?.status !== 'REVOKED' && (
+          <div className="row">
+            <button
+              className="btn btn-primary"
+              type="button"
+              onClick={() => api.downloadReceiptPdf(drill.receipt.receipt_id, `${drill.receipt.receipt_number}.pdf`).catch((e) => setError(e.message))}
+            >
+              Download receipt
+            </button>
+          </div>
+        )}
       </div>
 
       <Disclosure title="Fee / commission calculation" open>
@@ -622,6 +633,15 @@ export function OpsTransactionDetail() {
           {drill.settlement?.settlement_id && (
             <button className="btn btn-ghost" type="button" onClick={() => navigate(`${base}/settlements/${drill.settlement.settlement_id}`)}>
               Settlement {drill.settlement.reference}
+            </button>
+          )}
+          {drill.receipt?.pdf_download_url && drill.receipt?.status !== 'REVOKED' && (
+            <button
+              className="btn btn-primary"
+              type="button"
+              onClick={() => api.downloadReceiptPdf(drill.receipt.receipt_id, `${drill.receipt.receipt_number}.pdf`).catch((e) => setError(e.message))}
+            >
+              Download receipt
             </button>
           )}
           {drill.receipt?.receipt_number && <Link className="btn btn-ghost" to="/verify">Verify receipt</Link>}
@@ -749,6 +769,8 @@ export function OpsReceipts() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
   const [meta, setMeta] = useState({ total: 0, total_pages: 1 })
+  const [busyId, setBusyId] = useState('')
+  const [error, setError] = useState('')
   useEffect(() => {
     setPage(1)
   }, [searchQuery, tenantFilter])
@@ -764,14 +786,27 @@ export function OpsReceipts() {
         setRows(listItems(res))
         setMeta({ total: res.total ?? 0, total_pages: res.total_pages ?? 1 })
       })
-      .catch(() => {})
+      .catch((e) => setError(e.message))
   }, [page, pageSize, searchQuery, tenantFilter])
+  async function onDownload(r, e) {
+    e?.stopPropagation?.()
+    setError('')
+    setBusyId(r.receipt_id)
+    try {
+      await api.downloadReceiptPdf(r.receipt_id, `${r.receipt_number}.pdf`)
+    } catch (err) {
+      setError(err.message || 'Download failed')
+    } finally {
+      setBusyId('')
+    }
+  }
   return (
     <div className="rise stack">
-      <PageHeader title="Receipts" subtitle="Server-filtered summary → verification details → transaction drill." />
+      <PageHeader title="Receipts" subtitle="Server-filtered summary → PDF download → verification details → transaction drill." />
+      {error && <div className="alert">{error}</div>}
       <div className="panel table-wrap">
         <table className="data">
-          <thead><tr><th>Receipt</th><th>Council</th><th>Revenue</th><th>Total</th><th>Status</th></tr></thead>
+          <thead><tr><th>Receipt</th><th>Council</th><th>Revenue</th><th>Total</th><th>Status</th><th></th></tr></thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.receipt_id} style={{ cursor: 'pointer' }} onClick={() => setSelected(r)}>
@@ -780,9 +815,23 @@ export function OpsReceipts() {
                 <td>{r.revenue_name}</td>
                 <td>{formatMoney(r.total_amount, r.currency)}</td>
                 <td><span className="pill">{r.status}</span></td>
+                <td onClick={(e) => e.stopPropagation()}>
+                  {r.pdf_download_url && r.status !== 'REVOKED' ? (
+                    <button
+                      className="btn btn-primary"
+                      type="button"
+                      disabled={busyId === r.receipt_id}
+                      onClick={(e) => onDownload(r, e)}
+                    >
+                      {busyId === r.receipt_id ? 'Downloading…' : 'Download receipt'}
+                    </button>
+                  ) : (
+                    <span className="muted">—</span>
+                  )}
+                </td>
               </tr>
             ))}
-            {!rows.length && <EmptyRow cols={5} />}
+            {!rows.length && <EmptyRow cols={6} />}
           </tbody>
         </table>
         <PaginationBar
@@ -801,12 +850,17 @@ export function OpsReceipts() {
           <p>Payer display: {selected.payer_display_name}</p>
           <p>Council: {selected.council_name}</p>
           <div className="row">
+            {selected.pdf_download_url && selected.status !== 'REVOKED' && (
+              <button className="btn btn-primary" type="button" disabled={busyId === selected.receipt_id} onClick={(e) => onDownload(selected, e)}>
+                {busyId === selected.receipt_id ? 'Downloading…' : 'Download receipt PDF'}
+              </button>
+            )}
             {selected.transaction_id && (
               <button className="btn btn-ghost" type="button" onClick={() => navigate(`${base}/transactions/${selected.transaction_id}`)}>
                 Drill to transaction
               </button>
             )}
-            <Link className="btn btn-primary" to="/verify">Open public verification</Link>
+            <Link className="btn btn-ghost" to="/verify">Open public verification</Link>
           </div>
         </Disclosure>
       )}

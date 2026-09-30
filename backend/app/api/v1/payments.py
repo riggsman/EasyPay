@@ -110,12 +110,14 @@ def get_payment(transaction_id: str, db: DbDep, current: UserDep):
         payer = get_payer_by_user(db, current.user_id)
         if txn.payer_id != payer.payer_id:
             raise HTTPException(status_code=403, detail="Forbidden")
-    elif current.user_type != "PLATFORM_ADMIN" and txn.transaction_tenant_id != current.tenant_id:
+    elif current.user_type not in ("PLATFORM_ADMIN", "SUPER_ADMIN") and txn.transaction_tenant_id != current.tenant_id:
         raise HTTPException(status_code=403, detail="Tenant isolation")
     return _detail(db, txn)
 
 
 def _detail(db, txn: Transaction) -> TransactionDetailOut:
+    from app.services.receipts_pdf import receipt_pdf_path
+
     events = get_transaction_events(db, txn.transaction_id)
     receipt = db.query(Receipt).filter(Receipt.transaction_id == txn.transaction_id).first()
     base = TransactionOut.model_validate(txn).model_dump()
@@ -124,4 +126,5 @@ def _detail(db, txn: Transaction) -> TransactionDetailOut:
         events=[TransactionEventOut.model_validate(e) for e in events],
         receipt_number=receipt.receipt_number if receipt else None,
         receipt_id=receipt.receipt_id if receipt else None,
+        receipt_pdf_url=receipt_pdf_path(receipt.receipt_id) if receipt else None,
     )
