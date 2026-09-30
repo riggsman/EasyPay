@@ -260,6 +260,7 @@ class TransactionDetailOut(TransactionOut):
     events: List[TransactionEventOut] = []
     receipt_number: Optional[str] = None
     receipt_id: Optional[str] = None
+    receipt_pdf_url: Optional[str] = None
 
 
 # ---- Receipts ----
@@ -280,6 +281,7 @@ class ReceiptOut(ORMModel):
     status: str
     tenant_id: str
     geographic_unit_id: str
+    pdf_download_url: Optional[str] = None
 
 
 class PublicVerifyOut(BaseModel):
@@ -289,12 +291,12 @@ class PublicVerifyOut(BaseModel):
     council_name: Optional[str] = None
     revenue_name: Optional[str] = None
     amount: Optional[Decimal] = None
-    service_fee: Optional[Decimal] = None
     total_amount: Optional[Decimal] = None
     currency: Optional[str] = None
     payment_date: Optional[datetime] = None
     status: Optional[str] = None
     payer_display: Optional[str] = None
+    pdf_download_url: Optional[str] = None
 
 
 # ---- Settlements / Dashboards ----

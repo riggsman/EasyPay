@@ -5,10 +5,23 @@ import { api, formatMoney, listItems } from '../../api/client'
 export default function ReceiptsPage() {
   const [rows, setRows] = useState([])
   const [error, setError] = useState('')
+  const [busyId, setBusyId] = useState('')
 
   useEffect(() => {
     api.receipts({ page: 1, page_size: 100 }).then((res) => setRows(listItems(res))).catch((e) => setError(e.message))
   }, [])
+
+  async function onDownload(r) {
+    setError('')
+    setBusyId(r.receipt_id)
+    try {
+      await api.downloadReceiptPdf(r.receipt_id, `${r.receipt_number}.pdf`)
+    } catch (e) {
+      setError(e.message || 'Download failed')
+    } finally {
+      setBusyId('')
+    }
+  }
 
   return (
     <div className="rise">
@@ -34,7 +47,21 @@ export default function ReceiptsPage() {
                 <td>{r.revenue_name}</td>
                 <td>{formatMoney(r.total_amount, r.currency)}</td>
                 <td><span className="pill">{r.status}</span></td>
-                <td><Link to={`/verify`}>Verify</Link></td>
+                <td>
+                  <div className="row" style={{ gap: '0.5rem', justifyContent: 'flex-end' }}>
+                    {r.pdf_download_url && r.status !== 'REVOKED' && (
+                      <button
+                        className="btn btn-primary"
+                        type="button"
+                        disabled={busyId === r.receipt_id}
+                        onClick={() => onDownload(r)}
+                      >
+                        {busyId === r.receipt_id ? 'Downloading…' : 'Download receipt'}
+                      </button>
+                    )}
+                    <Link className="btn btn-ghost" to="/verify">Verify</Link>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>

@@ -14,7 +14,7 @@ router = APIRouter(prefix="/tenants")
 
 @router.get("", response_model=List[TenantOut])
 def list_tenants(db: DbDep, current = Depends(require_permissions("tenants:read"))):
-    if current.user_type == "PLATFORM_ADMIN":
+    if current.user_type in ("PLATFORM_ADMIN", "SUPER_ADMIN"):
         return db.query(Tenant).all()
     if current.tenant_id:
         t = db.get(Tenant, current.tenant_id)
@@ -49,7 +49,7 @@ def create_tenant(body: TenantCreate, db: DbDep, current = Depends(require_permi
 
 @router.get("/{tenant_id}", response_model=TenantOut)
 def get_tenant(tenant_id: str, db: DbDep, current = Depends(require_permissions("tenants:read"))):
-    if current.user_type != "PLATFORM_ADMIN" and current.tenant_id != tenant_id:
+    if current.user_type not in ("PLATFORM_ADMIN", "SUPER_ADMIN") and current.tenant_id != tenant_id:
         raise HTTPException(status_code=403, detail="Tenant isolation violation")
     tenant = db.get(Tenant, tenant_id)
     if not tenant:

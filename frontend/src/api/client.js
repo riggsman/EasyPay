@@ -150,6 +150,8 @@ export const api = {
   payment: (id) => request(`/api/v1/payments/${id}`),
   receipts: (params) => request(`/api/v1/receipts${queryString(params)}`),
   receipt: (id) => request(`/api/v1/receipts/${id}`),
+  downloadReceiptPdf: (receiptId, filename) =>
+    download(`/api/v1/receipts/${receiptId}/pdf`, filename || `${receiptId}.pdf`),
   verify: (body) => request('/api/v1/public/verify', { method: 'POST', body: JSON.stringify(body) }, false),
   verifyToken: (token) => request(`/api/v1/public/verify/${token}`, {}, false),
   payerDashboard: () => request('/api/v1/dashboards/payer'),
