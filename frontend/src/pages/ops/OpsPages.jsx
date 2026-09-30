@@ -531,14 +531,78 @@ export function OpsTransactionDetail() {
   const { id } = useParams()
   const base = useBase()
   const navigate = useNavigate()
+  const ctx = useCtx()
+  const isPlatform = base.startsWith('/platform') || ['PLATFORM_ADMIN', 'SUPER_ADMIN'].includes(ctx.user?.user_type || ctx.me?.user_type || '')
   const [drill, setDrill] = useState(null)
   const [error, setError] = useState('')
+  const [message, setMessage] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [showReason, setShowReason] = useState(false)
+  const [manualOpen, setManualOpen] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [manualForm, setManualForm] = useState(null)
+
+  function refresh() {
+    return api.opsDrillTransaction(id).then(setDrill)
+  }
+
   useEffect(() => {
-    api.opsDrillTransaction(id).then(setDrill).catch((e) => setError(e.message))
+    refresh().catch((e) => setError(e.message))
   }, [id])
-  if (error) return <div className="alert">{error}</div>
+
+  if (error && !drill) return <div className="alert">{error}</div>
   if (!drill) return <p>Loading…</p>
   const t = drill.transaction
+  const recovery = drill.credit_recovery
+  const failed = t.status === 'FAILED' || t.status === 'REJECTED' || t.status === 'MANUAL_INTERVENTION'
+
+  async function onRetry() {
+    setBusy(true)
+    setError('')
+    setMessage('')
+    try {
+      await api.retryCredit(id)
+      await refresh()
+      setMessage('Credit retry submitted.')
+    } catch (e) {
+      setError(e.message)
+      refresh().catch(() => {})
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function openManual() {
+    const ctx = recovery || {}
+    setManualForm({
+      payout_method: ctx.payout_method || 'MOMO',
+      momo_number: ctx.momo_number || '',
+      bank_account_number: ctx.bank_account_number || '',
+      bank_account_name: ctx.bank_account_name || ctx.council_name || '',
+      bank_code: ctx.bank_code || 'CM_DEFAULT',
+      amount: ctx.net_credit_amount || t.amount,
+    })
+    setManualOpen(true)
+    setConfirmOpen(false)
+  }
+
+  async function submitManual() {
+    setBusy(true)
+    setError('')
+    setMessage('')
+    try {
+      await api.manualCredit(id, { ...manualForm, confirm: true })
+      setManualOpen(false)
+      setConfirmOpen(false)
+      await refresh()
+      setMessage('Manual council credit completed and transaction settled.')
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <div className="rise stack">
       <PageHeader
@@ -547,12 +611,46 @@ export function OpsTransactionDetail() {
         actions={<Link className="btn btn-ghost" to={`${base}/transactions`}>Back</Link>}
       />
       <div className="row">
-        <span className="pill">{t.status}</span>
+        <span className={`pill${failed ? ' failed' : ''}`}>{t.status === 'REJECTED' ? 'FAILED' : t.status}</span>
         <span className="muted">{t.payment_channel}</span>
         <span className="muted">{t.initiated_at ? new Date(t.initiated_at).toLocaleString() : ''}</span>
       </div>
+      {error && <div className="alert">{error}</div>}
+      {message && <div className="alert ok">{message}</div>}
       <MoneyCells amount={t.amount} fee={t.service_fee} commission={t.commission_amount} total={t.total_amount} />
       <ChainSteps steps={drill.chain} active="transaction" />
+
+      {failed && (
+        <div className="panel stack">
+          <h3>{t.status === 'MANUAL_INTERVENTION' ? 'Manual intervention required' : 'Payment failed'}</h3>
+          <p className="muted">
+            Stage: <strong>{t.failure_stage || recovery?.failure_stage || '—'}</strong>
+            {recovery && (
+              <>
+                {' '}· Retries: <strong>{recovery.credit_retry_count}</strong> / {recovery.max_credit_retries}
+              </>
+            )}
+          </p>
+          <div className="row" style={{ flexWrap: 'wrap', gap: '0.5rem' }}>
+            <button className="btn btn-ghost" type="button" onClick={() => setShowReason((v) => !v)}>
+              {showReason ? 'Hide failure reason' : 'View failure reason'}
+            </button>
+            {recovery?.can_retry && (
+              <button className="btn btn-primary" type="button" disabled={busy} onClick={onRetry}>
+                {busy ? 'Retrying…' : 'Retry council credit'}
+              </button>
+            )}
+            {isPlatform && recovery?.needs_manual_intervention && (
+              <button className="btn btn-primary" type="button" onClick={openManual}>
+                Manual intervention
+              </button>
+            )}
+          </div>
+          {showReason && (
+            <p className="failure-reason-inline">{t.failure_reason || recovery?.failure_reason || 'No reason recorded.'}</p>
+          )}
+        </div>
+      )}
 
       <div className="panel stack">
         <p>
@@ -590,8 +688,108 @@ export function OpsTransactionDetail() {
       </Disclosure>
 
       <Disclosure title="State history" open>
-        <TransactionTimeline events={drill.events} />
+        <TransactionTimeline events={drill.events} failureReason={t.failure_reason || recovery?.failure_reason} />
       </Disclosure>
+
+      {manualOpen && manualForm && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true">
+          <div className="modal-card stack">
+            <h3>Manual council credit</h3>
+            <p className="muted">
+              Prefill uses council payout details and the net credit amount. Edit only if necessary.
+            </p>
+            <div className="field">
+              <label>Council</label>
+              <input value={recovery?.council_name || drill.tenant?.name || ''} readOnly />
+            </div>
+            <div className="field">
+              <label>Payout method</label>
+              <select
+                value={manualForm.payout_method}
+                onChange={(e) => setManualForm({ ...manualForm, payout_method: e.target.value })}
+              >
+                <option value="MOMO">Mobile Money</option>
+                <option value="BANK">Bank transfer</option>
+              </select>
+            </div>
+            <div className="field">
+              <label>Amount to credit ({recovery?.currency || 'XAF'})</label>
+              <input
+                value={manualForm.amount}
+                onChange={(e) => setManualForm({ ...manualForm, amount: e.target.value })}
+              />
+            </div>
+            {manualForm.payout_method === 'MOMO' ? (
+              <div className="field">
+                <label>Council MoMo number</label>
+                <input
+                  value={manualForm.momo_number}
+                  onChange={(e) => setManualForm({ ...manualForm, momo_number: e.target.value })}
+                />
+              </div>
+            ) : (
+              <>
+                <div className="field">
+                  <label>Bank account number</label>
+                  <input
+                    value={manualForm.bank_account_number}
+                    onChange={(e) => setManualForm({ ...manualForm, bank_account_number: e.target.value })}
+                  />
+                </div>
+                <div className="field">
+                  <label>Account name</label>
+                  <input
+                    value={manualForm.bank_account_name}
+                    onChange={(e) => setManualForm({ ...manualForm, bank_account_name: e.target.value })}
+                  />
+                </div>
+                <div className="field">
+                  <label>Bank code</label>
+                  <input
+                    value={manualForm.bank_code}
+                    onChange={(e) => setManualForm({ ...manualForm, bank_code: e.target.value })}
+                  />
+                </div>
+              </>
+            )}
+            <div className="row">
+              <button className="btn btn-ghost" type="button" onClick={() => setManualOpen(false)} disabled={busy}>
+                Cancel
+              </button>
+              <button className="btn btn-primary" type="button" onClick={() => setConfirmOpen(true)} disabled={busy}>
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmOpen && manualForm && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true">
+          <div className="modal-card stack">
+            <h3>Confirm manual credit</h3>
+            <div className="warn-box">
+              <p><strong>Do you want to proceed?</strong></p>
+              <ul>
+                {(recovery?.warnings || []).map((w) => <li key={w}>{w}</li>)}
+                <li>
+                  Crediting {formatMoney(manualForm.amount, recovery?.currency)} to{' '}
+                  {manualForm.payout_method === 'MOMO' ? manualForm.momo_number : manualForm.bank_account_number}{' '}
+                  for {recovery?.council_name || 'council'}.
+                </li>
+              </ul>
+            </div>
+            <div className="row">
+              <button className="btn btn-ghost" type="button" onClick={() => setConfirmOpen(false)} disabled={busy}>
+                Back
+              </button>
+              <button className="btn btn-primary" type="button" onClick={submitManual} disabled={busy}>
+                {busy ? 'Processing…' : 'Confirm & credit council'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Disclosure title="Ledger posting">
         {!drill.ledger?.posting_id && <p className="muted">No ledger posting yet.</p>}

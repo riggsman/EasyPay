@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Optional
 
-from sqlalchemy import DateTime, ForeignKey, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, TimestampMixin, StatusMixin, new_id, utcnow
@@ -50,8 +50,18 @@ class Transaction(Base, TimestampMixin, StatusMixin):
     payer_msisdn: Mapped[Optional[str]] = mapped_column(String(32))
     initiated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
     settled_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
-    # status: INITIATED | PROCESSING | DEBITED | CREDITED | SETTLED | FAILED
-    # SETTLED and FAILED are peer terminal outcomes; REJECTED is a legacy alias of FAILED
+    # Credit / failure tracking (council credit after payer debit)
+    failure_reason: Mapped[Optional[str]] = mapped_column(Text)
+    failure_stage: Mapped[Optional[str]] = mapped_column(String(32))  # DEBIT | CREDIT
+    credit_retry_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    credit_destination: Mapped[Optional[str]] = mapped_column(String(128))
+    credit_payout_method: Mapped[Optional[str]] = mapped_column(String(32))  # MOMO | BANK
+    credit_provider_reference: Mapped[Optional[str]] = mapped_column(String(128))
+    manual_intervention_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    manual_intervention_by: Mapped[Optional[str]] = mapped_column(String(36))
+    # status: INITIATED | PROCESSING | DEBITED | CREDITED | SETTLED | FAILED | MANUAL_INTERVENTION
+    # SETTLED and FAILED are peer terminal outcomes; MANUAL_INTERVENTION is ops-resolvable
+    # REJECTED is a legacy alias of FAILED
 
 
 class TransactionEvent(Base, TimestampMixin):

@@ -246,6 +246,10 @@ export const api = {
   testCampayToken: () => request('/api/v1/providers/campay/test-token', { method: 'POST' }),
   processSettlement: (id, body) =>
     request(`/api/v1/settlements/${id}/process`, { method: 'POST', body: JSON.stringify(body || {}) }),
+  creditRecovery: (id) => request(`/api/v1/payments/${id}/credit-recovery`),
+  retryCredit: (id) => request(`/api/v1/payments/${id}/retry-credit`, { method: 'POST' }),
+  manualCredit: (id, body) =>
+    request(`/api/v1/payments/${id}/manual-credit`, { method: 'POST', body: JSON.stringify(body || {}) }),
 
   clearTokens,
   setTokens,
