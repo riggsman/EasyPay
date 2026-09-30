@@ -27,10 +27,12 @@ def test_payer_payment_detail_hides_commission(client):
 
     drill = client.get(f"/api/v1/ops/drill/transaction/{txn_id}", headers=headers)
     assert drill.status_code == 200, drill.text
-    fc = drill.json().get("fee_commission") or {}
+    body_drill = drill.json()
+    fc = body_drill.get("fee_commission") or {}
     assert "commission_amount" not in fc
     assert "net_to_tenant" not in fc
     assert "service_fee" in fc
+    assert "commission_amount" not in (body_drill.get("transaction") or {})
 
 
 def test_admin_payment_still_includes_commission(client):
