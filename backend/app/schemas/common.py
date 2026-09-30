@@ -48,6 +48,7 @@ class PlatformOut(ORMModel):
     legal_name: Optional[str] = None
     default_currency: str
     status: str
+    logo_path: Optional[str] = None
 
 
 class GeographicUnitCreate(BaseModel):
@@ -88,6 +89,7 @@ class TenantOut(ORMModel):
     status: str
     zone_change_mode: str
     verification: str
+    logo_path: Optional[str] = None
 
 
 class TenantGeoMapCreate(BaseModel):

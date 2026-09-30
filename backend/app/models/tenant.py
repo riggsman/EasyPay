@@ -22,3 +22,5 @@ class Tenant(Base, TimestampMixin, StatusMixin):
     currency: Mapped[str] = mapped_column(String(8), default="XAF")
     verification: Mapped[str] = mapped_column(String(32), default="PENDING")
     zone_change_mode: Mapped[str] = mapped_column(String(32), default="IMMEDIATE")  # IMMEDIATE | APPROVAL_REQUIRED
+    # Relative path under LOGO_STORAGE_DIR (e.g. tenants/{id}.png); PDF falls back to platform logo
+    logo_path: Mapped[Optional[str]] = mapped_column(String(512))

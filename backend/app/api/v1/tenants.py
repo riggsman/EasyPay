@@ -1,12 +1,13 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
-from app.core.deps import DbDep, UserDep, require_permissions
+from app.core.deps import DbDep, require_permissions
 from app.db.base import utcnow
 from app.models.geography import TenantGeographicUnit
 from app.models.tenant import Tenant
 from app.schemas.common import TenantCreate, TenantGeoMapCreate, TenantOut
+from app.services.branding import save_uploaded_logo
 from app.services.geography import get_unit
 
 router = APIRouter(prefix="/tenants")
@@ -66,3 +67,34 @@ def map_geography(body: TenantGeoMapCreate, db: DbDep, current = Depends(require
     db.add(mapping)
     db.commit()
     return {"message": "Mapped", "id": mapping.tenant_geographic_unit_id}
+
+
+@router.post("/{tenant_id}/logo", response_model=TenantOut)
+async def upload_tenant_logo(
+    tenant_id: str,
+    db: DbDep,
+    current=Depends(require_permissions("tenants:write")),
+    file: UploadFile = File(...),
+):
+    if current.user_type not in ("PLATFORM_ADMIN", "SUPER_ADMIN") and current.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Tenant isolation violation")
+    tenant = db.get(Tenant, tenant_id)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Not found")
+    data = await file.read()
+    if not data:
+        raise HTTPException(status_code=422, detail="Empty file")
+    if len(data) > 2_000_000:
+        raise HTTPException(status_code=422, detail="Logo must be under 2MB")
+    try:
+        tenant.logo_path = save_uploaded_logo(
+            owner="tenants",
+            owner_id=tenant.tenant_id,
+            filename=file.filename or "logo.png",
+            data=data,
+        )
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=422, detail=f"Invalid image: {exc}") from exc
+    db.commit()
+    db.refresh(tenant)
+    return tenant

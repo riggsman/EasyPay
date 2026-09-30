@@ -39,6 +39,14 @@ class Settings(BaseSettings):
     CAMPAY_BASE_URL: str = "https://demo.campay.net/api"
     CAMPAY_MOCK: bool = True
 
+    # Public frontend base URL used in PDF QR deep-links (no trailing slash).
+    # Change this when migrating to production, e.g. https://pay.example.com
+    PUBLIC_BASE_URL: str = "http://localhost:5173"
+    # Directory for tenant/platform logo files (relative to backend/ unless absolute)
+    LOGO_STORAGE_DIR: str = "var/logos"
+    # Logo watermark wash: 0.6 = 60% opacity (washed background mark)
+    PDF_LOGO_WASH_OPACITY: float = 0.6
+
     @property
     def cors_origin_list(self) -> List[str]:
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]

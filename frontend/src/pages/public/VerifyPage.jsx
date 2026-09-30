@@ -1,23 +1,36 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { api, formatMoney } from '../../api/client'
 
 export default function VerifyPage() {
-  const [code, setCode] = useState('')
+  const { token: pathToken } = useParams()
+  const [searchParams] = useSearchParams()
+  const queryCode = searchParams.get('code') || searchParams.get('token') || ''
+  const deepLinkToken = (pathToken || queryCode || '').trim()
+
+  const [code, setCode] = useState(deepLinkToken)
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  async function onSubmit(e) {
-    e.preventDefault()
+  async function verifyValue(raw) {
+    const value = (raw || '').trim()
+    if (!value) return
     setLoading(true)
     setError('')
     setResult(null)
     try {
-      const looksLikeReceipt = code.toUpperCase().startsWith('RCPT')
+      // Deep-link / QR path uses the same public token verify endpoint
+      if (value.startsWith('v_') || pathToken) {
+        const data = await api.verifyToken(value)
+        setResult(data)
+        return
+      }
+      const looksLikeReceipt = value.toUpperCase().startsWith('RCPT')
       const data = await api.verify(
         looksLikeReceipt
-          ? { receipt_number: code.trim() }
-          : { verification_code: code.trim() },
+          ? { receipt_number: value }
+          : { verification_code: value },
       )
       setResult(data)
     } catch (err) {
@@ -27,11 +40,24 @@ export default function VerifyPage() {
     }
   }
 
+  useEffect(() => {
+    if (deepLinkToken) {
+      setCode(deepLinkToken)
+      verifyValue(deepLinkToken)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deepLinkToken])
+
+  async function onSubmit(e) {
+    e.preventDefault()
+    await verifyValue(code)
+  }
+
   return (
     <div className="container" style={{ padding: '2rem 0 4rem' }}>
       <div className="panel rise" style={{ maxWidth: 560, margin: '0 auto' }}>
         <h2>Verify Receipt</h2>
-        <p>Enter a receipt number or verification code. No account required.</p>
+        <p>Enter a receipt number or verification code, or open a scanned QR link. No account required.</p>
         {error && <div className="alert">{error}</div>}
         <form onSubmit={onSubmit}>
           <div className="field">

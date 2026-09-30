@@ -733,8 +733,11 @@ def ensure_sample_demo_data(db) -> dict:
     ensure_providers(db, admin)
     ensure_notification_toggles(db)
     from app.services.history_exports import ensure_default_history_export_settings
+    from app.services.branding import ensure_default_platform_logo
+
     ensure_default_history_export_settings(db)
     ensure_tenant_payout_destinations(db)
+    ensure_default_platform_logo(db)
 
     settled = 0
     for spec in SAMPLE_PAYERS:
@@ -978,6 +981,7 @@ def seed():
         print(f"  Sample payers ensured: {stats['payers']}")
         print(f"  Settled payments (total in DB): {settled_count}")
         print("  History export: 2 free downloads / fee 500 XAF thereafter")
+        print("  PDF branding: platform logo watermark (60% wash) + receipt verify QR via PUBLIC_BASE_URL")
         demos = stats.get("failure_demos") or {}
         if demos:
             print(
