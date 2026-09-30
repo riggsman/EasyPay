@@ -21,6 +21,7 @@ from app.services.payments import (
     get_transaction_events,
     initiate_payment,
     resolve_payment_context,
+    serialize_timeline_event,
 )
 
 router = APIRouter(prefix="/payments")
@@ -48,7 +49,7 @@ def confirm(transaction_id: str, db: DbDep, current: UserDep):
         if txn.payer_id != payer.payer_id:
             raise HTTPException(status_code=403, detail="Forbidden")
     txn = complete_payment_happy_path(db, transaction_id, current.user_id)
-    return _detail(db, txn)
+    return _detail(db, txn, current.user_type)
 
 
 @router.get("", response_model=PaginatedResponse[TransactionOut])
@@ -110,18 +111,18 @@ def get_payment(transaction_id: str, db: DbDep, current: UserDep):
         payer = get_payer_by_user(db, current.user_id)
         if txn.payer_id != payer.payer_id:
             raise HTTPException(status_code=403, detail="Forbidden")
-    elif current.user_type != "PLATFORM_ADMIN" and txn.transaction_tenant_id != current.tenant_id:
+    elif current.user_type not in ("PLATFORM_ADMIN", "SUPER_ADMIN") and txn.transaction_tenant_id != current.tenant_id:
         raise HTTPException(status_code=403, detail="Tenant isolation")
-    return _detail(db, txn)
+    return _detail(db, txn, current.user_type)
 
 
-def _detail(db, txn: Transaction) -> TransactionDetailOut:
-    events = get_transaction_events(db, txn.transaction_id)
+def _detail(db, txn: Transaction, user_type: str) -> TransactionDetailOut:
+    events = get_transaction_events(db, txn.transaction_id, user_type=user_type)
     receipt = db.query(Receipt).filter(Receipt.transaction_id == txn.transaction_id).first()
     base = TransactionOut.model_validate(txn).model_dump()
     return TransactionDetailOut(
         **base,
-        events=[TransactionEventOut.model_validate(e) for e in events],
+        events=[TransactionEventOut(**serialize_timeline_event(e, user_type=user_type)) for e in events],
         receipt_number=receipt.receipt_number if receipt else None,
         receipt_id=receipt.receipt_id if receipt else None,
     )

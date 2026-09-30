@@ -57,6 +57,38 @@ export function MoneyCells({ amount, fee, commission, total, currency = 'XAF' })
   )
 }
 
+const STATUS_LABELS = {
+  INITIATED: 'Initiated',
+  PROCESSING: 'Payment processing',
+  DEBITED: 'Customer account debited',
+  CREDITED: 'Council credited',
+  SETTLED: 'Settlement completed',
+  REJECTED: 'Rejected',
+}
+
+export function TransactionTimeline({ events }) {
+  if (!events?.length) {
+    return <p className="muted">No timeline events yet.</p>
+  }
+  return (
+    <ol className="timeline">
+      {events.map((e, i) => {
+        const label = e.label || STATUS_LABELS[e.to_status] || e.to_status
+        const when = e.created_at ? new Date(e.created_at).toLocaleString() : ''
+        return (
+          <li className="item" key={`${e.to_status}-${e.created_at || i}-${i}`}>
+            <strong>
+              <span className="timeline-check" aria-hidden="true">✓</span>
+              {label}
+            </strong>
+            {when && <span className="muted timeline-time">{when}</span>}
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
+
 export function EmptyRow({ cols, text = 'No records.' }) {
   return (
     <tr>

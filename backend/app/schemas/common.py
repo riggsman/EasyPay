@@ -252,6 +252,7 @@ class TransactionOut(ORMModel):
 class TransactionEventOut(ORMModel):
     from_status: Optional[str] = None
     to_status: str
+    label: Optional[str] = None
     note: Optional[str] = None
     created_at: datetime
 

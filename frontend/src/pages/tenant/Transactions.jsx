@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api, formatMoney, listItems } from '../../api/client'
+import { TransactionTimeline } from '../../components/OpsUI'
 
 export default function TenantTransactions() {
   const [rows, setRows] = useState([])
@@ -74,13 +75,8 @@ export default function TenantTransactions() {
 
           <details className="details-block" open>
             <summary>State history</summary>
-            <div className="timeline" style={{ marginTop: '0.75rem' }}>
-              {(detail.events || []).map((e, i) => (
-                <div className="item" key={i}>
-                  <strong>{e.to_status}</strong>
-                  <span className="muted">{e.note} · {new Date(e.created_at).toLocaleString()}</span>
-                </div>
-              ))}
+            <div style={{ marginTop: '0.75rem' }}>
+              <TransactionTimeline events={detail.events} />
             </div>
           </details>
           <details className="details-block">

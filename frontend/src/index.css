@@ -399,12 +399,28 @@ button.linkish {
   color: #fff;
 }
 .timeline {
+  list-style: none;
+  margin: 0;
   border-left: 2px solid rgba(31, 107, 74, 0.35);
   padding-left: 1rem;
   display: grid;
   gap: 0.85rem;
 }
-.timeline .item strong { display: block; }
+.timeline .item strong {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  font-weight: 600;
+}
+.timeline .timeline-check {
+  color: var(--ok);
+  font-size: 0.95em;
+}
+.timeline .timeline-time {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.92em;
+}
 @media (max-width: 860px) {
   .ops-body { grid-template-columns: 1fr; }
   .ops-aside {
