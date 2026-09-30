@@ -119,7 +119,11 @@ export default function PaymentHistory() {
                 <td>{t.transaction_reference}</td>
                 <td>{formatMoney(t.amount, t.currency)}</td>
                 <td>{formatMoney(t.total_amount, t.currency)}</td>
-                <td><span className="pill">{t.status}</span></td>
+                <td>
+                  <span className={`pill${t.status === 'FAILED' || t.status === 'REJECTED' ? ' failed' : ''}`}>
+                    {t.status === 'REJECTED' ? 'FAILED' : t.status}
+                  </span>
+                </td>
                 <td><Link to={`/payer/payments/${t.transaction_id}`}>View</Link></td>
               </tr>
             ))}

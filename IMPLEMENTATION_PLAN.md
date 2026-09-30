@@ -302,7 +302,9 @@ Plus fees/commission amounts as posted at calculation time.
 
 ```
 INITIATED → PROCESSING → DEBITED → CREDITED → SETTLED
-                ↘ REJECTED
+                                              ↘ FAILED
+         (FAILED is also reachable from INITIATED / PROCESSING / DEBITED;
+          SETTLED and FAILED are peer terminal outcomes)
 ```
 
 Persist every transition in `transaction_events` for UI timeline.

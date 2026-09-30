@@ -236,11 +236,11 @@ def campay_webhook(payload: dict, db: DbDep):
         from app.services.payments import advance_transaction
 
         txn = db.get(Transaction, intent.entity_id)
-        if txn and txn.status not in ("SETTLED", "REJECTED"):
+        if txn and txn.status not in ("SETTLED", "FAILED", "REJECTED"):
             try:
-                advance_transaction(db, txn, "REJECTED", None, f"Campay webhook {status}")
+                advance_transaction(db, txn, "FAILED", None, f"Payment failed ({status})")
             except Exception:
-                txn.status = "REJECTED"
+                txn.status = "FAILED"
                 db.commit()
     else:
         db.commit()

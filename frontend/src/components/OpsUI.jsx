@@ -65,7 +65,8 @@ const STATUS_LABELS = {
   DEBITED: 'Customer account debited',
   CREDITED: 'Council credited',
   SETTLED: 'Settlement completed',
-  REJECTED: 'Rejected',
+  FAILED: 'Payment failed',
+  REJECTED: 'Payment failed',
 }
 
 export function TransactionTimeline({ events }) {
@@ -75,12 +76,14 @@ export function TransactionTimeline({ events }) {
   return (
     <ol className="timeline">
       {events.map((e, i) => {
-        const label = e.label || STATUS_LABELS[e.to_status] || e.to_status
+        const status = e.to_status
+        const failed = status === 'FAILED' || status === 'REJECTED'
+        const label = e.label || STATUS_LABELS[status] || status
         const when = e.created_at ? new Date(e.created_at).toLocaleString() : ''
         return (
-          <li className="item" key={`${e.to_status}-${e.created_at || i}-${i}`}>
+          <li className={`item${failed ? ' failed' : ''}`} key={`${status}-${e.created_at || i}-${i}`}>
             <strong>
-              <span className="timeline-check" aria-hidden="true">✓</span>
+              <span className="timeline-check" aria-hidden="true">{failed ? '✗' : '✓'}</span>
               {label}
             </strong>
             {when && <span className="muted timeline-time">{when}</span>}

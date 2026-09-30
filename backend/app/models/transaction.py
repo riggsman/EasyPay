@@ -50,7 +50,8 @@ class Transaction(Base, TimestampMixin, StatusMixin):
     payer_msisdn: Mapped[Optional[str]] = mapped_column(String(32))
     initiated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
     settled_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
-    # status: INITIATED | PROCESSING | DEBITED | CREDITED | SETTLED | REJECTED
+    # status: INITIATED | PROCESSING | DEBITED | CREDITED | SETTLED | FAILED
+    # SETTLED and FAILED are peer terminal outcomes; REJECTED is a legacy alias of FAILED
 
 
 class TransactionEvent(Base, TimestampMixin):

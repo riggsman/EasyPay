@@ -18,23 +18,30 @@ from app.services.audit import write_audit
 from app.services.fees import calculate_commission, calculate_fee
 
 
+# Terminal outcomes share one stage: SETTLED (success) or FAILED (failure).
+# REJECTED remains accepted as a legacy alias for FAILED.
 VALID_TRANSITIONS = {
-    "INITIATED": {"PROCESSING", "REJECTED"},
-    "PROCESSING": {"DEBITED", "REJECTED"},
-    "DEBITED": {"CREDITED", "REJECTED"},
-    "CREDITED": {"SETTLED"},
+    "INITIATED": {"PROCESSING", "FAILED", "REJECTED"},
+    "PROCESSING": {"DEBITED", "FAILED", "REJECTED"},
+    "DEBITED": {"CREDITED", "FAILED", "REJECTED"},
+    "CREDITED": {"SETTLED", "FAILED", "REJECTED"},
     "SETTLED": set(),
+    "FAILED": set(),
     "REJECTED": set(),
 }
 
-# Stable UI order when several events share the same timestamp
+TERMINAL_STATUSES = frozenset({"SETTLED", "FAILED", "REJECTED"})
+
+# Stable UI order when several events share the same timestamp.
+# FAILED sits at the same terminal stage as SETTLED.
 TIMELINE_STATUS_ORDER = {
     "INITIATED": 0,
     "PROCESSING": 1,
     "DEBITED": 2,
     "CREDITED": 3,
     "SETTLED": 4,
-    "REJECTED": 5,
+    "FAILED": 4,
+    "REJECTED": 4,  # legacy alias — same stage as FAILED/SETTLED
 }
 
 TIMELINE_LABELS = {
@@ -43,13 +50,19 @@ TIMELINE_LABELS = {
     "DEBITED": "Customer account debited",
     "CREDITED": "Council credited",
     "SETTLED": "Settlement completed",
-    "REJECTED": "Rejected",
+    "FAILED": "Payment failed",
+    "REJECTED": "Payment failed",
 }
 
 # Role-scoped intermediary visibility: payers see debit; council sees credit; platform sees all
-_PAYER_TIMELINE_STATUSES = frozenset({"INITIATED", "PROCESSING", "DEBITED", "SETTLED", "REJECTED"})
-_COUNCIL_TIMELINE_STATUSES = frozenset({"INITIATED", "PROCESSING", "CREDITED", "SETTLED", "REJECTED"})
+_PAYER_TIMELINE_STATUSES = frozenset({"INITIATED", "PROCESSING", "DEBITED", "SETTLED", "FAILED", "REJECTED"})
+_COUNCIL_TIMELINE_STATUSES = frozenset({"INITIATED", "PROCESSING", "CREDITED", "SETTLED", "FAILED", "REJECTED"})
 _PLATFORM_USER_TYPES = frozenset({"PLATFORM_ADMIN", "SUPER_ADMIN"})
+
+
+def normalize_transaction_status(status: str) -> str:
+    """Map legacy REJECTED onto FAILED (terminal failure)."""
+    return "FAILED" if status == "REJECTED" else status
 
 
 def timeline_visible_statuses(user_type: Optional[str]) -> Optional[frozenset]:
@@ -235,8 +248,8 @@ def initiate_payment(db: Session, payer: Payer, data: PaymentInitiateRequest, ac
         txn.provider_reference = result.reference
         txn.provider_status = result.status
         if not result.ok:
-            txn.status = "REJECTED"
-            _add_event(db, txn, "INITIATED", "REJECTED", result.error or "Campay collect failed", actor_user_id)
+            txn.status = "FAILED"
+            _add_event(db, txn, "INITIATED", "FAILED", result.error or "Payment failed", actor_user_id)
         else:
             txn.status = "PROCESSING"
             # Keep provider reference on the transaction; timeline note stays human-readable
@@ -273,11 +286,18 @@ def initiate_payment(db: Session, payer: Payer, data: PaymentInitiateRequest, ac
 
 
 def advance_transaction(db: Session, txn: Transaction, to_status: str, actor_user_id: Optional[str] = None, note: str = "") -> Transaction:
-    allowed = VALID_TRANSITIONS.get(txn.status, set())
-    if to_status not in allowed:
+    to_status = normalize_transaction_status(to_status)
+    current = normalize_transaction_status(txn.status)
+    if current in ("SETTLED", "FAILED"):
+        if to_status == current:
+            return txn
+        raise HTTPException(status_code=422, detail=f"Cannot transition from terminal status {txn.status}")
+    allowed = VALID_TRANSITIONS.get(txn.status, set()) | VALID_TRANSITIONS.get(current, set())
+    allowed_norm = {normalize_transaction_status(s) for s in allowed}
+    if to_status not in allowed and to_status not in allowed_norm:
         raise HTTPException(status_code=422, detail=f"Cannot transition from {txn.status} to {to_status}")
     from_status = txn.status
-    _add_event(db, txn, from_status, to_status, note, actor_user_id)
+    _add_event(db, txn, from_status, to_status, note or ("Payment failed" if to_status == "FAILED" else ""), actor_user_id)
     txn.status = to_status
     if to_status == "SETTLED":
         txn.settled_at = utcnow()
@@ -291,6 +311,10 @@ def advance_transaction(db: Session, txn: Transaction, to_status: str, actor_use
             col = db.get(Collection, txn.collection_id)
             if col:
                 col.status = "COMPLETED"
+    elif to_status == "FAILED" and txn.collection_id:
+        col = db.get(Collection, txn.collection_id)
+        if col and col.status not in ("COMPLETED",):
+            col.status = "FAILED"
     db.commit()
     db.refresh(txn)
     from app.realtime.publisher import publish_transaction_status
@@ -310,7 +334,7 @@ def complete_payment_happy_path(db: Session, transaction_id: str, actor_user_id:
     txn = db.get(Transaction, transaction_id)
     if not txn:
         raise HTTPException(status_code=404, detail="Transaction not found")
-    if txn.status == "REJECTED":
+    if normalize_transaction_status(txn.status) in ("FAILED", "SETTLED"):
         return txn
 
     # MoMo must settle only after Campay confirms SUCCESSFUL
@@ -322,8 +346,14 @@ def complete_payment_happy_path(db: Session, transaction_id: str, actor_user_id:
         txn.provider_status = status_result.status
         db.flush()
         if status_result.status in ("FAILED", "CANCELED", "CANCELLED"):
-            if txn.status != "REJECTED":
-                txn = advance_transaction(db, txn, "REJECTED", actor_user_id, f"Campay {status_result.status}")
+            if normalize_transaction_status(txn.status) != "FAILED":
+                txn = advance_transaction(
+                    db,
+                    txn,
+                    "FAILED",
+                    actor_user_id,
+                    f"Payment failed ({status_result.status})",
+                )
             return txn
         if status_result.status not in ("SUCCESSFUL", "SUCCESS", "COMPLETED") and not client.mock:
             # Leave in PROCESSING until webhook/poll confirms
@@ -337,7 +367,7 @@ def complete_payment_happy_path(db: Session, transaction_id: str, actor_user_id:
         ("CREDITED", "Council credited"),
         ("SETTLED", "Settlement completed"),
     ]:
-        if txn.status == "REJECTED":
+        if normalize_transaction_status(txn.status) == "FAILED":
             break
         if txn.status != state:
             txn = advance_transaction(db, txn, state, actor_user_id, note)
