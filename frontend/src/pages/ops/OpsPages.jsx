@@ -1129,6 +1129,7 @@ export function OpsUsersRoles() {
 export function OpsConfig() {
   const [rows, setRows] = useState([])
   const [notif, setNotif] = useState(null)
+  const [historyExport, setHistoryExport] = useState({ fee_amount: '500', free_downloads: 2, currency: 'XAF' })
   const [logPage, setLogPage] = useState({ items: [], total: 0, total_pages: 1 })
   const [form, setForm] = useState({ config_key: '', config_value: '', description: '' })
   const [message, setMessage] = useState('')
@@ -1136,6 +1137,14 @@ export function OpsConfig() {
   async function load() {
     setRows(await api.opsConfig())
     setNotif(await api.opsNotificationSettings())
+    const hx = await api.historyExportSettings().catch(() => null)
+    if (hx) {
+      setHistoryExport({
+        fee_amount: String(hx.fee_amount ?? '500'),
+        free_downloads: Number(hx.free_downloads ?? 2),
+        currency: hx.currency || 'XAF',
+      })
+    }
     const log = await api.opsNotificationLog({ page: 1, page_size: 20 })
     setLogPage(log)
   }
@@ -1175,11 +1184,70 @@ export function OpsConfig() {
       setError(err.message)
     }
   }
+  async function saveHistoryExport(e) {
+    e.preventDefault()
+    setError('')
+    setMessage('')
+    try {
+      const saved = await api.updateHistoryExportSettings({
+        fee_amount: historyExport.fee_amount,
+        free_downloads: Number(historyExport.free_downloads),
+        currency: historyExport.currency || 'XAF',
+      })
+      setHistoryExport({
+        fee_amount: String(saved.fee_amount),
+        free_downloads: Number(saved.free_downloads),
+        currency: saved.currency,
+      })
+      setMessage('Transaction history export fee settings saved')
+      await load()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
   return (
     <div className="rise stack">
       <PageHeader title="System Configuration" />
       {error && <div className="alert">{error}</div>}
       {message && <div className="alert ok">{message}</div>}
+      <Disclosure title="Transaction history export (payer downloads)" open>
+        <p className="muted">
+          Payers can download dated transaction history PDFs. Each payer receives the configured number of free
+          downloads; further downloads are charged the fee via Mobile Money (Campay).
+        </p>
+        <form className="stack" onSubmit={saveHistoryExport} style={{ maxWidth: 520 }}>
+          <div className="field">
+            <label>Free downloads per payer</label>
+            <input
+              type="number"
+              min="0"
+              required
+              value={historyExport.free_downloads}
+              onChange={(e) => setHistoryExport({ ...historyExport, free_downloads: e.target.value })}
+            />
+          </div>
+          <div className="field">
+            <label>Fee after free allowance</label>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              required
+              value={historyExport.fee_amount}
+              onChange={(e) => setHistoryExport({ ...historyExport, fee_amount: e.target.value })}
+            />
+          </div>
+          <div className="field">
+            <label>Currency</label>
+            <input
+              required
+              value={historyExport.currency}
+              onChange={(e) => setHistoryExport({ ...historyExport, currency: e.target.value })}
+            />
+          </div>
+          <button className="btn btn-primary" type="submit">Save export fee settings</button>
+        </form>
+      </Disclosure>
       {notif && (
         <Disclosure title="Notification channels (email, SMS, WhatsApp)" open>
           <p className="muted">

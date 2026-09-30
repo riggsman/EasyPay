@@ -496,6 +496,8 @@ def ensure_sample_demo_data(db) -> dict:
 
     ensure_providers(db, admin)
     ensure_notification_toggles(db)
+    from app.services.history_exports import ensure_default_history_export_settings
+    ensure_default_history_export_settings(db)
 
     settled = 0
     for spec in SAMPLE_PAYERS:
@@ -731,6 +733,7 @@ def seed():
         print("  Payers: abctrading, mambagroceries, buearoasters, threeconner / payer123")
         print(f"  Sample payers ensured: {stats['payers']}")
         print(f"  Settled payments (total in DB): {settled_count}")
+        print("  History export: 2 free downloads / fee 500 XAF thereafter")
         if fresh:
             print("  Fresh install: ABC Trading has Business License DUE + Waste Levy PAID.")
     finally:
