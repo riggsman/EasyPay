@@ -76,9 +76,17 @@ def test_platform_timeline_sees_all_states(client):
     assert drill_statuses[-1] == "SETTLED"
 
 
-_ORDER = ["INITIATED", "PROCESSING", "DEBITED", "CREDITED", "SETTLED", "REJECTED"]
+_ORDER = {
+    "INITIATED": 0,
+    "PROCESSING": 1,
+    "DEBITED": 2,
+    "CREDITED": 3,
+    "SETTLED": 4,
+    "FAILED": 4,
+    "REJECTED": 4,
+}
 
 
 def _is_ordered(statuses):
-    ranks = [_ORDER.index(s) for s in statuses if s in _ORDER]
+    ranks = [_ORDER[s] for s in statuses if s in _ORDER]
     return ranks == sorted(ranks)

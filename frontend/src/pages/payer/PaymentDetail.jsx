@@ -52,7 +52,11 @@ export default function PaymentDetail() {
           </div>
         )}
       />
-      <div className="row"><span className="pill">{txn.status}</span></div>
+      <div className="row">
+        <span className={`pill${txn.status === 'FAILED' || txn.status === 'REJECTED' ? ' failed' : ''}`}>
+          {txn.status === 'REJECTED' ? 'FAILED' : txn.status}
+        </span>
+      </div>
       <MoneyCells
         amount={txn.amount}
         fee={txn.service_fee}

@@ -10,7 +10,7 @@ from app.models.transaction import Transaction
 
 def compute_ops_alerts(db: Session, tenant_id: Optional[str], *, list_limit: int = 50) -> dict[str, Any]:
     pending_q = db.query(Transaction).filter(Transaction.status.in_(["INITIATED", "PROCESSING"]))
-    rejected_q = db.query(Transaction).filter(Transaction.status == "REJECTED")
+    rejected_q = db.query(Transaction).filter(Transaction.status.in_(["FAILED", "REJECTED"]))
     settle_q = db.query(Settlement).filter(Settlement.status == "PENDING_APPROVAL")
     if tenant_id:
         pending_q = pending_q.filter(Transaction.transaction_tenant_id == tenant_id)
