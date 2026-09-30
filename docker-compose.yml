@@ -20,6 +20,9 @@ services:
       DATABASE_URL: mysql+pymysql://easypay:easypay@db:3306/easypay
       SECRET_KEY: easypay-dev-secret-key-change-in-production-32chars
       CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+      PUBLIC_BASE_URL: http://localhost:5173
+      LOGO_STORAGE_DIR: var/logos
+      PDF_LOGO_WASH_OPACITY: "0.6"
     depends_on:
       - db
     command: >

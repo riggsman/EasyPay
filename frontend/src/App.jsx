@@ -93,6 +93,8 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/verify" element={<VerifyPage />} />
+          {/* QR deep-link from receipt PDFs — same public verify logic */}
+          <Route path="/v/:token" element={<VerifyPage />} />
         </Route>
 
         <Route element={<RequireAuth allow={['PAYER']} />}>

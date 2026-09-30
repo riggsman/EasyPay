@@ -18,3 +18,5 @@ class Platform(Base, TimestampMixin, StatusMixin):
     phone: Mapped[Optional[str]] = mapped_column(String(64))
     address: Mapped[Optional[str]] = mapped_column(Text)
     default_currency: Mapped[str] = mapped_column(String(8), default="XAF", nullable=False)
+    # Relative path under LOGO_STORAGE_DIR (e.g. platform/easypay-default.png)
+    logo_path: Mapped[Optional[str]] = mapped_column(String(512))

@@ -8,15 +8,17 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from sqlalchemy.orm import Session
 
 from app.models.receipt import Receipt
+from app.services.pdf_branding import logo_watermark_callbacks, verification_block
 
 
 def receipt_pdf_path(receipt_id: str) -> str:
     return f"/api/v1/receipts/{receipt_id}/pdf"
 
 
-def build_receipt_pdf(receipt: Receipt) -> bytes:
+def build_receipt_pdf(db: Session, receipt: Receipt) -> bytes:
     buffer = BytesIO()
     doc = SimpleDocTemplate(
         buffer,
@@ -98,10 +100,18 @@ def build_receipt_pdf(receipt: Receipt) -> bytes:
         Spacer(1, 8),
         table,
         Spacer(1, 14),
+        *verification_block(verification_token=receipt.verification_token or "", styles=styles),
+        Spacer(1, 8),
         Paragraph(
-            "Verify authenticity with the receipt number or verification code on the EasyPay verify page.",
+            "Verify authenticity by scanning the QR code or entering the receipt number / verification code "
+            "on the EasyPay verify page.",
             value,
         ),
     ]
-    doc.build(story)
+    on_first, on_later = logo_watermark_callbacks(
+        db,
+        tenant_id=receipt.tenant_id,
+        force_platform=False,
+    )
+    doc.build(story, onFirstPage=on_first, onLaterPages=on_later)
     return buffer.getvalue()

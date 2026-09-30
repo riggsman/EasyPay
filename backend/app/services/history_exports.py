@@ -164,12 +164,16 @@ def _load_transactions(db: Session, payer_id: str, date_from: datetime, date_to:
 
 def build_history_pdf(
     *,
+    db: Session,
     payer: Payer,
     transactions: list[Transaction],
     date_from: datetime,
     date_to: datetime,
     quote: dict,
+    force_platform: bool = False,
 ) -> bytes:
+    from app.services.pdf_branding import logo_watermark_callbacks
+
     buffer = BytesIO()
     doc = SimpleDocTemplate(
         buffer,
@@ -254,7 +258,12 @@ def build_history_pdf(
             meta,
         )
     )
-    doc.build(story)
+    on_first, on_later = logo_watermark_callbacks(
+        db,
+        tenant_id=None if force_platform else payer.tenant_id,
+        force_platform=force_platform,
+    )
+    doc.build(story, onFirstPage=on_first, onLaterPages=on_later)
     return buffer.getvalue()
 
 
@@ -342,11 +351,13 @@ def generate_history_export(
             raise
 
     pdf = build_history_pdf(
+        db=db,
         payer=payer,
         transactions=transactions,
         date_from=date_from,
         date_to=date_to,
         quote=quote,
+        force_platform=False,
     )
     row = HistoryExport(
         payer_id=payer.payer_id,

@@ -22,3 +22,9 @@ __pycache__/
 **/__pycache__/
 *.pyc
 frontend/dist/
+
+# Uploaded logos (keep default platform mark if committed under platform/)
+backend/var/logos/tenants/
+backend/var/logos/platform/*
+!backend/var/logos/platform/.gitkeep
+!backend/var/logos/platform/easypay-default.png

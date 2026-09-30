@@ -111,7 +111,7 @@ def download_receipt_pdf(receipt_id: str, db: DbDep, current: UserDep):
     _assert_receipt_access(db, current, r)
     if r.status == "REVOKED":
         raise HTTPException(status_code=409, detail="Receipt has been revoked")
-    pdf = build_receipt_pdf(r)
+    pdf = build_receipt_pdf(db, r)
     filename = f"{r.receipt_number}.pdf"
     return Response(
         content=pdf,
