@@ -593,6 +593,15 @@ def global_search(
     return {"query": term, "results": results}
 
 
+def _timeline_event_json(event, user_type: str) -> dict:
+    from app.services.payments import serialize_timeline_event
+
+    payload = serialize_timeline_event(event, user_type=user_type)
+    created = payload.get("created_at")
+    payload["created_at"] = created.isoformat() if created else None
+    return payload
+
+
 @router.get("/drill/transaction/{transaction_id}")
 def drill_transaction(transaction_id: str, db: DbDep, current: UserDep):
     """Full explainability chain for a transaction."""
@@ -601,7 +610,6 @@ def drill_transaction(transaction_id: str, db: DbDep, current: UserDep):
     from app.models.revenue import RevenueType
     from app.models.tenant import Tenant
     from app.models.geography import GeographicUnit
-    from app.models.transaction import TransactionEvent
     from app.models.settlement import SettlementLine
     from app.services.payer import get_payer_by_user
 
@@ -628,12 +636,9 @@ def drill_transaction(transaction_id: str, db: DbDep, current: UserDep):
     tenant = db.get(Tenant, txn.transaction_tenant_id)
     geo = db.get(GeographicUnit, txn.transaction_geographic_unit_id)
     receipt = db.query(Receipt).filter(Receipt.transaction_id == txn.transaction_id).first()
-    events = (
-        db.query(TransactionEvent)
-        .filter(TransactionEvent.transaction_id == txn.transaction_id)
-        .order_by(TransactionEvent.created_at.asc())
-        .all()
-    )
+    from app.services.payments import get_transaction_events
+
+    events = get_transaction_events(db, txn.transaction_id, user_type=current.user_type)
     posting = db.query(LedgerPosting).filter(LedgerPosting.transaction_id == txn.transaction_id).first()
     entries = []
     if posting:
@@ -742,15 +747,7 @@ def drill_transaction(transaction_id: str, db: DbDep, current: UserDep):
                 "net_to_tenant": str(txn.amount - txn.commission_amount),
             }
         ),
-        "events": [
-            {
-                "from_status": e.from_status,
-                "to_status": e.to_status,
-                "note": e.note,
-                "created_at": e.created_at.isoformat() if e.created_at else None,
-            }
-            for e in events
-        ],
+        "events": [_timeline_event_json(e, current.user_type) for e in events],
         "ledger": {
             "posting_id": posting.ledger_posting_id if posting else None,
             "entries": [

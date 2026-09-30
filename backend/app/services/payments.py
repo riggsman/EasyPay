@@ -27,6 +27,64 @@ VALID_TRANSITIONS = {
     "REJECTED": set(),
 }
 
+# Stable UI order when several events share the same timestamp
+TIMELINE_STATUS_ORDER = {
+    "INITIATED": 0,
+    "PROCESSING": 1,
+    "DEBITED": 2,
+    "CREDITED": 3,
+    "SETTLED": 4,
+    "REJECTED": 5,
+}
+
+TIMELINE_LABELS = {
+    "INITIATED": "Initiated",
+    "PROCESSING": "Payment processing",
+    "DEBITED": "Customer account debited",
+    "CREDITED": "Council credited",
+    "SETTLED": "Settlement completed",
+    "REJECTED": "Rejected",
+}
+
+# Role-scoped intermediary visibility: payers see debit; council sees credit; platform sees all
+_PAYER_TIMELINE_STATUSES = frozenset({"INITIATED", "PROCESSING", "DEBITED", "SETTLED", "REJECTED"})
+_COUNCIL_TIMELINE_STATUSES = frozenset({"INITIATED", "PROCESSING", "CREDITED", "SETTLED", "REJECTED"})
+_PLATFORM_USER_TYPES = frozenset({"PLATFORM_ADMIN", "SUPER_ADMIN"})
+
+
+def timeline_visible_statuses(user_type: Optional[str]) -> Optional[frozenset]:
+    """Return allowed to_status values, or None when the audience sees every state."""
+    if not user_type or user_type in _PLATFORM_USER_TYPES:
+        return None
+    if user_type == "PAYER":
+        return _PAYER_TIMELINE_STATUSES
+    return _COUNCIL_TIMELINE_STATUSES
+
+
+def timeline_label(to_status: str) -> str:
+    return TIMELINE_LABELS.get(to_status, to_status.replace("_", " ").title())
+
+
+def serialize_timeline_event(event: TransactionEvent, *, user_type: Optional[str] = None) -> dict:
+    """Audience-aware event payload: ordered labels, no provider noise for non-platform users."""
+    label = timeline_label(event.to_status)
+    note = (event.note or "").strip()
+    if user_type not in _PLATFORM_USER_TYPES:
+        lower = note.lower()
+        if lower.startswith("campay ") or lower.startswith("provider "):
+            note = label
+        elif not note:
+            note = label
+    elif not note:
+        note = label
+    return {
+        "from_status": event.from_status,
+        "to_status": event.to_status,
+        "label": label,
+        "note": note,
+        "created_at": event.created_at,
+    }
+
 
 def _next_ref(db: Session, prefix: str) -> str:
     # Simple sequential reference
@@ -181,7 +239,8 @@ def initiate_payment(db: Session, payer: Payer, data: PaymentInitiateRequest, ac
             _add_event(db, txn, "INITIATED", "REJECTED", result.error or "Campay collect failed", actor_user_id)
         else:
             txn.status = "PROCESSING"
-            _add_event(db, txn, "INITIATED", "PROCESSING", f"Campay collect {result.reference}", actor_user_id)
+            # Keep provider reference on the transaction; timeline note stays human-readable
+            _add_event(db, txn, "INITIATED", "PROCESSING", "Payment processing", actor_user_id)
 
     db.add(IdempotencyKey(key_value=data.idempotency_key, scope="payment", response_ref=txn.transaction_id))
     write_audit(
@@ -409,10 +468,25 @@ def _issue_receipt(db: Session, txn: Transaction) -> Receipt:
     return receipt
 
 
-def get_transaction_events(db: Session, transaction_id: str) -> List[TransactionEvent]:
-    return (
+def get_transaction_events(
+    db: Session,
+    transaction_id: str,
+    user_type: Optional[str] = None,
+) -> List[TransactionEvent]:
+    """Return timeline events in machine order, filtered for the viewer's role."""
+    events = (
         db.query(TransactionEvent)
         .filter(TransactionEvent.transaction_id == transaction_id)
-        .order_by(TransactionEvent.created_at.asc())
         .all()
     )
+    events.sort(
+        key=lambda e: (
+            e.created_at or utcnow(),
+            TIMELINE_STATUS_ORDER.get(e.to_status, 99),
+            e.transaction_event_id or "",
+        )
+    )
+    visible = timeline_visible_statuses(user_type)
+    if visible is not None:
+        events = [e for e in events if e.to_status in visible]
+    return events

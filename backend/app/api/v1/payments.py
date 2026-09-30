@@ -21,6 +21,7 @@ from app.services.payments import (
     get_transaction_events,
     initiate_payment,
     resolve_payment_context,
+    serialize_timeline_event,
 )
 
 router = APIRouter(prefix="/payments")
@@ -133,12 +134,12 @@ def get_payment(transaction_id: str, db: DbDep, current: UserDep):
 def _detail(db, txn: Transaction, user_type: str) -> TransactionDetailOut:
     from app.services.receipts_pdf import receipt_pdf_path
 
-    events = get_transaction_events(db, txn.transaction_id)
+    events = get_transaction_events(db, txn.transaction_id, user_type=user_type)
     receipt = db.query(Receipt).filter(Receipt.transaction_id == txn.transaction_id).first()
     base = _hide_commission_for_payer(TransactionOut.model_validate(txn).model_dump(), user_type)
     return TransactionDetailOut(
         **base,
-        events=[TransactionEventOut.model_validate(e) for e in events],
+        events=[TransactionEventOut(**serialize_timeline_event(e, user_type=user_type)) for e in events],
         receipt_number=receipt.receipt_number if receipt else None,
         receipt_id=receipt.receipt_id if receipt else None,
         receipt_pdf_url=receipt_pdf_path(receipt.receipt_id) if receipt else None,

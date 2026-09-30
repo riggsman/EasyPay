@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api, formatMoney } from '../../api/client'
-import { ChainSteps, Disclosure, MoneyCells, PageHeader } from '../../components/OpsUI'
+import { ChainSteps, Disclosure, MoneyCells, PageHeader, TransactionTimeline } from '../../components/OpsUI'
 
 export default function PaymentDetail() {
   const { id } = useParams()
@@ -64,14 +64,7 @@ export default function PaymentDetail() {
       {drill?.geography && <p className="muted">Zone at payment (immutable): {drill.geography.name}</p>}
 
       <Disclosure title="Transaction timeline" open>
-        <div className="timeline">
-          {(txn.events || []).map((e, i) => (
-            <div className="item" key={i}>
-              <strong>{e.to_status}</strong>
-              <span className="muted">{e.note} · {new Date(e.created_at).toLocaleString()}</span>
-            </div>
-          ))}
-        </div>
+        <TransactionTimeline events={txn.events} />
       </Disclosure>
 
       {drill && (

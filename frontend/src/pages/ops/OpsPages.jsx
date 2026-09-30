@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom'
 import { api, formatMoney, listItems } from '../../api/client'
-import { ChainSteps, Disclosure, EmptyRow, MoneyCells, PageHeader, PaginationBar, StatLink } from '../../components/OpsUI'
+import { ChainSteps, Disclosure, EmptyRow, MoneyCells, PageHeader, PaginationBar, StatLink, TransactionTimeline } from '../../components/OpsUI'
 
 function useCtx() {
   return useOutletContext() || {}
@@ -590,14 +590,7 @@ export function OpsTransactionDetail() {
       </Disclosure>
 
       <Disclosure title="State history" open>
-        <div className="timeline">
-          {(drill.events || []).map((e, i) => (
-            <div className="item" key={i}>
-              <strong>{e.to_status}</strong>
-              <span className="muted">{e.note} · {e.created_at ? new Date(e.created_at).toLocaleString() : ''}</span>
-            </div>
-          ))}
-        </div>
+        <TransactionTimeline events={drill.events} />
       </Disclosure>
 
       <Disclosure title="Ledger posting">
