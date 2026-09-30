@@ -135,3 +135,79 @@ def test_payer_sees_debit_failure_reason(client):
     assert body["failure_stage"] == "DEBIT"
     assert body.get("failure_reason")
     assert body.get("credit_recovery") is None
+    statuses = [e["to_status"] for e in body.get("events") or []]
+    assert statuses == ["INITIATED", "PROCESSING", "FAILED"]
+    assert statuses[-1] == "FAILED"
+    assert "CREDITED" not in statuses and "SETTLED" not in statuses
+    failed = body["events"][-1]
+    assert failed.get("label") == "Customer account debit failed"
+    assert "debit" in (failed.get("note") or body["failure_reason"]).lower() or "declined" in (
+        failed.get("note") or body["failure_reason"]
+    ).lower()
+
+
+def test_live_payer_debit_failure_stops_after_debit_stage(client):
+    """Simulate Campay collect decline → FAILED right after debiting stage with reason."""
+    from app.db.base import new_id
+    from app.db.session import SessionLocal
+    from app.models.obligation import Obligation
+    from app.models.payer import Payer
+    from app.services.payments import initiate_payment
+    from app.schemas.common import PaymentInitiateRequest
+    from unittest.mock import patch
+    from app.services.providers.campay import CampayResult
+
+    from app.models.user import User
+
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.username == "abctrading").first()
+        assert user
+        payer = db.query(Payer).filter(Payer.user_id == user.user_id).first()
+        assert payer
+        obl = (
+            db.query(Obligation)
+            .filter(Obligation.payer_id == payer.payer_id, Obligation.status.in_(["DUE", "PARTIAL", "OVERDUE"]))
+            .first()
+        )
+        if not obl:
+            obl = db.query(Obligation).filter(Obligation.payer_id == payer.payer_id).first()
+        assert obl
+        key = f"sim-debit-fail-{new_id('')[-8:]}"
+        with patch("app.services.providers.campay.CampayClient.collect") as collect:
+            collect.return_value = CampayResult(
+                ok=False,
+                reference=None,
+                status="FAILED",
+                raw={},
+                error="Payer debit failed: MoMo wallet declined collection (insufficient funds)",
+            )
+            txn = initiate_payment(
+                db,
+                payer,
+                PaymentInitiateRequest(
+                    obligation_id=obl.obligation_id,
+                    payment_channel="MOBILE_MONEY",
+                    phone_number=payer.phone_number or "670000001",
+                    idempotency_key=key,
+                ),
+                actor_user_id=payer.user_id,
+            )
+        assert txn.status == "FAILED"
+        assert txn.failure_stage == "DEBIT"
+        assert txn.failure_reason
+        txn_id = txn.transaction_id
+    finally:
+        db.close()
+
+    token = _login(client, "abctrading", "payer123")
+    headers = {"Authorization": f"Bearer {token}"}
+    detail = client.get(f"/api/v1/payments/{txn_id}", headers=headers)
+    assert detail.status_code == 200, detail.text
+    body = detail.json()
+    statuses = [e["to_status"] for e in body["events"]]
+    assert statuses[:3] == ["INITIATED", "PROCESSING", "FAILED"]
+    assert body["events"][-1]["label"] == "Customer account debit failed"
+    assert "insufficient" in (body["failure_reason"] or "").lower() or "declined" in (
+        body["failure_reason"] or ""
+    ).lower()

@@ -84,13 +84,21 @@ def timeline_visible_statuses(user_type: Optional[str]) -> Optional[frozenset]:
     return _COUNCIL_TIMELINE_STATUSES
 
 
-def timeline_label(to_status: str) -> str:
+def timeline_label(to_status: str, from_status: Optional[str] = None) -> str:
+    """Human labels; FAILED is staged so payer-debit vs council-credit are distinct."""
+    if to_status == "FAILED":
+        if from_status == "DEBITED":
+            return "Council credit failed"
+        # Payer-side debit failures happen immediately after the debiting stage attempt
+        if from_status in ("PROCESSING", "INITIATED", None):
+            return "Customer account debit failed"
+        return "Payment failed"
     return TIMELINE_LABELS.get(to_status, to_status.replace("_", " ").title())
 
 
 def serialize_timeline_event(event: TransactionEvent, *, user_type: Optional[str] = None) -> dict:
     """Audience-aware event payload: ordered labels, no provider noise for non-platform users."""
-    label = timeline_label(event.to_status)
+    label = timeline_label(event.to_status, event.from_status)
     note = (event.note or "").strip()
     if user_type not in _PLATFORM_USER_TYPES:
         lower = note.lower()
@@ -107,6 +115,31 @@ def serialize_timeline_event(event: TransactionEvent, *, user_type: Optional[str
         "note": note,
         "created_at": event.created_at,
     }
+
+
+def mark_payer_debit_failed(
+    db: Session,
+    txn: Transaction,
+    reason: str,
+    actor_user_id: Optional[str] = None,
+) -> Transaction:
+    """Move to FAILED immediately after the debiting stage with a visible reason.
+
+    Timeline: INITIATED → PROCESSING → FAILED (debit). Never continues to CREDITED/SETTLED.
+    """
+    reason = (reason or "Payer debit failed").strip()
+    txn.failure_stage = "DEBIT"
+    txn.failure_reason = reason
+    # Ensure processing/debit stage is represented before the terminal failure
+    if txn.status == "INITIATED":
+        _add_event(db, txn, "INITIATED", "PROCESSING", "Payment processing", actor_user_id)
+        txn.status = "PROCESSING"
+        db.flush()
+    if normalize_transaction_status(txn.status) == "FAILED":
+        db.commit()
+        db.refresh(txn)
+        return txn
+    return advance_transaction(db, txn, "FAILED", actor_user_id, reason)
 
 
 def credit_max_retries(db: Session) -> int:
@@ -340,10 +373,13 @@ def initiate_payment(db: Session, payer: Payer, data: PaymentInitiateRequest, ac
         txn.provider_reference = result.reference
         txn.provider_status = result.status
         if not result.ok:
-            txn.status = "FAILED"
-            txn.failure_stage = "DEBIT"
-            txn.failure_reason = result.error or "Payer debit failed"
-            _add_event(db, txn, "INITIATED", "FAILED", txn.failure_reason, actor_user_id)
+            # Debit stage failed — PROCESSING then FAILED with reason (no credit/settle)
+            mark_payer_debit_failed(
+                db,
+                txn,
+                result.error or "Payer debit failed: MoMo collection was declined",
+                actor_user_id,
+            )
         else:
             txn.status = "PROCESSING"
             # Keep provider reference on the transaction; timeline note stays human-readable
@@ -704,17 +740,13 @@ def complete_payment_happy_path(db: Session, transaction_id: str, actor_user_id:
         txn.provider_status = status_result.status
         db.flush()
         if status_result.status in ("FAILED", "CANCELED", "CANCELLED"):
-            txn.failure_stage = "DEBIT"
-            txn.failure_reason = f"Payer debit failed ({status_result.status})"
-            if normalize_transaction_status(txn.status) != "FAILED":
-                txn = advance_transaction(
-                    db,
-                    txn,
-                    "FAILED",
-                    actor_user_id,
-                    txn.failure_reason,
-                )
-            return txn
+            # Fail immediately after the debiting stage — do not credit or settle
+            return mark_payer_debit_failed(
+                db,
+                txn,
+                f"Payer debit failed: provider status {status_result.status}",
+                actor_user_id,
+            )
         if status_result.status not in ("SUCCESSFUL", "SUCCESS", "COMPLETED") and not client.mock:
             # Leave in PROCESSING until webhook/poll confirms
             db.commit()

@@ -510,7 +510,15 @@ def ensure_failure_demo_cases(db, admin: User) -> dict:
     ensure_credit_retry_settings(db)
     ensure_tenant_payout_destinations(db)
 
-    payer = db.query(Payer).filter(Payer.payer_reference == "PYR-SEED-000001").first()
+    # Prefer ABC Trading demo payer (username abctrading)
+    payer_user = db.query(User).filter(User.username == "abctrading").first()
+    payer = db.query(Payer).filter(Payer.user_id == payer_user.user_id).first() if payer_user else None
+    if not payer:
+        payer = (
+            db.query(Payer)
+            .filter(Payer.payer_reference.in_(["PYR-2026-000001", "PYR-SEED-000001"]))
+            .first()
+        )
     if not payer:
         payer = db.query(Payer).order_by(Payer.created_at.asc()).first()
     if not payer:
@@ -558,8 +566,16 @@ def ensure_failure_demo_cases(db, admin: User) -> dict:
         _add_event(db, txn, None, "INITIATED", "Payment initiated", admin.user_id)
         if status in ("FAILED", "MANUAL_INTERVENTION"):
             if kwargs.get("failure_stage") == "DEBIT":
+                # Initiated → processing/debit attempt → FAILED immediately (no credit/settle)
                 _add_event(db, txn, "INITIATED", "PROCESSING", "Payment processing", admin.user_id)
-                _add_event(db, txn, "PROCESSING", "FAILED", kwargs.get("failure_reason") or "Payer debit failed", admin.user_id)
+                _add_event(
+                    db,
+                    txn,
+                    "PROCESSING",
+                    "FAILED",
+                    kwargs.get("failure_reason") or "Payer debit failed",
+                    admin.user_id,
+                )
             else:
                 _add_event(db, txn, "INITIATED", "PROCESSING", "Payment processing", admin.user_id)
                 _add_event(db, txn, "PROCESSING", "DEBITED", "Customer account debited via Campay", admin.user_id)

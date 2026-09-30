@@ -70,6 +70,17 @@ const STATUS_LABELS = {
   REJECTED: 'Payment failed',
 }
 
+function failedLabel(event) {
+  if (event.label) return event.label
+  if (event.to_status === 'FAILED' || event.to_status === 'REJECTED') {
+    if (event.from_status === 'DEBITED') return 'Council credit failed'
+    if (event.from_status === 'PROCESSING' || event.from_status === 'INITIATED' || !event.from_status) {
+      return 'Customer account debit failed'
+    }
+  }
+  return STATUS_LABELS[event.to_status] || event.to_status
+}
+
 export function TransactionTimeline({ events, failureReason }) {
   if (!events?.length) {
     return <p className="muted">No timeline events yet.</p>
@@ -79,9 +90,10 @@ export function TransactionTimeline({ events, failureReason }) {
       {events.map((e, i) => {
         const status = e.to_status
         const failed = status === 'FAILED' || status === 'REJECTED' || status === 'MANUAL_INTERVENTION'
-        const label = e.label || STATUS_LABELS[status] || status
+        const label = failedLabel(e)
         const when = e.created_at ? new Date(e.created_at).toLocaleString() : ''
-        const showReason = failed && failureReason && i === events.length - 1
+        const reason = (failed && i === events.length - 1 && (failureReason || e.note)) || ''
+        const showReason = Boolean(reason) && reason !== label
         return (
           <li className={`item${failed ? ' failed' : ''}`} key={`${status}-${e.created_at || i}-${i}`}>
             <strong>
@@ -90,8 +102,8 @@ export function TransactionTimeline({ events, failureReason }) {
             </strong>
             {when && <span className="muted timeline-time">{when}</span>}
             {showReason && (
-              <span className="failure-reason-inline" title={failureReason}>
-                {failureReason}
+              <span className="failure-reason-inline" title={reason}>
+                {reason}
               </span>
             )}
           </li>
