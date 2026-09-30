@@ -74,6 +74,30 @@ def test_receipt_pdf_includes_branding(client):
     assert public_verify_url(vtoken).endswith(f"/v/{vtoken}")
 
 
+def test_create_receipt_pdf_template_layout():
+    from app.services.receipts_pdf import create_receipt_pdf
+
+    pdf = create_receipt_pdf(
+        receipt_no="111220998",
+        receipt_date="30/09/26",
+        logo_text="LOGO",
+        bill_to_name="Alex Junior",
+        bill_to_address="123 Main Street,\nNY City",
+        paid_to_name="Kumba 1 Council",
+        paid_to_address="Kumba",
+        items=[{"qty": 1, "description": "Lorem ipsum", "price": 1000, "amount": 1000}],
+        sub_total=1000.0,
+        service_fee=50.0,
+        grand_total=1050.0,
+        currency="XAF",
+        terms_text="Sample terms",
+        website="http://localhost:5173",
+        verification_token="v_template",
+    )
+    assert pdf[:4] == b"%PDF"
+    assert len(pdf) > 1000
+
+
 def test_deep_link_token_still_verifies(client):
     token = _login(client, "admin", "admin123")
     headers = {"Authorization": f"Bearer {token}"}
