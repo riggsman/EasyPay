@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from app.core.security import hash_password
 from app.db.models import Base
 from app.db.session import SessionLocal, engine
-from app.db.base import utcnow
+from app.db.base import new_id, utcnow
 from app.models.platform import Platform
 from app.models.geography import GeographicUnit, TenantGeographicUnit
 from app.models.tenant import Tenant
@@ -487,6 +487,145 @@ def settle_obligation_if_needed(db, payer: Payer, obl: Obligation, idempotency_k
     return txn
 
 
+def ensure_tenant_payout_destinations(db) -> None:
+    for t in db.query(Tenant).all():
+        suffix = (t.tenant_code or "1")[-1]
+        if not t.momo_number:
+            t.momo_number = f"67010000{suffix}"
+        if not t.bank_account_number:
+            t.bank_account_number = f"10001{suffix}9988"
+        if not t.phone_number:
+            t.phone_number = f"2337{suffix}00001"
+    db.flush()
+
+
+def ensure_failure_demo_cases(db, admin: User) -> dict:
+    """Seed payer-debit failure + council-credit failure / manual-intervention demos."""
+    from app.services.payments import (
+        DEFAULT_CREDIT_MAX_RETRIES,
+        ensure_credit_retry_settings,
+        _add_event,
+    )
+
+    ensure_credit_retry_settings(db)
+    ensure_tenant_payout_destinations(db)
+
+    payer = db.query(Payer).filter(Payer.payer_reference == "PYR-SEED-000001").first()
+    if not payer:
+        payer = db.query(Payer).order_by(Payer.created_at.asc()).first()
+    if not payer:
+        return {"debit_fail": None, "credit_fail": None, "manual": None}
+
+    template = (
+        db.query(Transaction)
+        .filter(Transaction.payer_id == payer.payer_id, Transaction.status == "SETTLED")
+        .order_by(Transaction.initiated_at.desc())
+        .first()
+    )
+    if not template:
+        return {"debit_fail": None, "credit_fail": None, "manual": None}
+
+    def _ensure(ref: str, status: str, **kwargs) -> Transaction:
+        existing = db.query(Transaction).filter(Transaction.transaction_reference == ref).first()
+        if existing:
+            for k, v in kwargs.items():
+                setattr(existing, k, v)
+            existing.status = status
+            db.flush()
+            return existing
+        txn = Transaction(
+            transaction_reference=ref,
+            correlation_id=new_id("cor_"),
+            idempotency_key=f"seed-{ref.lower()}",
+            payer_id=template.payer_id,
+            transaction_tenant_id=template.transaction_tenant_id,
+            transaction_geographic_unit_id=template.transaction_geographic_unit_id,
+            obligation_id=template.obligation_id,
+            revenue_type_id=template.revenue_type_id,
+            amount=template.amount,
+            service_fee=template.service_fee,
+            commission_amount=template.commission_amount,
+            total_amount=template.total_amount,
+            currency=template.currency,
+            payment_channel="MOBILE_MONEY",
+            payment_provider="CAMPAY",
+            status=status,
+            initiated_at=utcnow(),
+            **kwargs,
+        )
+        db.add(txn)
+        db.flush()
+        _add_event(db, txn, None, "INITIATED", "Payment initiated", admin.user_id)
+        if status in ("FAILED", "MANUAL_INTERVENTION"):
+            if kwargs.get("failure_stage") == "DEBIT":
+                _add_event(db, txn, "INITIATED", "PROCESSING", "Payment processing", admin.user_id)
+                _add_event(db, txn, "PROCESSING", "FAILED", kwargs.get("failure_reason") or "Payer debit failed", admin.user_id)
+            else:
+                _add_event(db, txn, "INITIATED", "PROCESSING", "Payment processing", admin.user_id)
+                _add_event(db, txn, "PROCESSING", "DEBITED", "Customer account debited via Campay", admin.user_id)
+                _add_event(
+                    db,
+                    txn,
+                    "DEBITED",
+                    "FAILED",
+                    kwargs.get("failure_reason") or "Council credit failed",
+                    admin.user_id,
+                )
+                if status == "MANUAL_INTERVENTION":
+                    _add_event(
+                        db,
+                        txn,
+                        "FAILED",
+                        "MANUAL_INTERVENTION",
+                        f"Credit retries exhausted ({DEFAULT_CREDIT_MAX_RETRIES}/{DEFAULT_CREDIT_MAX_RETRIES})",
+                        admin.user_id,
+                    )
+        return txn
+
+    debit = _ensure(
+        "TXN-DEMO-DEBIT-FAIL",
+        "FAILED",
+        failure_stage="DEBIT",
+        failure_reason="Payer debit failed: MoMo wallet declined collection (insufficient funds)",
+        payer_msisdn=payer.phone_number,
+        credit_retry_count=0,
+    )
+    credit = _ensure(
+        "TXN-DEMO-CREDIT-FAIL",
+        "FAILED",
+        failure_stage="CREDIT",
+        failure_reason=(
+            "Council credit failed: payout provider returned insufficient float "
+            "for destination account (simulated)"
+        ),
+        credit_destination="670000000",
+        credit_payout_method="MOMO",
+        credit_retry_count=1,
+        payer_msisdn=payer.phone_number,
+    )
+    manual = _ensure(
+        "TXN-DEMO-CREDIT-MANUAL",
+        "MANUAL_INTERVENTION",
+        failure_stage="CREDIT",
+        failure_reason=(
+            "Council credit failed after retries: destination rejected by payout provider "
+            "(simulated unavailable float / invalid MoMo account)"
+        ),
+        credit_destination="670000000",
+        credit_payout_method="MOMO",
+        credit_retry_count=DEFAULT_CREDIT_MAX_RETRIES,
+        payer_msisdn=payer.phone_number,
+        manual_intervention_at=utcnow(),
+        manual_intervention_by=admin.user_id,
+    )
+    db.flush()
+    return {
+        "debit_fail": debit.transaction_reference,
+        "credit_fail": credit.transaction_reference,
+        "manual": manual.transaction_reference,
+    }
+
+
 def ensure_sample_demo_data(db) -> dict:
     """Ensure curated sample payers, obligations, and settled payments."""
     admin = ensure_default_super_admin(db)
@@ -498,6 +637,7 @@ def ensure_sample_demo_data(db) -> dict:
     ensure_notification_toggles(db)
     from app.services.history_exports import ensure_default_history_export_settings
     ensure_default_history_export_settings(db)
+    ensure_tenant_payout_destinations(db)
 
     settled = 0
     for spec in SAMPLE_PAYERS:
@@ -517,10 +657,14 @@ def ensure_sample_demo_data(db) -> dict:
                 if txn and txn.status == "SETTLED":
                     settled += 1
 
+    failures = ensure_failure_demo_cases(db, admin)
+    db.commit()
+
     return {
         "payers": len(SAMPLE_PAYERS),
         "settled_payments": settled,
         "admin": admin,
+        "failure_demos": failures,
     }
 
 
@@ -592,6 +736,9 @@ def seed_foundation(db) -> None:
             organization_type="COUNCIL",
             currency="XAF",
             email=f"{tcode.lower()}@council.local",
+            phone_number=f"2337{tcode[-1]}00001",
+            momo_number=f"67010000{tcode[-1]}",
+            bank_account_number=f"10001{tcode[-1]}9988",
             zone_change_mode="IMMEDIATE",
             verification="VERIFIED",
             status="ACTIVE",
@@ -734,6 +881,14 @@ def seed():
         print(f"  Sample payers ensured: {stats['payers']}")
         print(f"  Settled payments (total in DB): {settled_count}")
         print("  History export: 2 free downloads / fee 500 XAF thereafter")
+        demos = stats.get("failure_demos") or {}
+        if demos:
+            print(
+                "  Failure demos: "
+                f"{demos.get('debit_fail')} (payer debit), "
+                f"{demos.get('credit_fail')} (council credit retryable), "
+                f"{demos.get('manual')} (manual intervention)"
+            )
         if fresh:
             print("  Fresh install: ABC Trading has Business License DUE + Waste Levy PAID.")
     finally:
