@@ -20,6 +20,7 @@ from app.models.receipt import Receipt
 from app.models.settlement import Settlement, SettlementLine, ReconciliationRecord
 from app.models.notification import NotificationDelivery
 from app.models.provider import ProviderConfiguration, ProviderPaymentIntent
+from app.models.history_export import HistoryExport
 
 __all__ = [
     "Platform",
@@ -57,4 +58,5 @@ __all__ = [
     "NotificationDelivery",
     "ProviderConfiguration",
     "ProviderPaymentIntent",
+    "HistoryExport",
 ]

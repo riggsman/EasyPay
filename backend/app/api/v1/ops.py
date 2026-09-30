@@ -1248,6 +1248,43 @@ class NotificationDeliveryOut(BaseModel):
     created_at: object
 
 
+class HistoryExportSettingsOut(BaseModel):
+    fee_amount: Decimal
+    free_downloads: int
+    currency: str
+
+
+class HistoryExportSettingsIn(BaseModel):
+    fee_amount: Decimal
+    free_downloads: int = 2
+    currency: str = "XAF"
+
+
+@router.get("/history-export-settings", response_model=HistoryExportSettingsOut)
+def get_history_export_settings_api(db: DbDep, current=Depends(require_permissions("system:configure", "platforms:write"))):
+    from app.services.history_exports import ensure_default_history_export_settings
+
+    return HistoryExportSettingsOut(**ensure_default_history_export_settings(db))
+
+
+@router.put("/history-export-settings", response_model=HistoryExportSettingsOut)
+def update_history_export_settings_api(
+    body: HistoryExportSettingsIn,
+    db: DbDep,
+    current=Depends(require_permissions("system:configure", "platforms:write")),
+):
+    from app.services.history_exports import update_history_export_settings
+
+    return HistoryExportSettingsOut(
+        **update_history_export_settings(
+            db,
+            fee_amount=body.fee_amount,
+            free_downloads=body.free_downloads,
+            currency=body.currency,
+        )
+    )
+
+
 @router.get("/notifications/settings", response_model=NotificationSettingsOut)
 def get_notification_settings(db: DbDep, current=Depends(require_permissions("platforms:write", "tenants:write", "reports:read"))):
     tid = current.tenant_id if current.user_type != "PLATFORM_ADMIN" else None

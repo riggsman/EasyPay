@@ -152,6 +152,40 @@ export const api = {
   receipt: (id) => request(`/api/v1/receipts/${id}`),
   downloadReceiptPdf: (receiptId, filename) =>
     download(`/api/v1/receipts/${receiptId}/pdf`, filename || `${receiptId}.pdf`),
+  historyExportQuote: () => request('/api/v1/payers/me/history-exports/quote'),
+  downloadHistoryExport: async (body, filename) => {
+    const res = await request('/api/v1/payers/me/history-exports', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      raw: true,
+    })
+    if (!res.ok) {
+      const text = await res.text()
+      let message = 'Download failed'
+      try {
+        const data = text ? JSON.parse(text) : null
+        message = typeof data?.detail === 'string' ? data.detail : message
+      } catch {
+        if (text) message = text
+      }
+      throw new Error(message)
+    }
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename || 'EasyPay-transaction-history.pdf'
+    a.click()
+    URL.revokeObjectURL(url)
+    return {
+      wasFree: res.headers.get('X-EasyPay-Was-Free') === 'true',
+      feeAmount: res.headers.get('X-EasyPay-Fee-Amount'),
+      exportId: res.headers.get('X-EasyPay-Export-Id'),
+    }
+  },
+  historyExportSettings: () => request('/api/v1/ops/history-export-settings'),
+  updateHistoryExportSettings: (body) =>
+    request('/api/v1/ops/history-export-settings', { method: 'PUT', body: JSON.stringify(body) }),
   verify: (body) => request('/api/v1/public/verify', { method: 'POST', body: JSON.stringify(body) }, false),
   verifyToken: (token) => request(`/api/v1/public/verify/${token}`, {}, false),
   payerDashboard: () => request('/api/v1/dashboards/payer'),

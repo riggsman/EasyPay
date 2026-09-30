@@ -316,11 +316,16 @@ def seed():
             )
         )
 
+        from app.services.history_exports import ensure_default_history_export_settings
+
+        ensure_default_history_export_settings(db)
+
         db.commit()
         print("Seed complete.")
         print("  admin / admin123 (platform)")
         print("  kumba1_admin / council123 (tenant)")
         print("  abctrading / payer123 (payer in Kumba 1)")
+        print("  History export: 2 free downloads / fee 500 XAF thereafter")
     finally:
         db.close()
 
