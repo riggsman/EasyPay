@@ -7,11 +7,12 @@ Creates:
   - Campay / Email / WhatsApp / SMS provider configs (Campay mock)
   - Notification channel toggles
   - Sample obligations + settled Mobile Money payments (via payment service)
+  - Failed-transaction demos (payer debit fail, council credit retry, manual intervention)
 
 Safe to re-run: foundation is skipped when present; sample users/providers/payments
-are ensured idempotently.
+and failure demos are ensured idempotently (failure demos are fully reset each run).
 """
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 import sys
@@ -29,7 +30,7 @@ from app.models.user import User, Role, Permission, RolePermission, UserRole
 from app.models.revenue import RevenueType, PaymentChannel, FeeConfiguration, CommissionAgreement
 from app.models.obligation import Obligation
 from app.models.payer import Payer, PayerGeographicHistory
-from app.models.transaction import Transaction
+from app.models.transaction import Transaction, TransactionEvent
 from app.schemas.common import PaymentInitiateRequest
 from app.services.notifications.config import (
     CONFIG_EMAIL,
@@ -499,18 +500,77 @@ def ensure_tenant_payout_destinations(db) -> None:
     db.flush()
 
 
+# Curated failed-payment demos (ABC Trading / Kumba 1). Amounts are distinct for easy spotting.
+FAILURE_DEMO_SPECS = [
+    {
+        "ref": "TXN-DEMO-DEBIT-FAIL",
+        "status": "FAILED",
+        "failure_stage": "DEBIT",
+        "failure_reason": (
+            "Payer debit failed: MoMo wallet declined collection (insufficient funds)"
+        ),
+        "amount": Decimal("12500"),
+        "service_fee": Decimal("500"),
+        "commission_amount": Decimal("625"),
+        "revenue_code": "MARKET_LEVY",
+        "obligation_description": "Market Levy — debit failure demo (do not settle)",
+        "provider_status": "FAILED",
+        "credit_retry_count": 0,
+        "hours_ago": 6,
+    },
+    {
+        "ref": "TXN-DEMO-CREDIT-FAIL",
+        "status": "FAILED",
+        "failure_stage": "CREDIT",
+        "failure_reason": (
+            "Council credit failed: payout provider returned insufficient float "
+            "for destination account (simulated)"
+        ),
+        "amount": Decimal("18000"),
+        "service_fee": Decimal("500"),
+        "commission_amount": Decimal("900"),
+        "revenue_code": "SIGNBOARD",
+        "obligation_description": "Signboard Fee — credit failure demo (retryable)",
+        "provider_status": "SUCCESSFUL",
+        "credit_retry_count": 1,
+        "hours_ago": 4,
+    },
+    {
+        "ref": "TXN-DEMO-CREDIT-MANUAL",
+        "status": "MANUAL_INTERVENTION",
+        "failure_stage": "CREDIT",
+        "failure_reason": (
+            "Council credit failed after retries: destination rejected by payout provider "
+            "(simulated unavailable float / invalid MoMo account)"
+        ),
+        "amount": Decimal("22000"),
+        "service_fee": Decimal("500"),
+        "commission_amount": Decimal("1100"),
+        "revenue_code": "BIZ_LICENSE",
+        "obligation_description": "Business License installment — manual intervention demo",
+        "provider_status": "SUCCESSFUL",
+        "credit_retry_count": None,  # filled with DEFAULT_CREDIT_MAX_RETRIES
+        "hours_ago": 2,
+    },
+]
+
+
 def ensure_failure_demo_cases(db, admin: User) -> dict:
-    """Seed payer-debit failure + council-credit failure / manual-intervention demos."""
+    """Idempotently seed (and reset) payer-debit / council-credit failure demos.
+
+    Scenarios:
+      - TXN-DEMO-DEBIT-FAIL — FAILED immediately after debiting stage (failure_stage=DEBIT)
+      - TXN-DEMO-CREDIT-FAIL — FAILED after debit; council credit retryable (failure_stage=CREDIT)
+      - TXN-DEMO-CREDIT-MANUAL — MANUAL_INTERVENTION after credit retries exhausted
+    """
     from app.services.payments import (
         DEFAULT_CREDIT_MAX_RETRIES,
         ensure_credit_retry_settings,
-        _add_event,
     )
 
     ensure_credit_retry_settings(db)
     ensure_tenant_payout_destinations(db)
 
-    # Prefer ABC Trading demo payer (username abctrading)
     payer_user = db.query(User).filter(User.username == "abctrading").first()
     payer = db.query(Payer).filter(Payer.user_id == payer_user.user_id).first() if payer_user else None
     if not payer:
@@ -524,122 +584,143 @@ def ensure_failure_demo_cases(db, admin: User) -> dict:
     if not payer:
         return {"debit_fail": None, "credit_fail": None, "manual": None}
 
-    template = (
-        db.query(Transaction)
-        .filter(Transaction.payer_id == payer.payer_id, Transaction.status == "SETTLED")
-        .order_by(Transaction.initiated_at.desc())
-        .first()
-    )
-    if not template:
-        return {"debit_fail": None, "credit_fail": None, "manual": None}
+    tenant = db.get(Tenant, payer.tenant_id)
+    momo_dest = (tenant.momo_number if tenant else None) or "670100001"
+    now = utcnow()
+    out: dict[str, str | None] = {"debit_fail": None, "credit_fail": None, "manual": None}
 
-    def _ensure(ref: str, status: str, **kwargs) -> Transaction:
-        existing = db.query(Transaction).filter(Transaction.transaction_reference == ref).first()
-        if existing:
-            for k, v in kwargs.items():
-                setattr(existing, k, v)
-            existing.status = status
-            db.flush()
-            return existing
-        txn = Transaction(
-            transaction_reference=ref,
-            correlation_id=new_id("cor_"),
-            idempotency_key=f"seed-{ref.lower()}",
-            payer_id=template.payer_id,
-            transaction_tenant_id=template.transaction_tenant_id,
-            transaction_geographic_unit_id=template.transaction_geographic_unit_id,
-            obligation_id=template.obligation_id,
-            revenue_type_id=template.revenue_type_id,
-            amount=template.amount,
-            service_fee=template.service_fee,
-            commission_amount=template.commission_amount,
-            total_amount=template.total_amount,
-            currency=template.currency,
-            payment_channel="MOBILE_MONEY",
-            payment_provider="CAMPAY",
-            status=status,
-            initiated_at=utcnow(),
-            **kwargs,
+    for spec in FAILURE_DEMO_SPECS:
+        revenue = _revenue(db, payer.tenant_id, spec["revenue_code"])
+        obl = ensure_obligation(
+            db,
+            payer,
+            {
+                "revenue_code": spec["revenue_code"],
+                "description": spec["obligation_description"],
+                "amount": spec["amount"],
+            },
         )
-        db.add(txn)
+        # Keep demo obligations unpaid so they remain visible as open work
+        obl.status = "DUE"
+        obl.balance = spec["amount"]
+
+        amount = spec["amount"]
+        fee = spec["service_fee"]
+        commission = spec["commission_amount"]
+        total = amount + fee
+        retries = spec["credit_retry_count"]
+        if retries is None:
+            retries = DEFAULT_CREDIT_MAX_RETRIES
+        initiated = now - timedelta(hours=spec["hours_ago"])
+
+        txn = db.query(Transaction).filter(Transaction.transaction_reference == spec["ref"]).first()
+        if not txn:
+            txn = Transaction(
+                transaction_reference=spec["ref"],
+                correlation_id=new_id("cor_"),
+                idempotency_key=f"seed-{spec['ref'].lower()}",
+                payer_id=payer.payer_id,
+                transaction_tenant_id=payer.tenant_id,
+                transaction_geographic_unit_id=payer.current_geographic_unit_id,
+                obligation_id=obl.obligation_id,
+                revenue_type_id=revenue.revenue_type_id,
+                amount=amount,
+                service_fee=fee,
+                commission_amount=commission,
+                total_amount=total,
+                currency="XAF",
+                payment_channel="MOBILE_MONEY",
+                payment_provider="CAMPAY",
+                status=spec["status"],
+                initiated_at=initiated,
+            )
+            db.add(txn)
+            db.flush()
+        else:
+            txn.payer_id = payer.payer_id
+            txn.transaction_tenant_id = payer.tenant_id
+            txn.transaction_geographic_unit_id = payer.current_geographic_unit_id
+            txn.obligation_id = obl.obligation_id
+            txn.revenue_type_id = revenue.revenue_type_id
+            txn.amount = amount
+            txn.service_fee = fee
+            txn.commission_amount = commission
+            txn.total_amount = total
+            txn.currency = "XAF"
+            txn.payment_channel = "MOBILE_MONEY"
+            txn.payment_provider = "CAMPAY"
+            txn.initiated_at = initiated
+
+        # Always restore canonical failure state (tests may settle / escalate demos)
+        txn.status = spec["status"]
+        txn.failure_stage = spec["failure_stage"]
+        txn.failure_reason = spec["failure_reason"]
+        txn.credit_retry_count = retries
+        txn.payer_msisdn = payer.phone_number
+        txn.provider_status = spec["provider_status"]
+        txn.provider_reference = f"CAMPAY-DEMO-{spec['ref']}"
+        txn.settled_at = None
+        txn.collection_id = None
+        txn.credit_provider_reference = None
+        if spec["failure_stage"] == "CREDIT":
+            txn.credit_destination = momo_dest
+            txn.credit_payout_method = "MOMO"
+        else:
+            txn.credit_destination = None
+            txn.credit_payout_method = None
+        if spec["status"] == "MANUAL_INTERVENTION":
+            txn.manual_intervention_at = initiated + timedelta(minutes=45)
+            txn.manual_intervention_by = admin.user_id
+        else:
+            txn.manual_intervention_at = None
+            txn.manual_intervention_by = None
+
+        # Rebuild a clean timeline so polluted retry/settle events from UAT do not linger
+        db.query(TransactionEvent).filter(TransactionEvent.transaction_id == txn.transaction_id).delete(
+            synchronize_session=False
+        )
         db.flush()
-        _add_event(db, txn, None, "INITIATED", "Payment initiated", admin.user_id)
-        if status in ("FAILED", "MANUAL_INTERVENTION"):
-            if kwargs.get("failure_stage") == "DEBIT":
-                # Initiated → processing/debit attempt → FAILED immediately (no credit/settle)
-                _add_event(db, txn, "INITIATED", "PROCESSING", "Payment processing", admin.user_id)
-                _add_event(
-                    db,
-                    txn,
-                    "PROCESSING",
-                    "FAILED",
-                    kwargs.get("failure_reason") or "Payer debit failed",
-                    admin.user_id,
-                )
-            else:
-                _add_event(db, txn, "INITIATED", "PROCESSING", "Payment processing", admin.user_id)
-                _add_event(db, txn, "PROCESSING", "DEBITED", "Customer account debited via Campay", admin.user_id)
-                _add_event(
-                    db,
-                    txn,
-                    "DEBITED",
-                    "FAILED",
-                    kwargs.get("failure_reason") or "Council credit failed",
-                    admin.user_id,
-                )
-                if status == "MANUAL_INTERVENTION":
-                    _add_event(
-                        db,
-                        txn,
+
+        # Stagger created_at so timeline order is stable (same-second inserts are unordered)
+        timeline: list[tuple[str | None, str, str, int]] = [
+            (None, "INITIATED", "Payment initiated", 0),
+            ("INITIATED", "PROCESSING", "Payment processing", 1),
+        ]
+        if spec["failure_stage"] == "DEBIT":
+            timeline.append(("PROCESSING", "FAILED", spec["failure_reason"], 2))
+        else:
+            timeline.append(("PROCESSING", "DEBITED", "Customer account debited via Campay", 2))
+            timeline.append(("DEBITED", "FAILED", spec["failure_reason"], 3))
+            if spec["status"] == "MANUAL_INTERVENTION":
+                timeline.append(
+                    (
                         "FAILED",
                         "MANUAL_INTERVENTION",
-                        f"Credit retries exhausted ({DEFAULT_CREDIT_MAX_RETRIES}/{DEFAULT_CREDIT_MAX_RETRIES})",
-                        admin.user_id,
+                        f"Credit retries exhausted ({retries}/{DEFAULT_CREDIT_MAX_RETRIES})",
+                        4,
                     )
-        return txn
+                )
+        for from_status, to_status, note, offset_min in timeline:
+            ev = TransactionEvent(
+                transaction_id=txn.transaction_id,
+                from_status=from_status,
+                to_status=to_status,
+                note=note,
+                actor_user_id=admin.user_id,
+            )
+            ev.created_at = initiated + timedelta(minutes=offset_min)
+            ev.updated_at = ev.created_at
+            db.add(ev)
+        db.flush()
 
-    debit = _ensure(
-        "TXN-DEMO-DEBIT-FAIL",
-        "FAILED",
-        failure_stage="DEBIT",
-        failure_reason="Payer debit failed: MoMo wallet declined collection (insufficient funds)",
-        payer_msisdn=payer.phone_number,
-        credit_retry_count=0,
-    )
-    credit = _ensure(
-        "TXN-DEMO-CREDIT-FAIL",
-        "FAILED",
-        failure_stage="CREDIT",
-        failure_reason=(
-            "Council credit failed: payout provider returned insufficient float "
-            "for destination account (simulated)"
-        ),
-        credit_destination="670000000",
-        credit_payout_method="MOMO",
-        credit_retry_count=1,
-        payer_msisdn=payer.phone_number,
-    )
-    manual = _ensure(
-        "TXN-DEMO-CREDIT-MANUAL",
-        "MANUAL_INTERVENTION",
-        failure_stage="CREDIT",
-        failure_reason=(
-            "Council credit failed after retries: destination rejected by payout provider "
-            "(simulated unavailable float / invalid MoMo account)"
-        ),
-        credit_destination="670000000",
-        credit_payout_method="MOMO",
-        credit_retry_count=DEFAULT_CREDIT_MAX_RETRIES,
-        payer_msisdn=payer.phone_number,
-        manual_intervention_at=utcnow(),
-        manual_intervention_by=admin.user_id,
-    )
-    db.flush()
-    return {
-        "debit_fail": debit.transaction_reference,
-        "credit_fail": credit.transaction_reference,
-        "manual": manual.transaction_reference,
-    }
+        if spec["ref"] == "TXN-DEMO-DEBIT-FAIL":
+            out["debit_fail"] = txn.transaction_reference
+        elif spec["ref"] == "TXN-DEMO-CREDIT-FAIL":
+            out["credit_fail"] = txn.transaction_reference
+        elif spec["ref"] == "TXN-DEMO-CREDIT-MANUAL":
+            out["manual"] = txn.transaction_reference
+
+    return out
 
 
 def ensure_sample_demo_data(db) -> dict:
