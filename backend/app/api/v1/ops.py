@@ -705,23 +705,43 @@ def drill_transaction(transaction_id: str, db: DbDep, current: UserDep):
             "name": geo.unit_name if geo else None,
             "code": geo.unit_code if geo else None,
         },
-        "transaction": {
-            "transaction_id": txn.transaction_id,
-            "reference": txn.transaction_reference,
-            "status": txn.status,
-            "amount": str(txn.amount),
-            "service_fee": str(txn.service_fee),
-            "commission_amount": str(txn.commission_amount),
-            "total_amount": str(txn.total_amount),
-            "payment_channel": txn.payment_channel,
-            "initiated_at": txn.initiated_at.isoformat() if txn.initiated_at else None,
-            "settled_at": txn.settled_at.isoformat() if txn.settled_at else None,
-        },
-        "fee_commission": {
-            "service_fee": str(txn.service_fee),
-            "commission_amount": str(txn.commission_amount),
-            "net_to_tenant": str(txn.amount - txn.commission_amount),
-        },
+        "transaction": (
+            {
+                "transaction_id": txn.transaction_id,
+                "reference": txn.transaction_reference,
+                "status": txn.status,
+                "amount": str(txn.amount),
+                "service_fee": str(txn.service_fee),
+                "total_amount": str(txn.total_amount),
+                "payment_channel": txn.payment_channel,
+                "initiated_at": txn.initiated_at.isoformat() if txn.initiated_at else None,
+                "settled_at": txn.settled_at.isoformat() if txn.settled_at else None,
+            }
+            if current.user_type == "PAYER"
+            else {
+                "transaction_id": txn.transaction_id,
+                "reference": txn.transaction_reference,
+                "status": txn.status,
+                "amount": str(txn.amount),
+                "service_fee": str(txn.service_fee),
+                "commission_amount": str(txn.commission_amount),
+                "total_amount": str(txn.total_amount),
+                "payment_channel": txn.payment_channel,
+                "initiated_at": txn.initiated_at.isoformat() if txn.initiated_at else None,
+                "settled_at": txn.settled_at.isoformat() if txn.settled_at else None,
+            }
+        ),
+        "fee_commission": (
+            {
+                "service_fee": str(txn.service_fee),
+            }
+            if current.user_type == "PAYER"
+            else {
+                "service_fee": str(txn.service_fee),
+                "commission_amount": str(txn.commission_amount),
+                "net_to_tenant": str(txn.amount - txn.commission_amount),
+            }
+        ),
         "events": [
             {
                 "from_status": e.from_status,

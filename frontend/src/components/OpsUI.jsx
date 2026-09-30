@@ -46,12 +46,14 @@ export function ChainSteps({ steps, active }) {
   )
 }
 
-export function MoneyCells({ amount, fee, commission, total, currency = 'XAF' }) {
+export function MoneyCells({ amount, fee, commission, total, currency = 'XAF', showCommission = true }) {
   return (
     <div className="stat-grid">
       <div className="stat"><span className="muted">Amount</span><strong>{formatMoney(amount, currency)}</strong></div>
       <div className="stat"><span className="muted">Service fee</span><strong>{formatMoney(fee, currency)}</strong></div>
-      <div className="stat"><span className="muted">Commission</span><strong>{formatMoney(commission, currency)}</strong></div>
+      {showCommission && (
+        <div className="stat"><span className="muted">Commission</span><strong>{formatMoney(commission, currency)}</strong></div>
+      )}
       <div className="stat"><span className="muted">Total</span><strong>{formatMoney(total ?? Number(amount || 0) + Number(fee || 0), currency)}</strong></div>
     </div>
   )
