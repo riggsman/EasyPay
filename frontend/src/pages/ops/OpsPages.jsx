@@ -961,6 +961,7 @@ export function OpsCommissions() {
 export function OpsUsersRoles() {
   const [users, setUsers] = useState([])
   const [roles, setRoles] = useState([])
+  const [tab, setTab] = useState('staff')
   const [form, setForm] = useState({ username: '', password: '', full_name: '', email: '', role_code: 'TENANT_ADMIN' })
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -981,59 +982,92 @@ export function OpsUsersRoles() {
       setMessage('Staff user created')
       setForm({ username: '', password: '', full_name: '', email: '', role_code: 'TENANT_ADMIN' })
       await load()
+      setTab('staff')
     } catch (err) {
       setError(err.message)
     }
   }
+  const tabs = [
+    { id: 'staff', label: `Staff users${users.length ? ` · ${users.length}` : ''}` },
+    { id: 'roles', label: `Roles${roles.length ? ` · ${roles.length}` : ''}` },
+    { id: 'new', label: 'New user' },
+  ]
   return (
     <div className="rise stack">
       <PageHeader title="Users & Roles" subtitle="Access control. Tenant scope applied from session for staff." />
       {error && <div className="alert">{error}</div>}
       {message && <div className="alert ok">{message}</div>}
-      <form className="panel" onSubmit={create} style={{ maxWidth: 560 }}>
-        <div className="field"><label>Username</label><input required value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} /></div>
-        <div className="field"><label>Password</label><input type="password" required value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></div>
-        <div className="field"><label>Full name</label><input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></div>
-        <div className="field"><label>Email</label><input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
-        <div className="field">
-          <label>Role</label>
-          <select value={form.role_code} onChange={(e) => setForm({ ...form, role_code: e.target.value })}>
-            {roles.map((r) => <option key={r.role_id} value={r.role_code}>{r.role_name}</option>)}
-          </select>
+      <div className="ops-tabs" role="tablist" aria-label="Users and roles sections">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            aria-selected={tab === t.id}
+            className={`ops-tab${tab === t.id ? ' on' : ''}`}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      {tab === 'new' && (
+        <form className="panel" onSubmit={create} style={{ maxWidth: 560 }} role="tabpanel">
+          <h3>Create staff user</h3>
+          <div className="field"><label>Username</label><input required value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} /></div>
+          <div className="field"><label>Password</label><input type="password" required value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></div>
+          <div className="field"><label>Full name</label><input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></div>
+          <div className="field"><label>Email</label><input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
+          <div className="field">
+            <label>Role</label>
+            <select value={form.role_code} onChange={(e) => setForm({ ...form, role_code: e.target.value })}>
+              {roles.map((r) => <option key={r.role_id} value={r.role_code}>{r.role_name}</option>)}
+            </select>
+          </div>
+          <button className="btn btn-primary" type="submit">Create staff user</button>
+        </form>
+      )}
+      {tab === 'staff' && (
+        <div className="panel table-wrap" role="tabpanel">
+          <h3>Staff users</h3>
+          <table className="data">
+            <thead><tr><th>Username</th><th>Name</th><th>Type</th><th>Active</th></tr></thead>
+            <tbody>
+              {users.map((u) => (
+                <tr key={u.user_id}>
+                  <td>{u.username}</td>
+                  <td>{u.full_name}</td>
+                  <td>{u.user_type}</td>
+                  <td>{u.is_active ? 'Yes' : 'No'}</td>
+                </tr>
+              ))}
+              {!users.length && (
+                <tr><td colSpan={4} className="muted">No staff users yet.</td></tr>
+              )}
+            </tbody>
+          </table>
         </div>
-        <button className="btn btn-primary" type="submit">Create staff user</button>
-      </form>
-      <div className="panel table-wrap">
-        <h3>Staff users</h3>
-        <table className="data">
-          <thead><tr><th>Username</th><th>Name</th><th>Type</th><th>Active</th></tr></thead>
-          <tbody>
-            {users.map((u) => (
-              <tr key={u.user_id}>
-                <td>{u.username}</td>
-                <td>{u.full_name}</td>
-                <td>{u.user_type}</td>
-                <td>{u.is_active ? 'Yes' : 'No'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className="panel table-wrap">
-        <h3>Roles</h3>
-        <table className="data">
-          <thead><tr><th>Code</th><th>Name</th><th>Scope</th></tr></thead>
-          <tbody>
-            {roles.map((r) => (
-              <tr key={r.role_id}>
-                <td>{r.role_code}</td>
-                <td>{r.role_name}</td>
-                <td>{r.scope}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      )}
+      {tab === 'roles' && (
+        <div className="panel table-wrap" role="tabpanel">
+          <h3>Roles</h3>
+          <table className="data">
+            <thead><tr><th>Code</th><th>Name</th><th>Scope</th></tr></thead>
+            <tbody>
+              {roles.map((r) => (
+                <tr key={r.role_id}>
+                  <td>{r.role_code}</td>
+                  <td>{r.role_name}</td>
+                  <td>{r.scope}</td>
+                </tr>
+              ))}
+              {!roles.length && (
+                <tr><td colSpan={3} className="muted">No roles configured.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }
