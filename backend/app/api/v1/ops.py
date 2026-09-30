@@ -636,9 +636,14 @@ def drill_transaction(transaction_id: str, db: DbDep, current: UserDep):
     tenant = db.get(Tenant, txn.transaction_tenant_id)
     geo = db.get(GeographicUnit, txn.transaction_geographic_unit_id)
     receipt = db.query(Receipt).filter(Receipt.transaction_id == txn.transaction_id).first()
-    from app.services.payments import get_transaction_events
+    from app.services.payments import build_manual_credit_context, get_transaction_events
 
     events = get_transaction_events(db, txn.transaction_id, user_type=current.user_type)
+    credit_recovery = None
+    if current.user_type != "PAYER" and (
+        txn.failure_reason or txn.status in ("FAILED", "REJECTED", "MANUAL_INTERVENTION")
+    ):
+        credit_recovery = build_manual_credit_context(db, txn)
     posting = db.query(LedgerPosting).filter(LedgerPosting.transaction_id == txn.transaction_id).first()
     entries = []
     if posting:
@@ -721,6 +726,8 @@ def drill_transaction(transaction_id: str, db: DbDep, current: UserDep):
                 "payment_channel": txn.payment_channel,
                 "initiated_at": txn.initiated_at.isoformat() if txn.initiated_at else None,
                 "settled_at": txn.settled_at.isoformat() if txn.settled_at else None,
+                "failure_reason": txn.failure_reason,
+                "failure_stage": txn.failure_stage,
             }
             if current.user_type == "PAYER"
             else {
@@ -734,6 +741,11 @@ def drill_transaction(transaction_id: str, db: DbDep, current: UserDep):
                 "payment_channel": txn.payment_channel,
                 "initiated_at": txn.initiated_at.isoformat() if txn.initiated_at else None,
                 "settled_at": txn.settled_at.isoformat() if txn.settled_at else None,
+                "failure_reason": txn.failure_reason,
+                "failure_stage": txn.failure_stage,
+                "credit_retry_count": txn.credit_retry_count or 0,
+                "credit_destination": txn.credit_destination,
+                "credit_payout_method": txn.credit_payout_method,
             }
         ),
         "fee_commission": (
@@ -747,6 +759,7 @@ def drill_transaction(transaction_id: str, db: DbDep, current: UserDep):
                 "net_to_tenant": str(txn.amount - txn.commission_amount),
             }
         ),
+        "credit_recovery": credit_recovery,
         "events": [_timeline_event_json(e, current.user_type) for e in events],
         "ledger": {
             "posting_id": posting.ledger_posting_id if posting else None,

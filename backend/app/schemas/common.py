@@ -251,6 +251,11 @@ class TransactionOut(ORMModel):
     status: str
     initiated_at: datetime
     settled_at: Optional[datetime] = None
+    failure_reason: Optional[str] = None
+    failure_stage: Optional[str] = None
+    credit_retry_count: int = 0
+    credit_destination: Optional[str] = None
+    credit_payout_method: Optional[str] = None
 
 
 class TransactionEventOut(ORMModel):
@@ -266,6 +271,17 @@ class TransactionDetailOut(TransactionOut):
     receipt_number: Optional[str] = None
     receipt_id: Optional[str] = None
     receipt_pdf_url: Optional[str] = None
+    credit_recovery: Optional[dict] = None
+
+
+class ManualCreditRequest(BaseModel):
+    confirm: bool = False
+    payout_method: str = "MOMO"
+    momo_number: Optional[str] = None
+    bank_account_number: Optional[str] = None
+    bank_account_name: Optional[str] = None
+    bank_code: Optional[str] = None
+    amount: Optional[Decimal] = None
 
 
 # ---- Receipts ----

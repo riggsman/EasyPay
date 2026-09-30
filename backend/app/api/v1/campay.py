@@ -233,14 +233,21 @@ def campay_webhook(payload: dict, db: DbDep):
         complete_payment_happy_path(db, intent.entity_id, actor_user_id=None)
     elif intent and intent.entity_type == "transaction" and status in ("FAILED", "CANCELED", "CANCELLED"):
         from app.models.transaction import Transaction
-        from app.services.payments import advance_transaction
+        from app.services.payments import mark_payer_debit_failed
 
         txn = db.get(Transaction, intent.entity_id)
-        if txn and txn.status not in ("SETTLED", "REJECTED"):
+        if txn and txn.status not in ("SETTLED", "FAILED", "REJECTED", "MANUAL_INTERVENTION", "CREDITED"):
             try:
-                advance_transaction(db, txn, "REJECTED", None, f"Campay webhook {status}")
+                mark_payer_debit_failed(
+                    db,
+                    txn,
+                    f"Payer debit failed: provider status {status}",
+                    actor_user_id=None,
+                )
             except Exception:
-                txn.status = "REJECTED"
+                txn.status = "FAILED"
+                txn.failure_stage = "DEBIT"
+                txn.failure_reason = f"Payer debit failed: provider status {status}"
                 db.commit()
     else:
         db.commit()

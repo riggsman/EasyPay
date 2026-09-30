@@ -65,25 +65,47 @@ const STATUS_LABELS = {
   DEBITED: 'Customer account debited',
   CREDITED: 'Council credited',
   SETTLED: 'Settlement completed',
-  REJECTED: 'Rejected',
+  FAILED: 'Payment failed',
+  MANUAL_INTERVENTION: 'Manual intervention required',
+  REJECTED: 'Payment failed',
 }
 
-export function TransactionTimeline({ events }) {
+function failedLabel(event) {
+  if (event.label) return event.label
+  if (event.to_status === 'FAILED' || event.to_status === 'REJECTED') {
+    if (event.from_status === 'DEBITED') return 'Council credit failed'
+    if (event.from_status === 'PROCESSING' || event.from_status === 'INITIATED' || !event.from_status) {
+      return 'Customer account debit failed'
+    }
+  }
+  return STATUS_LABELS[event.to_status] || event.to_status
+}
+
+export function TransactionTimeline({ events, failureReason }) {
   if (!events?.length) {
     return <p className="muted">No timeline events yet.</p>
   }
   return (
     <ol className="timeline">
       {events.map((e, i) => {
-        const label = e.label || STATUS_LABELS[e.to_status] || e.to_status
+        const status = e.to_status
+        const failed = status === 'FAILED' || status === 'REJECTED' || status === 'MANUAL_INTERVENTION'
+        const label = failedLabel(e)
         const when = e.created_at ? new Date(e.created_at).toLocaleString() : ''
+        const reason = (failed && i === events.length - 1 && (failureReason || e.note)) || ''
+        const showReason = Boolean(reason) && reason !== label
         return (
-          <li className="item" key={`${e.to_status}-${e.created_at || i}-${i}`}>
+          <li className={`item${failed ? ' failed' : ''}`} key={`${status}-${e.created_at || i}-${i}`}>
             <strong>
-              <span className="timeline-check" aria-hidden="true">✓</span>
+              <span className="timeline-check" aria-hidden="true">{failed ? '✗' : '✓'}</span>
               {label}
             </strong>
             {when && <span className="muted timeline-time">{when}</span>}
+            {showReason && (
+              <span className="failure-reason-inline" title={reason}>
+                {reason}
+              </span>
+            )}
           </li>
         )
       })}

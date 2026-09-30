@@ -8,6 +8,7 @@ from app.schemas.pagination import PaginatedResponse, paginate_query
 from app.models.receipt import Receipt
 from app.models.transaction import Transaction
 from app.schemas.common import (
+    ManualCreditRequest,
     PaymentInitiateRequest,
     PaymentResolveRequest,
     PaymentResolveResponse,
@@ -17,10 +18,13 @@ from app.schemas.common import (
 )
 from app.services.payer import get_payer_by_user
 from app.services.payments import (
+    build_manual_credit_context,
     complete_payment_happy_path,
     get_transaction_events,
     initiate_payment,
+    manual_council_credit,
     resolve_payment_context,
+    retry_council_credit,
     serialize_timeline_event,
 )
 
@@ -131,16 +135,72 @@ def get_payment(transaction_id: str, db: DbDep, current: UserDep):
     return _detail(db, txn, current.user_type)
 
 
+@router.get("/{transaction_id}/credit-recovery")
+def credit_recovery_context(transaction_id: str, db: DbDep, current: UserDep):
+    txn = _staff_txn(db, transaction_id, current)
+    return build_manual_credit_context(db, txn)
+
+
+@router.post("/{transaction_id}/retry-credit", response_model=TransactionDetailOut)
+def retry_credit(transaction_id: str, db: DbDep, current: UserDep):
+    _staff_txn(db, transaction_id, current)
+    txn = retry_council_credit(db, transaction_id, current.user_id)
+    return _detail(db, txn, current.user_type)
+
+
+@router.post("/{transaction_id}/manual-credit", response_model=TransactionDetailOut)
+def manual_credit(transaction_id: str, body: ManualCreditRequest, db: DbDep, current: UserDep):
+    if current.user_type not in ("PLATFORM_ADMIN", "SUPER_ADMIN"):
+        raise HTTPException(status_code=403, detail="Platform administrator only")
+    _staff_txn(db, transaction_id, current)
+    txn = manual_council_credit(
+        db,
+        transaction_id,
+        actor_user_id=current.user_id,
+        confirm=body.confirm,
+        payout_method=body.payout_method,
+        momo_number=body.momo_number,
+        bank_account_number=body.bank_account_number,
+        bank_account_name=body.bank_account_name,
+        bank_code=body.bank_code,
+        amount=body.amount,
+    )
+    return _detail(db, txn, current.user_type)
+
+
+def _staff_txn(db, transaction_id: str, current) -> Transaction:
+    txn = db.get(Transaction, transaction_id)
+    if not txn:
+        raise HTTPException(status_code=404, detail="Not found")
+    if current.user_type == "PAYER":
+        raise HTTPException(status_code=403, detail="Staff only")
+    if current.user_type not in ("PLATFORM_ADMIN", "SUPER_ADMIN") and txn.transaction_tenant_id != current.tenant_id:
+        raise HTTPException(status_code=403, detail="Tenant isolation")
+    return txn
+
+
 def _detail(db, txn: Transaction, user_type: str) -> TransactionDetailOut:
     from app.services.receipts_pdf import receipt_pdf_path
 
     events = get_transaction_events(db, txn.transaction_id, user_type=user_type)
     receipt = db.query(Receipt).filter(Receipt.transaction_id == txn.transaction_id).first()
     base = _hide_commission_for_payer(TransactionOut.model_validate(txn).model_dump(), user_type)
+    recovery = None
+    if user_type != "PAYER" and (
+        txn.failure_reason or txn.status in ("FAILED", "REJECTED", "MANUAL_INTERVENTION")
+    ):
+        recovery = build_manual_credit_context(db, txn)
+        if user_type not in ("PLATFORM_ADMIN", "SUPER_ADMIN"):
+            # Council can see reason + retry eligibility, not full bank edit payload secrets beyond defaults
+            recovery = {
+                **recovery,
+                "warnings": recovery.get("warnings") or [],
+            }
     return TransactionDetailOut(
         **base,
         events=[TransactionEventOut(**serialize_timeline_event(e, user_type=user_type)) for e in events],
         receipt_number=receipt.receipt_number if receipt else None,
         receipt_id=receipt.receipt_id if receipt else None,
         receipt_pdf_url=receipt_pdf_path(receipt.receipt_id) if receipt else None,
+        credit_recovery=recovery,
     )

@@ -39,7 +39,7 @@ def tenant_dashboard(db: Session, tenant_id: str) -> DashboardStats:
     all_today = base.count()
     successful = base.filter(Transaction.status.in_(["SETTLED", "CREDITED", "DEBITED"])).count()
     pending = base.filter(Transaction.status.in_(["INITIATED", "PROCESSING"])).count()
-    rejected = base.filter(Transaction.status == "REJECTED").count()
+    rejected = base.filter(Transaction.status.in_(["FAILED", "REJECTED"])).count()
     collections = (
         db.query(func.coalesce(func.sum(Transaction.amount), 0))
         .filter(

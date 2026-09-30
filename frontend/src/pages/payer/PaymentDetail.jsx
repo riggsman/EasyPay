@@ -52,7 +52,17 @@ export default function PaymentDetail() {
           </div>
         )}
       />
-      <div className="row"><span className="pill">{txn.status}</span></div>
+      <div className="row">
+        <span className={`pill${['FAILED', 'REJECTED', 'MANUAL_INTERVENTION'].includes(txn.status) ? ' failed' : ''}`}>
+          {txn.status === 'REJECTED' ? 'FAILED' : txn.status}
+        </span>
+      </div>
+      {txn.failure_reason && (
+        <Disclosure title="View failure reason" open>
+          <p className="failure-reason-inline">{txn.failure_reason}</p>
+          {txn.failure_stage && <p className="muted">Failed at: {txn.failure_stage}</p>}
+        </Disclosure>
+      )}
       <MoneyCells
         amount={txn.amount}
         fee={txn.service_fee}
@@ -64,7 +74,7 @@ export default function PaymentDetail() {
       {drill?.geography && <p className="muted">Zone at payment (immutable): {drill.geography.name}</p>}
 
       <Disclosure title="Transaction timeline" open>
-        <TransactionTimeline events={txn.events} />
+        <TransactionTimeline events={txn.events} failureReason={txn.failure_reason} />
       </Disclosure>
 
       {drill && (
