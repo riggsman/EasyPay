@@ -503,17 +503,91 @@ button.linkish {
   display: grid;
   grid-template-columns: 220px 1fr;
   flex: 1;
+  position: relative;
 }
 .ops-aside {
   background: linear-gradient(180deg, #134832, #1a5a3d);
   color: #edf5f0;
   padding: 1.25rem 0.85rem 2rem;
 }
+.ops-aside-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
 .ops-aside-title {
   font-family: var(--font-display);
-  margin: 0 0 1rem;
+  margin: 0;
   font-size: 1.05rem;
 }
+.ops-aside-close,
+.ops-cube-toggle,
+.ops-nav-backdrop {
+  display: none;
+}
+.ops-cube-toggle {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 12px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+.ops-cube-toggle:hover,
+.ops-cube-toggle.is-open {
+  background: rgba(232, 184, 74, 0.22);
+  border-color: rgba(243, 210, 122, 0.55);
+}
+.ops-cube {
+  position: relative;
+  width: 1.05rem;
+  height: 1.05rem;
+  transform: rotateX(22deg) rotateY(-28deg);
+  transform-style: preserve-3d;
+  transition: transform 220ms ease;
+}
+.ops-cube-toggle.is-open .ops-cube {
+  transform: rotateX(28deg) rotateY(38deg) scale(1.05);
+}
+.ops-cube-face {
+  position: absolute;
+  inset: 0;
+  border: 1.5px solid rgba(255, 255, 255, 0.92);
+  background: rgba(237, 245, 240, 0.18);
+  border-radius: 2px;
+}
+.ops-cube-front { transform: translateZ(0.34rem); }
+.ops-cube-top {
+  transform: rotateX(90deg) translateZ(0.34rem);
+  background: rgba(243, 210, 122, 0.35);
+}
+.ops-cube-side {
+  transform: rotateY(90deg) translateZ(0.34rem);
+  background: rgba(255, 255, 255, 0.08);
+}
+.ops-aside-close {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: transparent;
+  color: #fff;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+body.ops-nav-lock { overflow: hidden; }
 .ops-nav-group { margin-bottom: 1.1rem; }
 .ops-nav-label {
   font-size: 0.72rem;
@@ -856,21 +930,55 @@ button.linkish {
 }
 @media (max-width: 860px) {
   .ops-body { grid-template-columns: 1fr; }
+  .ops-cube-toggle { display: inline-flex; }
+  .ops-aside-close { display: inline-flex; }
+  .ops-nav-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    background: rgba(8, 24, 18, 0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 200ms ease;
+    z-index: 8;
+  }
+  .ops-shell.ops-nav-open .ops-nav-backdrop {
+    opacity: 1;
+    pointer-events: auto;
+  }
   .ops-aside {
-    position: sticky;
-    top: 56px;
-    z-index: 3;
-    padding-bottom: 0.75rem;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(300px, 86vw);
+    z-index: 9;
+    padding: 1rem 0.85rem 1.5rem;
+    overflow-y: auto;
+    transform: translateX(-105%);
+    transition: transform 220ms ease;
+    box-shadow: 12px 0 32px rgba(8, 24, 18, 0.28);
+  }
+  .ops-shell.ops-nav-open .ops-aside {
+    transform: translateX(0);
   }
   .ops-aside nav {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem;
+    display: block;
   }
-  .ops-nav-group { margin-bottom: 0.5rem; width: 100%; }
+  .ops-nav-group { margin-bottom: 0.85rem; width: 100%; }
   .ops-nav-toggle { width: 100%; }
   .ops-aside nav a { margin: 0; }
-  .ops-search { min-width: 0; width: 100%; }
+  .ops-top-right .ops-user,
+  .ops-top-right .ops-live-label,
+  .ops-top-right .ops-alert-chip {
+    display: none;
+  }
+  .ops-search { min-width: 0; width: min(42vw, 11rem); }
+  .ops-context { display: none; }
+  .ops-tenant-select { max-width: 8.5rem; }
   .public-nav { gap: 0.5rem; padding: 0.9rem 0; }
   .public-nav-inner {
     flex-wrap: nowrap;

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { api, listItems } from '../../api/client'
 
 /**
@@ -6,6 +7,8 @@ import { api, listItems } from '../../api/client'
  * New future products can be registered with a payer route_path.
  */
 export default function PaymentProductsAdmin() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const formRef = useRef(null)
   const [items, setItems] = useState([])
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -31,6 +34,17 @@ export default function PaymentProductsAdmin() {
   useEffect(() => {
     load().catch((e) => setError(e.message))
   }, [])
+
+  useEffect(() => {
+    if (searchParams.get('new') !== '1') return
+    setMessage('Register a new payment product below.')
+    const t = window.setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      formRef.current?.querySelector('input')?.focus()
+    }, 50)
+    setSearchParams({}, { replace: true })
+    return () => window.clearTimeout(t)
+  }, [searchParams, setSearchParams])
 
   async function toggle(row) {
     setBusy(true)
@@ -79,12 +93,24 @@ export default function PaymentProductsAdmin() {
             Catalog-backed products (utilities) only appear when their store has active services.
           </p>
         </div>
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => {
+            setMessage('')
+            setError('')
+            formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            window.setTimeout(() => formRef.current?.querySelector('input')?.focus(), 80)
+          }}
+        >
+          Create product
+        </button>
       </div>
       {error && <div className="alert">{error}</div>}
       {message && <div className="alert ok">{message}</div>}
 
-      <div className="panel" style={{ marginBottom: '1.25rem' }}>
-        <h3>Register a payment product</h3>
+      <div className="panel" id="create-product" ref={formRef} style={{ marginBottom: '1.25rem' }}>
+        <h3>Create payment product</h3>
         <form onSubmit={onCreate}>
           <div className="row" style={{ alignItems: 'flex-start' }}>
             <div className="field" style={{ flex: 1 }}>

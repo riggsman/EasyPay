@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { api, formatMoney, listItems } from '../../api/client'
 
 const EMPTY = {
@@ -18,6 +19,8 @@ const EMPTY = {
 }
 
 export default function UtilityServicesAdmin() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const formRef = useRef(null)
   const [items, setItems] = useState([])
   const [form, setForm] = useState(EMPTY)
   const [editingId, setEditingId] = useState(null)
@@ -29,10 +32,6 @@ export default function UtilityServicesAdmin() {
     const rows = await api.utilityServicesAdmin()
     setItems(listItems(rows))
   }
-
-  useEffect(() => {
-    load().catch((e) => setError(e.message))
-  }, [])
 
   function setField(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -63,6 +62,22 @@ export default function UtilityServicesAdmin() {
     setEditingId(null)
     setForm(EMPTY)
   }
+
+  useEffect(() => {
+    load().catch((e) => setError(e.message))
+  }, [])
+
+  useEffect(() => {
+    if (searchParams.get('new') !== '1') return
+    resetForm()
+    setMessage('Fill in the form below to create a utility service.')
+    const t = window.setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      formRef.current?.querySelector('input:not([disabled])')?.focus()
+    }, 50)
+    setSearchParams({}, { replace: true })
+    return () => window.clearTimeout(t)
+  }, [searchParams, setSearchParams])
 
   async function onSubmit(e) {
     e.preventDefault()
@@ -116,12 +131,25 @@ export default function UtilityServicesAdmin() {
             Platform catalog for bill-pay (light, water, …). Active services become store cards automatically; disabled services are hidden.
           </p>
         </div>
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => {
+            resetForm()
+            setMessage('')
+            setError('')
+            formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            window.setTimeout(() => formRef.current?.querySelector('input:not([disabled])')?.focus(), 80)
+          }}
+        >
+          Create service
+        </button>
       </div>
       {error && <div className="alert">{error}</div>}
       {message && <div className="alert ok">{message}</div>}
 
-      <div className="panel" style={{ marginBottom: '1.25rem' }}>
-        <h3>{editingId ? 'Edit service' : 'Add service'}</h3>
+      <div className="panel" id="create-service" ref={formRef} style={{ marginBottom: '1.25rem' }}>
+        <h3>{editingId ? 'Edit service' : 'Create service'}</h3>
         <form onSubmit={onSubmit}>
           <div className="row" style={{ alignItems: 'flex-start' }}>
             <div className="field" style={{ flex: 1, minWidth: 160 }}>
