@@ -1,9 +1,7 @@
-from typing import List
-
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import or_
 
-from app.core.deps import DbDep
+from app.core.deps import DbDep, get_user_permissions
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -12,9 +10,20 @@ from app.core.security import (
     needs_rehash,
     verify_password,
 )
-from app.core.deps import get_user_permissions
 from app.models.user import User
-from app.schemas.common import LoginRequest, RefreshRequest, TokenResponse
+from app.schemas.common import (
+    ForgotPasswordRequest,
+    ForgotPasswordResponse,
+    LoginRequest,
+    MessageOut,
+    PasswordResetChannelsOut,
+    RefreshRequest,
+    ResetPasswordRequest,
+    TokenResponse,
+    VerifyOtpRequest,
+    VerifyOtpResponse,
+)
+from app.services import password_reset as password_reset_service
 
 router = APIRouter(prefix="/auth")
 
@@ -78,3 +87,32 @@ def refresh(body: RefreshRequest, db: DbDep):
 @router.post("/logout")
 def logout():
     return {"message": "Logged out"}
+
+
+@router.get("/password-reset/channels", response_model=PasswordResetChannelsOut)
+def password_reset_channels(db: DbDep):
+    """Public: which OTP delivery channels are currently enabled."""
+    return PasswordResetChannelsOut(**password_reset_service.available_channels(db))
+
+
+@router.post("/forgot-password", response_model=ForgotPasswordResponse)
+def forgot_password(body: ForgotPasswordRequest, db: DbDep):
+    result = password_reset_service.request_otp(db, identifier=body.identifier, channel=body.channel)
+    return ForgotPasswordResponse(**result)
+
+
+@router.post("/verify-otp", response_model=VerifyOtpResponse)
+def verify_otp(body: VerifyOtpRequest, db: DbDep):
+    result = password_reset_service.verify_otp(db, challenge_id=body.challenge_id, otp=body.otp)
+    return VerifyOtpResponse(**result)
+
+
+@router.post("/reset-password", response_model=MessageOut)
+def reset_password(body: ResetPasswordRequest, db: DbDep):
+    result = password_reset_service.reset_password(
+        db,
+        reset_token=body.reset_token,
+        new_password=body.new_password,
+        new_password_confirm=body.new_password_confirm,
+    )
+    return MessageOut(**result)

@@ -12,6 +12,8 @@ def send_sms(to_number: str, body: str, db: Optional[Session] = None) -> Optiona
     cfg = provider_store.get_provider_secrets(db, provider_store.PROVIDER_SMS) if db else {}
     if not to_number:
         return "Missing phone number"
+    if str(cfg.get("mock", "")).lower() in ("1", "true", "yes", "on"):
+        return None
     api_url = cfg.get("api_url") or settings.SMS_API_URL
     api_key = cfg.get("api_key") or settings.SMS_API_KEY
     if not api_url:

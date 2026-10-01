@@ -137,6 +137,14 @@ export const api = {
     request('/api/v1/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) }, false),
   refresh: () => refreshAccessToken(),
   register: (body) => request('/api/v1/payers/register', { method: 'POST', body: JSON.stringify(body) }, false),
+  passwordResetChannels: () =>
+    request('/api/v1/auth/password-reset/channels', {}, false),
+  forgotPassword: (body) =>
+    request('/api/v1/auth/forgot-password', { method: 'POST', body: JSON.stringify(body) }, false),
+  verifyOtp: (body) =>
+    request('/api/v1/auth/verify-otp', { method: 'POST', body: JSON.stringify(body) }, false),
+  resetPassword: (body) =>
+    request('/api/v1/auth/reset-password', { method: 'POST', body: JSON.stringify(body) }, false),
   geographyChildren: (parentId) =>
     request(`/api/v1/geography/children${parentId ? `?parent_id=${parentId}` : ''}`),
   mePayer: () => request('/api/v1/payers/me'),

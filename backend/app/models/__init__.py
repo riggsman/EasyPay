@@ -21,6 +21,7 @@ from app.models.settlement import Settlement, SettlementLine, ReconciliationReco
 from app.models.notification import NotificationDelivery
 from app.models.provider import ProviderConfiguration, ProviderPaymentIntent
 from app.models.history_export import HistoryExport
+from app.models.password_reset import PasswordResetChallenge
 
 __all__ = [
     "Platform",
@@ -59,4 +60,5 @@ __all__ = [
     "ProviderConfiguration",
     "ProviderPaymentIntent",
     "HistoryExport",
+    "PasswordResetChallenge",
 ]

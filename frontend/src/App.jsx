@@ -5,6 +5,7 @@ import { PublicLayout, PayerLayout, TenantLayout, PlatformLayout } from './layou
 import LandingPage from './pages/public/LandingPage'
 import LoginPage from './pages/public/LoginPage'
 import RegisterPage from './pages/public/RegisterPage'
+import ForgotPasswordPage from './pages/public/ForgotPasswordPage'
 import VerifyPage from './pages/public/VerifyPage'
 import PayerDashboard from './pages/payer/Dashboard'
 import ObligationsPage from './pages/payer/Obligations'
@@ -92,6 +93,7 @@ export default function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/verify" element={<VerifyPage />} />
           {/* QR deep-link from receipt PDFs — same public verify logic */}
           <Route path="/v/:token" element={<VerifyPage />} />

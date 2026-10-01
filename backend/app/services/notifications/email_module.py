@@ -28,6 +28,10 @@ def send_email(to_address: str, subject: str, body: str, db: Optional[Session] =
     if not to_address:
         return "Missing recipient email"
     cfg = _smtp_settings(db)
+    secrets = provider_store.get_provider_secrets(db, provider_store.PROVIDER_EMAIL) if db else {}
+    # Seeded / sandbox providers mark mock=true — accept without hitting SMTP.
+    if str(secrets.get("mock", "")).lower() in ("1", "true", "yes", "on"):
+        return None
     if not cfg["host"]:
         return None
     msg = EmailMessage()
