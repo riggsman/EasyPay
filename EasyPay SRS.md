@@ -2871,3 +2871,190 @@ PUBLIC LANDING PAGE
 
 
 
+Financial Collection Platform
+
+Production Backend UI/UX Software Requirements Specification
+
+Document Type: UI/UX + Frontend Engineering SRS
+Audience: Product Designers, UX Designers, Frontend Developers, Backend Developers, QA Engineers, DevOps Engineers
+Architecture: Multi-Tenant Financial Collection Platform
+Design Approach: Dependency-First
+UI Type: Responsive Web-Based Backend Console
+Design Priority: Financial correctness, operational clarity, security, traceability and usability
+Version: 1.0
+
+---
+
+1. Executive Summary
+
+The backend application shall provide a professional financial operations console for managing:
+
+- platform administration;
+- tenants;
+- users and roles;
+- revenue types;
+- payers;
+- payment obligations;
+- collections;
+- transactions;
+- fees;
+- commissions;
+- receipts;
+- receipt verification;
+- settlements;
+- reconciliation;
+- statements;
+- financial reports;
+- audit records;
+- system configuration.
+
+The interface shall not behave like a generic CRUD administration panel.
+
+It shall behave like a financial operations system where every important number can be traced to its underlying records.
+
+The core UX principle is:
+
+«Every important financial figure must be explainable, traceable and drillable.»
+
+For example:
+
+Monthly Collection
+      ↓
+Revenue Type
+      ↓
+Payer
+      ↓
+Obligation
+      ↓
+Collection
+      ↓
+Transaction
+      ↓
+Fee / Commission
+      ↓
+Ledger
+      ↓
+Settlement
+
+---
+
+2. Product Design Principles
+
+The application shall follow these principles.
+
+2.1 Financial-first design
+
+The interface must prioritize:
+
+1. financial status;
+2. transaction status;
+3. settlement status;
+4. exceptions;
+5. reconciliation;
+6. auditability.
+
+Decorative dashboard elements shall never take priority over operational information.
+
+---
+
+3. UX Principles
+
+3.1 Progressive disclosure
+
+Do not display every field simultaneously.
+
+Use:
+
+Summary
+   ↓
+Details
+   ↓
+Advanced Details
+   ↓
+Audit Trail
+
+Example:
+
+A transaction page initially shows:
+
+- transaction reference;
+- amount;
+- status;
+- payer;
+- tenant;
+- payment method;
+- date.
+
+The user can then expand:
+
+- fee calculation;
+- commission;
+- provider response;
+- ledger;
+- state history;
+- audit history.
+
+---
+
+4. Dependency-First UI Architecture
+
+The frontend shall follow the backend domain dependencies.
+
+01 Identity
+      ↓
+02 Platform / Tenant
+      ↓
+03 Access Control
+      ↓
+04 Configuration
+      ↓
+05 Revenue Setup
+      ↓
+06 Payers / Obligations
+      ↓
+07 Collections
+      ↓
+08 Transactions
+      ↓
+09 Ledger
+      ↓
+10 Receipts
+      ↓
+11 Settlement
+      ↓
+12 Reconciliation
+      ↓
+13 Statements
+      ↓
+14 Reports
+      ↓
+15 Dashboards
+
+This dependency order shall also determine:
+
+- navigation;
+- route guards;
+- permissions;
+- page availability;
+- onboarding;
+- implementation phases;
+- testing priorities.
+
+---
+
+5. Application Shell
+
+The backend shall use a persistent application shell.
+
+┌─────────────────────────────────────────────────────────────────┐
+│ Logo   Tenant/Platform Selector       Search   Alerts   User   │
+├───────────────┬─────────────────────────────────────────────────┤
+│               │                                                 │
+│ Dashboard     │                                                 │
+│               │                                                 │
+│ Operations    │               MAIN CONTENT                      │
+│  Collections  │                                                 │
+│  Transactions │                                                 │
+│  Obligations  │                                                 │
+│               │                                                 │
+│ Finance       │                                                 │

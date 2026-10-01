@@ -12,8 +12,8 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "change-me"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
-    DATABASE_URL: str = "mysql+pymysql://easypay:easypay@localhost:3306/easypay"
-    CORS_ORIGINS: str = "http://localhost:5173"
+    DATABASE_URL: str = "mysql+pymysql://root@localhost:3306/easypay"
+    CORS_ORIGINS: str = "http://localhost:3000"
     DEFAULT_CURRENCY: str = "XAF"
     ALGORITHM: str = "HS256"
 
@@ -41,7 +41,7 @@ class Settings(BaseSettings):
 
     # Public frontend base URL used in PDF QR deep-links (no trailing slash).
     # Change this when migrating to production, e.g. https://pay.example.com
-    PUBLIC_BASE_URL: str = "http://localhost:5173"
+    PUBLIC_BASE_URL: str = "http://localhost:3000"
     # Directory for tenant/platform logo files (relative to backend/ unless absolute)
     LOGO_STORAGE_DIR: str = "var/logos"
     # Logo watermark wash: 0.6 = 60% opacity (washed background mark)
