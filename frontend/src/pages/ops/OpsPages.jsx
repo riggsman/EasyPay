@@ -1321,6 +1321,12 @@ export function OpsConfig() {
   const [rows, setRows] = useState([])
   const [notif, setNotif] = useState(null)
   const [historyExport, setHistoryExport] = useState({ fee_amount: '500', free_downloads: 2, currency: 'XAF' })
+  const [clientCache, setClientCache] = useState({
+    ttl_minutes: 15,
+    min_ttl_seconds: 900,
+    max_ttl_seconds: 86400,
+    default_ttl_seconds: 900,
+  })
   const [logPage, setLogPage] = useState({ items: [], total: 0, total_pages: 1 })
   const [form, setForm] = useState({ config_key: '', config_value: '', description: '' })
   const [message, setMessage] = useState('')
@@ -1334,6 +1340,15 @@ export function OpsConfig() {
         fee_amount: String(hx.fee_amount ?? '500'),
         free_downloads: Number(hx.free_downloads ?? 2),
         currency: hx.currency || 'XAF',
+      })
+    }
+    const cacheSettings = await api.clientCacheSettings().catch(() => null)
+    if (cacheSettings) {
+      setClientCache({
+        ttl_minutes: Number(cacheSettings.ttl_minutes ?? 15),
+        min_ttl_seconds: Number(cacheSettings.min_ttl_seconds ?? 900),
+        max_ttl_seconds: Number(cacheSettings.max_ttl_seconds ?? 86400),
+        default_ttl_seconds: Number(cacheSettings.default_ttl_seconds ?? 900),
       })
     }
     const log = await api.opsNotificationLog({ page: 1, page_size: 20 })
@@ -1396,11 +1411,60 @@ export function OpsConfig() {
       setError(err.message)
     }
   }
+  async function saveClientCache(e) {
+    e.preventDefault()
+    setError('')
+    setMessage('')
+    try {
+      const saved = await api.updateClientCacheSettings({
+        ttl_minutes: Number(clientCache.ttl_minutes),
+      })
+      setClientCache({
+        ttl_minutes: Number(saved.ttl_minutes),
+        min_ttl_seconds: Number(saved.min_ttl_seconds),
+        max_ttl_seconds: Number(saved.max_ttl_seconds),
+        default_ttl_seconds: Number(saved.default_ttl_seconds),
+      })
+      // Server also sends X-EasyPay-Cache-TTL on this response; client.js applies it.
+      setMessage(`Client cache time updated to ${saved.ttl_minutes} minutes. Browsers pick it up on their next API request.`)
+      await load()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
   return (
     <div className="rise stack">
       <PageHeader title="System Configuration" />
       {error && <div className="alert">{error}</div>}
       {message && <div className="alert ok">{message}</div>}
+      <Disclosure title="Client data cache" open>
+        <p className="muted">
+          After the first load, GET responses are cached in the browser. Default is 15 minutes.
+          Platform admins can increase this value; clients receive the new TTL on their next request
+          via the <code>X-EasyPay-Cache-TTL</code> response header and update locally.
+        </p>
+        <form className="stack" onSubmit={saveClientCache} style={{ maxWidth: 520 }}>
+          <div className="field">
+            <label>Cache time (minutes)</label>
+            <input
+              type="number"
+              min={Math.round((clientCache.min_ttl_seconds || 900) / 60)}
+              max={Math.round((clientCache.max_ttl_seconds || 86400) / 60)}
+              step="1"
+              required
+              value={clientCache.ttl_minutes}
+              onChange={(e) => setClientCache({ ...clientCache, ttl_minutes: e.target.value })}
+            />
+          </div>
+          <p className="muted" style={{ marginTop: 0 }}>
+            Minimum {Math.round((clientCache.min_ttl_seconds || 900) / 60)} minutes · maximum{' '}
+            {Math.round((clientCache.max_ttl_seconds || 86400) / 60)} minutes · default{' '}
+            {Math.round((clientCache.default_ttl_seconds || 900) / 60)} minutes.
+            Active browser TTL: {Math.round((api.getClientCacheTtlMs?.() || 900000) / 60000)} minutes.
+          </p>
+          <button className="btn btn-primary" type="submit">Save cache time</button>
+        </form>
+      </Disclosure>
       <Disclosure title="Transaction history export (payer downloads)" open>
         <p className="muted">
           Payers can download dated transaction history PDFs. Each payer receives the configured number of free

@@ -1,6 +1,13 @@
 const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
 
+const CACHE_TTL_HEADER = 'X-EasyPay-Cache-TTL'
+const CACHE_TTL_STORAGE_KEY = 'ep_cache_ttl_ms'
+const CACHE_STORE_KEY = 'ep_response_cache'
+const DEFAULT_CACHE_TTL_MS = 15 * 60 * 1000
+const MIN_CACHE_TTL_MS = 15 * 60 * 1000
+
 let refreshPromise = null
+const memoryCache = new Map()
 
 function getAccess() {
   return localStorage.getItem('ep_access')
@@ -21,6 +28,115 @@ function clearTokens() {
   localStorage.removeItem('ep_session')
 }
 
+function cacheScope() {
+  try {
+    const session = JSON.parse(localStorage.getItem('ep_session') || 'null')
+    return session?.username || session?.user_type || 'anon'
+  } catch {
+    return 'anon'
+  }
+}
+
+export function getClientCacheTtlMs() {
+  const raw = Number(localStorage.getItem(CACHE_TTL_STORAGE_KEY))
+  if (Number.isFinite(raw) && raw >= MIN_CACHE_TTL_MS) return raw
+  return DEFAULT_CACHE_TTL_MS
+}
+
+export function getClientCacheTtlSeconds() {
+  return Math.round(getClientCacheTtlMs() / 1000)
+}
+
+function setClientCacheTtlSeconds(seconds) {
+  const n = Number(seconds)
+  if (!Number.isFinite(n) || n * 1000 < MIN_CACHE_TTL_MS) return getClientCacheTtlMs()
+  const ms = Math.round(n * 1000)
+  localStorage.setItem(CACHE_TTL_STORAGE_KEY, String(ms))
+  window.dispatchEvent(new CustomEvent('ep:cache-ttl', { detail: { ttl_seconds: n, ttl_ms: ms } }))
+  return ms
+}
+
+function applyServerCacheTtl(res) {
+  const header = res.headers.get(CACHE_TTL_HEADER)
+  if (header == null || header === '') return
+  setClientCacheTtlSeconds(header)
+}
+
+function loadPersistedCache() {
+  try {
+    const raw = sessionStorage.getItem(CACHE_STORE_KEY)
+    if (!raw) return
+    const parsed = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object') return
+    const now = Date.now()
+    Object.entries(parsed).forEach(([key, entry]) => {
+      if (entry && entry.expiresAt > now) memoryCache.set(key, entry)
+    })
+  } catch {
+    /* ignore */
+  }
+}
+
+function persistCache() {
+  try {
+    const now = Date.now()
+    const out = {}
+    memoryCache.forEach((entry, key) => {
+      if (entry.expiresAt > now) out[key] = entry
+    })
+    sessionStorage.setItem(CACHE_STORE_KEY, JSON.stringify(out))
+  } catch {
+    /* ignore */
+  }
+}
+
+loadPersistedCache()
+
+function cacheKey(path, method = 'GET') {
+  return `${cacheScope()}|${method.toUpperCase()}|${path}`
+}
+
+function readCache(path) {
+  const key = cacheKey(path, 'GET')
+  const entry = memoryCache.get(key)
+  if (!entry) return null
+  if (entry.expiresAt <= Date.now()) {
+    memoryCache.delete(key)
+    persistCache()
+    return null
+  }
+  return entry.data
+}
+
+function writeCache(path, data) {
+  memoryCache.set(cacheKey(path, 'GET'), {
+    data,
+    expiresAt: Date.now() + getClientCacheTtlMs(),
+    storedAt: Date.now(),
+  })
+  persistCache()
+}
+
+export function clearResponseCache() {
+  memoryCache.clear()
+  try {
+    sessionStorage.removeItem(CACHE_STORE_KEY)
+  } catch {
+    /* ignore */
+  }
+}
+
+function shouldUseCache(path, options = {}) {
+  const method = (options.method || 'GET').toUpperCase()
+  if (method !== 'GET') return false
+  if (options.cache === false || options.raw) return false
+  if (path.includes('/auth/login') || path.includes('/auth/refresh') || path.includes('/auth/forgot-password')) {
+    return false
+  }
+  if (path.includes('/ops/alerts') || path.includes('/ops/search')) return false
+  return true
+}
+
 async function refreshAccessToken() {
   const refresh = getRefresh()
   if (!refresh) throw new Error('No refresh token')
@@ -29,6 +145,7 @@ async function refreshAccessToken() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refresh_token: refresh }),
   })
+  applyServerCacheTtl(res)
   if (!res.ok) {
     clearTokens()
     throw new Error('Session expired')
@@ -53,6 +170,12 @@ async function refreshAccessToken() {
 }
 
 async function request(path, options = {}, retry = true) {
+  const method = (options.method || 'GET').toUpperCase()
+  if (shouldUseCache(path, options)) {
+    const cached = readCache(path)
+    if (cached !== null) return cached
+  }
+
   const headers = {
     ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers || {}),
@@ -61,6 +184,7 @@ async function request(path, options = {}, retry = true) {
   if (token) headers.Authorization = `Bearer ${token}`
 
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers })
+  applyServerCacheTtl(res)
 
   if (res.status === 401 && retry && getRefresh() && !path.includes('/auth/login') && !path.includes('/auth/refresh')) {
     try {
@@ -94,6 +218,13 @@ async function request(path, options = {}, retry = true) {
     err.data = data
     throw err
   }
+
+  if (method === 'GET' && shouldUseCache(path, options)) {
+    writeCache(path, data)
+  } else if (method !== 'GET') {
+    clearResponseCache()
+  }
+
   return data
 }
 
@@ -194,8 +325,11 @@ export const api = {
   historyExportSettings: () => request('/api/v1/ops/history-export-settings'),
   updateHistoryExportSettings: (body) =>
     request('/api/v1/ops/history-export-settings', { method: 'PUT', body: JSON.stringify(body) }),
+  clientCacheSettings: () => request('/api/v1/ops/client-cache-settings', { cache: false }),
+  updateClientCacheSettings: (body) =>
+    request('/api/v1/ops/client-cache-settings', { method: 'PUT', body: JSON.stringify(body) }),
   verify: (body) => request('/api/v1/public/verify', { method: 'POST', body: JSON.stringify(body) }, false),
-  verifyToken: (token) => request(`/api/v1/public/verify/${token}`, {}, false),
+  verifyToken: (token) => request(`/api/v1/public/verify/${token}`, { cache: false }, false),
   payerDashboard: () => request('/api/v1/dashboards/payer'),
   tenantDashboard: () => request('/api/v1/dashboards/tenant'),
   platformDashboard: () => request('/api/v1/dashboards/platform'),
@@ -240,8 +374,9 @@ export const api = {
   opsReconciliation: () => request('/api/v1/ops/reconciliation'),
   opsStatement: (tenantId) => request(withTenant('/api/v1/ops/statements/tenant', tenantId)),
   opsPayerStatement: () => request('/api/v1/ops/payer-statement'),
-  opsAlerts: () => request('/api/v1/ops/alerts'),
-  opsSearch: (q, tenantId) => request(withTenant(`/api/v1/ops/search?q=${encodeURIComponent(q)}`, tenantId)),
+  opsAlerts: () => request('/api/v1/ops/alerts', { cache: false }),
+  opsSearch: (q, tenantId) =>
+    request(withTenant(`/api/v1/ops/search?q=${encodeURIComponent(q)}`, tenantId), { cache: false }),
   exportCollectionsCsv: (tenantId) => download(withTenant('/api/v1/ops/exports/collections.csv', tenantId), 'collections.csv'),
   exportCollectionsXlsx: (tenantId) => download(withTenant('/api/v1/ops/exports/collections.xlsx', tenantId), 'collections.xlsx'),
 
@@ -279,6 +414,9 @@ export const api = {
 
   clearTokens,
   setTokens,
+  clearResponseCache,
+  getClientCacheTtlMs,
+  getClientCacheTtlSeconds,
 }
 
 export function formatMoney(amount, currency = 'XAF') {
