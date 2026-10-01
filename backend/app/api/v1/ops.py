@@ -1315,6 +1315,39 @@ def update_history_export_settings_api(
     )
 
 
+class ClientCacheSettingsOut(BaseModel):
+    ttl_seconds: int
+    ttl_minutes: int
+    default_ttl_seconds: int
+    min_ttl_seconds: int
+    max_ttl_seconds: int
+
+
+class ClientCacheSettingsIn(BaseModel):
+    ttl_minutes: int
+
+
+@router.get("/client-cache-settings", response_model=ClientCacheSettingsOut)
+def get_client_cache_settings_api(
+    db: DbDep,
+    current=Depends(require_permissions("system:configure", "platforms:write", "dashboards:platform")),
+):
+    from app.services.client_cache import ensure_default_client_cache_settings
+
+    return ClientCacheSettingsOut(**ensure_default_client_cache_settings(db))
+
+
+@router.put("/client-cache-settings", response_model=ClientCacheSettingsOut)
+def update_client_cache_settings_api(
+    body: ClientCacheSettingsIn,
+    db: DbDep,
+    current=Depends(require_permissions("system:configure", "platforms:write")),
+):
+    from app.services.client_cache import update_client_cache_ttl
+
+    return ClientCacheSettingsOut(**update_client_cache_ttl(db, ttl_minutes=body.ttl_minutes))
+
+
 @router.get("/notifications/settings", response_model=NotificationSettingsOut)
 def get_notification_settings(db: DbDep, current=Depends(require_permissions("platforms:write", "tenants:write", "reports:read"))):
     tid = current.tenant_id if current.user_type != "PLATFORM_ADMIN" else None
