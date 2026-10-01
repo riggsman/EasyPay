@@ -115,6 +115,19 @@ def request_otp(db: Session, *, identifier: str, channel: str) -> dict:
         # Avoid leaking whether the account exists without that contact method.
         return generic
 
+    now = utcnow()
+    # Drop timed-out challenges so they do not block resend forever.
+    for stale in (
+        db.query(PasswordResetChallenge)
+        .filter(
+            PasswordResetChallenge.user_id == user.user_id,
+            PasswordResetChallenge.status.in_(("PENDING", "VERIFIED")),
+            PasswordResetChallenge.expires_at < now,
+        )
+        .all()
+    ):
+        stale.status = "EXPIRED"
+
     recent = (
         db.query(PasswordResetChallenge)
         .filter(
@@ -124,7 +137,7 @@ def request_otp(db: Session, *, identifier: str, channel: str) -> dict:
         .order_by(PasswordResetChallenge.created_at.desc())
         .first()
     )
-    if recent and (utcnow() - recent.created_at).total_seconds() < RESEND_COOLDOWN_SECONDS:
+    if recent and (now - recent.created_at).total_seconds() < RESEND_COOLDOWN_SECONDS:
         raise HTTPException(
             status_code=429,
             detail=f"Please wait {RESEND_COOLDOWN_SECONDS} seconds before requesting another code.",

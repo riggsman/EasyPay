@@ -4,7 +4,30 @@ import re
 
 from app.db.session import SessionLocal
 from app.models.notification import NotificationDelivery
+from app.models.password_reset import PasswordResetChallenge
+from app.models.user import User
 from app.services.password_reset import peek_latest_otp_for_tests
+
+
+def _clear_challenges_for(*identifiers: str) -> None:
+    db = SessionLocal()
+    try:
+        user_ids = []
+        for ident in identifiers:
+            user = (
+                db.query(User)
+                .filter((User.username == ident) | (User.email == ident) | (User.phone_number == ident))
+                .first()
+            )
+            if user:
+                user_ids.append(user.user_id)
+        if user_ids:
+            db.query(PasswordResetChallenge).filter(PasswordResetChallenge.user_id.in_(user_ids)).delete(
+                synchronize_session=False
+            )
+            db.commit()
+    finally:
+        db.close()
 
 
 def _otp_from_challenge(challenge_id: str) -> str:
@@ -39,6 +62,7 @@ def test_uat_forgot_password_unknown_user_no_leak(client):
 
 
 def test_uat_password_reset_email_flow_for_payer(client):
+    _clear_challenges_for("abctrading", "abc@traders.local", "670000001")
     # Request OTP via email
     r = client.post(
         "/api/v1/auth/forgot-password",
@@ -109,6 +133,7 @@ def test_uat_password_reset_email_flow_for_payer(client):
 
 
 def test_uat_password_reset_whatsapp_channel(client):
+    _clear_challenges_for("abctrading", "670000001")
     r = client.post(
         "/api/v1/auth/forgot-password",
         json={"identifier": "670000001", "channel": "WHATSAPP"},
@@ -148,6 +173,7 @@ def test_uat_password_reset_sms_disabled_by_default(client):
 
 
 def test_uat_password_reset_staff_user_email(client):
+    _clear_challenges_for("kumba1_admin")
     r = client.post(
         "/api/v1/auth/forgot-password",
         json={"identifier": "kumba1_admin", "channel": "EMAIL"},
