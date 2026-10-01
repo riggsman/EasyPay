@@ -262,6 +262,13 @@ export const api = {
   utilityPay: (body) =>
     request('/api/v1/utility-payments/initiate', { method: 'POST', body: JSON.stringify(body) }),
 
+  paymentProductsChooser: () => request('/api/v1/payment-products/chooser'),
+  paymentProductsAdmin: () => request('/api/v1/payment-products'),
+  createPaymentProduct: (body) =>
+    request('/api/v1/payment-products', { method: 'POST', body: JSON.stringify(body) }),
+  updatePaymentProduct: (id, body) =>
+    request(`/api/v1/payment-products/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+
   clearTokens,
   setTokens,
 }

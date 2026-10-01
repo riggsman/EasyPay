@@ -739,8 +739,10 @@ def ensure_sample_demo_data(db) -> dict:
     ensure_tenant_payout_destinations(db)
     ensure_default_platform_logo(db)
     from app.services.utilities import ensure_sample_utility_services
+    from app.services.payment_products import ensure_default_payment_products
 
     utilities = ensure_sample_utility_services(db)
+    payment_products = ensure_default_payment_products(db)
 
     settled = 0
     for spec in SAMPLE_PAYERS:
@@ -769,6 +771,7 @@ def ensure_sample_demo_data(db) -> dict:
         "admin": admin,
         "failure_demos": failures,
         "utilities": utilities,
+        "payment_products": payment_products,
     }
 
 
@@ -1000,6 +1003,12 @@ def seed():
                 "  Utility store: "
                 f"ENEO (light), CAMWATER (water) active; DEMO-DISABLED hidden — "
                 f"{len(utils)} catalog rows"
+            )
+        products = stats.get("payment_products") or {}
+        if products:
+            print(
+                "  Payment chooser: "
+                f"COUNCIL + UTILITY (+ future via payment_products) — {len(products)} products"
             )
         if fresh:
             print("  Fresh install: ABC Trading has Business License DUE + Waste Levy PAID.")

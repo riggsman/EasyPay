@@ -8,6 +8,7 @@ from sqlalchemy import text
 
 from app.db.models import Base
 from app.db.session import SessionLocal, engine
+from app.services.payment_products import ensure_default_payment_products
 from app.services.utilities import ensure_sample_utility_services
 
 
@@ -37,6 +38,8 @@ def main():
             print("SKIP: index ->", str(exc).split("\n")[0][:120])
         seeded = ensure_sample_utility_services(db)
         print("OK: sample services", seeded)
+        products = ensure_default_payment_products(db)
+        print("OK: payment products", products)
     finally:
         db.close()
     print("Migration complete")

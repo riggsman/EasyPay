@@ -1,111 +1,83 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { api, formatMoney, listItems } from '../../api/client'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { api, listItems } from '../../api/client'
 
-function newIdempotencyKey() {
-  return `pay-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+function productIcon(key) {
+  if (key === 'council') return '🏛'
+  if (key === 'utility') return '💡'
+  if (key === 'droplet') return '💧'
+  return '💳'
 }
 
+/**
+ * Payment product chooser — driven by /payment-products/chooser.
+ * New products appear here automatically when ACTIVE (and catalog-ready).
+ */
 export default function MakePaymentPage() {
   const navigate = useNavigate()
-  const [obligations, setObligations] = useState([])
-  const [obligationId, setObligationId] = useState('')
-  const [channel, setChannel] = useState('MOBILE_MONEY')
-  const [phone, setPhone] = useState('')
-  const [resolved, setResolved] = useState(null)
+  const [products, setProducts] = useState([])
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-  const due = useMemo(() => obligations.filter((o) => Number(o.balance) > 0), [obligations])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    api.obligations({ page: 1, page_size: 100 }).then((res) => {
-      const rows = listItems(res)
-      setObligations(rows)
-      const first = rows.find((o) => Number(o.balance) > 0)
-      if (first) setObligationId(first.obligation_id)
-    }).catch((e) => setError(e.message))
+    setLoading(true)
+    api.paymentProductsChooser()
+      .then((rows) => setProducts(listItems(rows)))
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false))
   }, [])
 
-  useEffect(() => {
-    if (!obligationId) return
-    setResolved(null)
-    api.resolvePayment({ obligation_id: obligationId, payment_channel: channel })
-      .then(setResolved)
-      .catch((e) => setError(e.message))
-  }, [obligationId, channel])
-
-  async function confirm() {
-    setLoading(true)
-    setError('')
-    try {
-      const txn = await api.initiatePayment({
-        obligation_id: obligationId,
-        payment_channel: channel,
-        phone_number: channel === 'MOBILE_MONEY' ? phone : undefined,
-        idempotency_key: newIdempotencyKey(),
-      })
-      if (txn.status === 'REJECTED') {
-        throw new Error('Mobile Money collection was rejected by Campay')
-      }
-      const detail = await api.confirmPayment(txn.transaction_id)
-      navigate(`/payer/payments/${detail.transaction_id}`)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
+  function openProduct(product) {
+    if (!product.available) return
+    navigate(product.route_path)
   }
 
   return (
     <div className="rise">
-      <h2>Make a Payment</h2>
-      {error && <div className="alert">{error}</div>}
-      <div className="panel stack" style={{ maxWidth: 560 }}>
-        <div className="field">
-          <label>Obligation</label>
-          <select value={obligationId} onChange={(e) => setObligationId(e.target.value)}>
-            {due.map((o) => (
-              <option key={o.obligation_id} value={o.obligation_id}>
-                {o.description} — {formatMoney(o.balance, o.currency)}
-              </option>
-            ))}
-          </select>
+      <div className="app-top">
+        <div>
+          <h2>Make a payment</h2>
+          <p className="muted">Choose what you want to pay. More payment types appear here as they are enabled.</p>
         </div>
-        <div className="field">
-          <label>Payment Channel</label>
-          <select value={channel} onChange={(e) => setChannel(e.target.value)}>
-            <option value="MOBILE_MONEY">Mobile Money (Campay)</option>
-            <option value="CARD">Card</option>
-            <option value="OTHER">Other</option>
-          </select>
-        </div>
-        {channel === 'MOBILE_MONEY' && (
-          <div className="field">
-            <label>MoMo phone number</label>
-            <input
-              required
-              placeholder="2376XXXXXXXX"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
-            <p className="muted">Collections are processed exclusively through Campay.</p>
-          </div>
-        )}
-        {resolved && (
-          <div className="stack">
-            <div><span className="muted">Operating Area</span><br /><strong>{resolved.operating_area}</strong></div>
-            <div><span className="muted">Council</span><br /><strong>{resolved.council_name}</strong></div>
-            <div><span className="muted">Revenue</span><br /><strong>{resolved.revenue_name}</strong></div>
-            <div><span className="muted">Amount Due</span><br /><strong>{formatMoney(resolved.amount, resolved.currency)}</strong></div>
-            <div><span className="muted">Service Fee</span><br /><strong>{formatMoney(resolved.service_fee, resolved.currency)}</strong></div>
-            <div><span className="muted">Total to Pay</span><br /><strong style={{ fontSize: '1.4rem' }}>{formatMoney(resolved.total_amount, resolved.currency)}</strong></div>
-            <button className="btn btn-primary" type="button" disabled={loading} onClick={confirm}>
-              {loading ? 'Processing…' : 'Confirm Payment'}
-            </button>
-          </div>
-        )}
-        {!due.length && <p className="muted">No outstanding obligations to pay.</p>}
       </div>
+      {error && <div className="alert">{error}</div>}
+      {loading && <p className="muted">Loading payment types…</p>}
+
+      {!loading && (
+        <div className="service-grid">
+          {products.map((product) => {
+            const unavailable = !product.available
+            return (
+              <button
+                key={product.payment_product_id}
+                type="button"
+                className={`service-card${unavailable ? ' service-card--disabled' : ''}`}
+                style={{ '--svc-accent': product.accent_color || '#1f6b4a' }}
+                onClick={() => openProduct(product)}
+                disabled={unavailable}
+              >
+                <span className="service-card-icon" aria-hidden="true">{productIcon(product.icon_key)}</span>
+                <strong>{product.name}</strong>
+                <span className="muted">{product.description}</span>
+                {unavailable ? (
+                  <span className="pill">Coming soon / unavailable</span>
+                ) : product.requires_catalog ? (
+                  <span className="pill">{product.catalog_count} service{product.catalog_count === 1 ? '' : 's'} available</span>
+                ) : (
+                  <span className="pill">Continue</span>
+                )}
+              </button>
+            )
+          })}
+          {!products.length && (
+            <div className="panel muted">No payment types are enabled right now.</div>
+          )}
+        </div>
+      )}
+
+      <p className="muted" style={{ marginTop: '1.5rem' }}>
+        Looking for a past payment? <Link to="/payer/history">Open transaction history</Link>
+      </p>
     </div>
   )
 }

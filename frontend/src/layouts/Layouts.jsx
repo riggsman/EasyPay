@@ -304,9 +304,8 @@ export function PayerLayout() {
       label: 'Portal',
       items: [
         { to: '/payer', label: 'Dashboard', end: true },
-        { to: '/payer/services', label: 'Services' },
-        { to: '/payer/obligations', label: 'Obligations' },
         { to: '/payer/pay', label: 'Make Payment' },
+        { to: '/payer/obligations', label: 'Obligations' },
         { to: '/payer/history', label: 'Transactions' },
         { to: '/payer/receipts', label: 'Receipts' },
         { to: '/payer/statements', label: 'Statements' },
@@ -359,6 +358,7 @@ export function PlatformLayout() {
       dropdown: true,
       items: [
         { to: '/platform/providers', label: 'Providers (Campay / Email / WA / SMS)' },
+        { to: '/platform/payment-products', label: 'Payment products' },
         { to: '/platform/utility-services', label: 'Utility services' },
         { to: '/platform/fees', label: 'Fees' },
         { to: '/platform/commissions', label: 'Commissions' },

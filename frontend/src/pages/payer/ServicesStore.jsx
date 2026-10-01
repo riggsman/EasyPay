@@ -2,6 +2,8 @@ import { useEffect, useId, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, formatMoney, listItems } from '../../api/client'
 
+/** Utility bill store — opened from the Make Payment chooser (UTILITY product). */
+
 function iconGlyph(key) {
   if (key === 'droplet') return '💧'
   if (key === 'grid') return '▦'
@@ -124,10 +126,13 @@ export default function ServicesStore() {
     <div className="rise">
       <div className="app-top">
         <div>
-          <h2>Services</h2>
-          <p className="muted">Pay utility bills — only active services appear here.</p>
+          <h2>Utility bills</h2>
+          <p className="muted">Pay light, water and other active utilities — disabled services stay hidden.</p>
         </div>
-        <Link className="btn btn-ghost" to="/payer/history">Transaction history</Link>
+        <div className="row">
+          <Link className="btn btn-ghost" to="/payer/pay">All payment types</Link>
+          <Link className="btn btn-ghost" to="/payer/history">History</Link>
+        </div>
       </div>
       {error && !selected && <div className="alert">{error}</div>}
 

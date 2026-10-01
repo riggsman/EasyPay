@@ -361,6 +361,13 @@ table.data th {
   transform: translateY(-2px);
   box-shadow: 0 12px 28px rgba(19, 72, 50, 0.12);
 }
+.service-card--disabled,
+.service-card:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
 .service-card-icon {
   width: 2.4rem;
   height: 2.4rem;
