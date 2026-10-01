@@ -210,6 +210,57 @@ def notify_zone_change_decision(db: Session, payer: Payer, approved: bool, notes
     )
 
 
+def notify_password_reset_otp(
+    db: Session,
+    *,
+    user: User,
+    channel: str,
+    destination: str,
+    otp: str,
+    entity_id: str,
+) -> str:
+    """Send a password-reset OTP on a single channel. Returns SENT|FAILED|SKIPPED."""
+    subject = "EasyPay password reset code"
+    body = (
+        f"Hello {user.full_name or user.username},\n\n"
+        f"Your EasyPay password reset code is {otp}.\n"
+        f"It expires in 10 minutes. If you did not request this, ignore this message.\n"
+    )
+    short = f"EasyPay: your password reset code is {otp}. Expires in 10 minutes."
+    send_map = {
+        "EMAIL": email_module.send_email,
+        "SMS": sms_module.send_sms,
+        "WHATSAPP": whatsapp_module.send_whatsapp,
+    }
+    send_fn = send_map.get(channel)
+    if not send_fn:
+        return "SKIPPED"
+    _dispatch_channel(
+        db,
+        tenant_id=user.tenant_id,
+        channel=channel,
+        event_type="PASSWORD_RESET_OTP",
+        recipient=destination,
+        subject=subject,
+        body=body if channel == "EMAIL" else short,
+        entity_type="password_reset",
+        entity_id=entity_id,
+        send_fn=send_fn,
+    )
+    db.flush()
+    row = (
+        db.query(NotificationDelivery)
+        .filter(
+            NotificationDelivery.entity_id == entity_id,
+            NotificationDelivery.event_type == "PASSWORD_RESET_OTP",
+            NotificationDelivery.channel == channel,
+        )
+        .order_by(NotificationDelivery.created_at.desc())
+        .first()
+    )
+    return row.status if row else "FAILED"
+
+
 def notify_settlement_approved(db: Session, settlement: Settlement, approver_id: str) -> None:
     approver = db.get(User, approver_id)
     tenant_users = (

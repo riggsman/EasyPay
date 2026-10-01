@@ -29,6 +29,44 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
+class ForgotPasswordRequest(BaseModel):
+    identifier: str = Field(..., min_length=1, description="Username, email, or phone")
+    channel: str = Field(..., description="EMAIL | SMS | WHATSAPP")
+
+
+class ForgotPasswordResponse(BaseModel):
+    message: str
+    challenge_id: Optional[str] = None
+    channel: str
+    destination_hint: Optional[str] = None
+    expires_in_seconds: int = 600
+
+
+class VerifyOtpRequest(BaseModel):
+    challenge_id: str
+    otp: str
+
+
+class VerifyOtpResponse(BaseModel):
+    message: str
+    reset_token: str
+    expires_in_seconds: int = 900
+
+
+class ResetPasswordRequest(BaseModel):
+    reset_token: str
+    new_password: str
+    new_password_confirm: str
+
+
+class PasswordResetChannelsOut(BaseModel):
+    email: bool
+    sms: bool
+    whatsapp: bool
+    otp_length: int = 6
+    otp_ttl_minutes: int = 10
+
+
 # ---- Platform / Tenant / Geography ----
 class PlatformCreate(BaseModel):
     platform_code: str
