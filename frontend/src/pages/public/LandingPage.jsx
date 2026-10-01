@@ -1,24 +1,29 @@
 import { Link } from 'react-router-dom'
+import heroImage from '../../assets/landing-hero.jpg'
 
 export default function LandingPage() {
   return (
     <>
-      <div className="container">
-        <section className="hero">
+      <section
+        className="hero hero-fullbleed"
+        style={{ '--hero-image': `url(${heroImage})` }}
+      >
+        <div className="hero-veil" aria-hidden="true" />
+        <div className="container hero-copy">
           <div className="brand-hero rise">EasyPay</div>
           <h1 className="rise rise-delay-1">Pay your council levies</h1>
           <p className="rise rise-delay-2">
-            Simple, secure, traceable, and verifiable payments from your registered operating area.
+            Simple, secure, traceable payments from your registered operating area.
           </p>
           <div className="hero-actions rise rise-delay-3">
             <Link className="btn btn-sun" to="/register">Create Payer Account</Link>
-            <Link className="btn btn-ghost" style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.45)' }} to="/login">Sign In</Link>
-            <Link className="btn btn-ghost" style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.45)' }} to="/verify">Verify Receipt</Link>
+            <Link className="btn btn-ghost hero-ghost" to="/login">Sign In</Link>
+            <Link className="btn btn-ghost hero-ghost" to="/verify">Verify Receipt</Link>
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
 
-      <section className="section" id="how">
+      <section className="section section-green" id="how">
         <div className="container">
           <h2>How it works</h2>
           <p>Register, select your council zone, view levies, pay, and verify your official receipt.</p>
@@ -32,7 +37,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="section">
+      <section className="section section-green-soft">
         <div className="container">
           <h2>Supported councils</h2>
           <p>Start with Southwest Region councils — including Kumba 1, Kumba 2, and Kumba 3.</p>
