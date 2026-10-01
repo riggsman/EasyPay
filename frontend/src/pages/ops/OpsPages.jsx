@@ -469,22 +469,33 @@ export function OpsTransactions() {
   const base = useBase()
   const navigate = useNavigate()
   const { searchQuery, tenantFilter } = useCtx()
+  const [tab, setTab] = useState('overview')
   const [rows, setRows] = useState([])
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
   const [meta, setMeta] = useState({ total: 0, total_pages: 1 })
   const [error, setError] = useState('')
+  const tabs = [
+    { id: 'overview', label: 'Overview', status: undefined },
+    { id: 'processing', label: 'Processing', status: 'PROCESSING' },
+    { id: 'debited', label: 'Debited', status: 'DEBITED' },
+    { id: 'settled', label: 'Settled', status: 'SETTLED' },
+    { id: 'failed', label: 'Failed', status: 'FAILED' },
+    { id: 'manual', label: 'Manual', status: 'MANUAL_INTERVENTION' },
+  ]
   useEffect(() => {
     setPage(1)
-  }, [searchQuery, tenantFilter])
+  }, [searchQuery, tenantFilter, tab])
   useEffect(() => {
-    const statusOnly = searchQuery?.startsWith('status:') ? searchQuery.slice(7) : undefined
+    const tabStatus = tabs.find((t) => t.id === tab)?.status
+    const statusFromSearch = searchQuery?.startsWith('status:') ? searchQuery.slice(7) : undefined
+    const status = tabStatus || statusFromSearch
     api
       .payments({
         page,
         page_size: pageSize,
-        status: statusOnly,
-        q: statusOnly ? undefined : (searchQuery || undefined),
+        status,
+        q: statusFromSearch ? undefined : (searchQuery || undefined),
         tenant_id: tenantFilter || undefined,
       })
       .then((res) => {
@@ -492,12 +503,26 @@ export function OpsTransactions() {
         setMeta({ total: res.total ?? 0, total_pages: res.total_pages ?? 1 })
       })
       .catch((e) => setError(e.message))
-  }, [page, pageSize, searchQuery, tenantFilter])
+  }, [page, pageSize, searchQuery, tenantFilter, tab])
   return (
-    <div className="rise">
+    <div className="rise stack">
       <PageHeader title="Transactions" subtitle="Server-filtered list. Click a row for progressive disclosure and drill chain." />
       {error && <div className="alert">{error}</div>}
-      <div className="panel table-wrap">
+      <div className="ops-tabs" role="tablist" aria-label="Transaction status sections">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            aria-selected={tab === t.id}
+            className={`ops-tab${tab === t.id ? ' on' : ''}`}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      <div className="panel table-wrap" role="tabpanel">
         <table className="data">
           <thead><tr><th>Reference</th><th>Amount</th><th>Status</th><th>Channel</th><th>Provider</th><th>Date</th></tr></thead>
           <tbody>
