@@ -16,6 +16,7 @@ export default function ForgotPasswordPage() {
   const [channels, setChannels] = useState({ email: true, sms: false, whatsapp: true })
   const [challengeId, setChallengeId] = useState('')
   const [destinationHint, setDestinationHint] = useState('')
+  const [demoOtp, setDemoOtp] = useState('')
   const [otp, setOtp] = useState('')
   const [resetToken, setResetToken] = useState('')
   const [password, setPassword] = useState('')
@@ -35,6 +36,22 @@ export default function ForgotPasswordPage() {
       .catch(() => {})
   }, [])
 
+  function openOtpStep(data) {
+    const id = data?.challenge_id || ''
+    setChallengeId(id)
+    setDestinationHint(data?.destination_hint || '')
+    setDemoOtp(data?.demo_otp || '')
+    if (data?.demo_otp) {
+      setOtp(String(data.demo_otp))
+    } else {
+      setOtp('')
+    }
+    setInfo(data?.message || 'Enter the one-time code that was sent.')
+    setError('')
+    // Always move to the OTP entry UI after a successful send response.
+    setStep(2)
+  }
+
   async function requestCode(e) {
     e.preventDefault()
     setError('')
@@ -42,17 +59,19 @@ export default function ForgotPasswordPage() {
     setLoading(true)
     try {
       const data = await api.forgotPassword({ identifier: identifier.trim(), channel })
-      setInfo(data.message)
-      if (!data.challenge_id) {
-        // Keep response generic (no account enumeration) while still guiding the user.
+      if (!data?.challenge_id) {
         setInfo(
-          `${data.message} If you do not receive a code, confirm your username/email/phone and try another channel.`,
+          `${data?.message || 'If an account matches, a one-time code was sent.'} If you do not receive a code, confirm your username/email/phone and try another channel.`,
         )
+        // Still show the OTP step so the flow is visible; verify stays disabled without a challenge.
+        setChallengeId('')
+        setDestinationHint(data?.destination_hint || '')
+        setDemoOtp('')
+        setOtp('')
+        setStep(2)
         return
       }
-      setChallengeId(data.challenge_id)
-      setDestinationHint(data.destination_hint || '')
-      setStep(2)
+      openOtpStep(data)
     } catch (err) {
       setError(err.message || 'Could not send code')
     } finally {
@@ -62,6 +81,10 @@ export default function ForgotPasswordPage() {
 
   async function verifyCode(e) {
     e.preventDefault()
+    if (!challengeId) {
+      setError('No active reset code. Go back and request a new one.')
+      return
+    }
     setError('')
     setInfo('')
     setLoading(true)
@@ -111,14 +134,12 @@ export default function ForgotPasswordPage() {
     setLoading(true)
     try {
       const data = await api.forgotPassword({ identifier: identifier.trim(), channel })
-      if (!data.challenge_id) {
-        setError('Could not resend code.')
+      if (!data?.challenge_id) {
+        setError('Could not resend code. Try another channel or check your details.')
         return
       }
-      setChallengeId(data.challenge_id)
-      setDestinationHint(data.destination_hint || '')
-      setOtp('')
-      setInfo('A new code was sent.')
+      openOtpStep(data)
+      setInfo(data.demo_otp ? data.message : 'A new code was sent.')
     } catch (err) {
       setError(err.message || 'Could not resend code')
     } finally {
@@ -186,11 +207,16 @@ export default function ForgotPasswordPage() {
       )}
 
       {step === 2 && (
-        <form onSubmit={verifyCode}>
+        <form onSubmit={verifyCode} key={challengeId || 'otp-step'}>
           <p className="muted" style={{ marginBottom: '1rem' }}>
             Enter the 6-digit code sent via {channel.toLowerCase()}
             {destinationHint ? ` to ${destinationHint}` : ''}.
           </p>
+          {demoOtp && (
+            <div className="alert ok" style={{ marginBottom: '1rem' }}>
+              Demo code (mock delivery): <strong style={{ letterSpacing: '0.2em' }}>{demoOtp}</strong>
+            </div>
+          )}
           <div className="field">
             <label>One-time code</label>
             <input
@@ -200,10 +226,16 @@ export default function ForgotPasswordPage() {
               autoComplete="one-time-code"
               placeholder="••••••"
               required
+              autoFocus
               style={{ letterSpacing: '0.35em', fontSize: '1.25rem' }}
             />
           </div>
-          <button className="btn btn-primary" type="submit" disabled={loading || otp.length !== 6} style={{ width: '100%' }}>
+          <button
+            className="btn btn-primary"
+            type="submit"
+            disabled={loading || otp.length !== 6 || !challengeId}
+            style={{ width: '100%' }}
+          >
             {loading ? 'Verifying…' : 'Verify code'}
           </button>
           <button
@@ -221,6 +253,7 @@ export default function ForgotPasswordPage() {
             onClick={() => {
               setStep(1)
               setOtp('')
+              setDemoOtp('')
               setError('')
               setInfo('')
             }}
