@@ -23,10 +23,13 @@ function groupContainsPath(group, pathname) {
 
 export function PublicLayout() {
   const { isAuthenticated, userType, logout } = useAuth()
+  const location = useLocation()
+  const isLanding = location.pathname === '/'
+
   return (
-    <div>
-      <div className="container">
-        <header className="public-nav rise">
+    <div className={isLanding ? 'public-shell public-shell--landing' : 'public-shell'}>
+      <header className={`public-nav rise${isLanding ? ' public-nav--overlay' : ''}`}>
+        <div className="container public-nav-inner">
           <Link to="/" className="brand">EasyPay</Link>
           <nav className="nav-links">
             <Link to="/#how">How it works</Link>
@@ -45,8 +48,8 @@ export function PublicLayout() {
               </>
             )}
           </nav>
-        </header>
-      </div>
+        </div>
+      </header>
       <Outlet />
       <div className="container footer">
         <span>© {new Date().getFullYear()} EasyPay Collection Platform</span>
