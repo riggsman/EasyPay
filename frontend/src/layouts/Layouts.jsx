@@ -7,14 +7,20 @@ import { api } from '../api/client'
 const DROPDOWN_NAV_LABELS = new Set([
   'Platform / Tenant',
   'Configuration',
+  'Services',
   'Operations',
   'Finance',
   'Governance',
 ])
 
+function navPath(to) {
+  return String(to || '').split('?')[0]
+}
+
 function pathMatchesItem(pathname, item) {
-  if (item.end) return pathname === item.to
-  return pathname === item.to || pathname.startsWith(`${item.to}/`)
+  const target = navPath(item.to)
+  if (item.end) return pathname === target
+  return pathname === target || pathname.startsWith(`${target}/`)
 }
 
 function groupContainsPath(group, pathname) {
@@ -95,6 +101,7 @@ function OpsShell({ title, links, contextLabel, basePath, showOpsChrome = true, 
   const [q, setQ] = useState('')
   const [searchResults, setSearchResults] = useState(null)
   const [tenantFilter, setTenantFilter] = useState(localStorage.getItem('ep_tenant_filter') || '')
+  const [navOpen, setNavOpen] = useState(false)
   const [openGroups, setOpenGroups] = useState(() => {
     const initial = {}
     for (const group of links) {
@@ -114,6 +121,23 @@ function OpsShell({ title, links, contextLabel, basePath, showOpsChrome = true, 
       return next
     })
   }, [location.pathname, links])
+
+  useEffect(() => {
+    setNavOpen(false)
+  }, [location.pathname])
+
+  useEffect(() => {
+    if (!navOpen) return undefined
+    function onKey(e) {
+      if (e.key === 'Escape') setNavOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    document.body.classList.add('ops-nav-lock')
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.classList.remove('ops-nav-lock')
+    }
+  }, [navOpen])
 
   useEffect(() => {
     if (!showOpsChrome) return
@@ -167,9 +191,23 @@ function OpsShell({ title, links, contextLabel, basePath, showOpsChrome = true, 
   }
 
   return (
-    <div className="ops-shell">
+    <div className={`ops-shell${navOpen ? ' ops-nav-open' : ''}`}>
       <header className="ops-topbar">
         <div className="ops-top-left">
+          <button
+            type="button"
+            className={`ops-cube-toggle${navOpen ? ' is-open' : ''}`}
+            aria-label={navOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={navOpen}
+            aria-controls="ops-side-nav"
+            onClick={() => setNavOpen((v) => !v)}
+          >
+            <span className="ops-cube" aria-hidden="true">
+              <span className="ops-cube-face ops-cube-front" />
+              <span className="ops-cube-face ops-cube-top" />
+              <span className="ops-cube-face ops-cube-side" />
+            </span>
+          </button>
           <Link to="/" className="brand">EasyPay</Link>
           <span className="ops-context">{contextLabel || title}</span>
           {showOpsChrome && tenantOptions.length > 0 && (
@@ -202,7 +240,7 @@ function OpsShell({ title, links, contextLabel, basePath, showOpsChrome = true, 
             </Link>
           )}
           {showOpsChrome && (
-            <span className="muted" title={realtime?.connected ? 'Realtime connected' : 'Realtime offline'}>
+            <span className="muted ops-live-label" title={realtime?.connected ? 'Realtime connected' : 'Realtime offline'}>
               <span className={`ops-live-dot ${realtime?.connected ? 'on' : ''}`} />
               Live
             </span>
@@ -212,8 +250,20 @@ function OpsShell({ title, links, contextLabel, basePath, showOpsChrome = true, 
         </div>
       </header>
       <div className="ops-body">
-        <aside className="ops-aside">
-          <p className="ops-aside-title">{title}</p>
+        <button
+          type="button"
+          className="ops-nav-backdrop"
+          aria-label="Close menu"
+          tabIndex={navOpen ? 0 : -1}
+          onClick={() => setNavOpen(false)}
+        />
+        <aside className="ops-aside" id="ops-side-nav">
+          <div className="ops-aside-head">
+            <p className="ops-aside-title">{title}</p>
+            <button type="button" className="ops-aside-close" aria-label="Close menu" onClick={() => setNavOpen(false)}>
+              ✕
+            </button>
+          </div>
           <nav>
             {links.map((group) => {
               const isDropdown = group.dropdown || DROPDOWN_NAV_LABELS.has(group.label)
@@ -245,7 +295,9 @@ function OpsShell({ title, links, contextLabel, basePath, showOpsChrome = true, 
                   {isOpen && (
                     <div className="ops-nav-items">
                       {group.items.map((l) => (
-                        <NavLink key={l.to} to={l.to} end={l.end}>{l.label}</NavLink>
+                        <NavLink key={l.to} to={l.to} end={l.end} onClick={() => setNavOpen(false)}>
+                          {l.label}
+                        </NavLink>
                       ))}
                     </div>
                   )}
@@ -372,12 +424,20 @@ export function PlatformLayout() {
       ],
     },
     {
+      label: 'Services',
+      dropdown: true,
+      items: [
+        { to: '/platform/utility-services', label: 'Utility services' },
+        { to: '/platform/utility-services?new=1', label: 'Create utility service' },
+        { to: '/platform/payment-products', label: 'Payment products' },
+        { to: '/platform/payment-products?new=1', label: 'Create payment product' },
+      ],
+    },
+    {
       label: 'Configuration',
       dropdown: true,
       items: [
         { to: '/platform/providers', label: 'Providers (Campay / Email / WA / SMS)' },
-        { to: '/platform/payment-products', label: 'Payment products' },
-        { to: '/platform/utility-services', label: 'Utility services' },
         { to: '/platform/fees', label: 'Fees' },
         { to: '/platform/commissions', label: 'Commissions' },
         { to: '/platform/config', label: 'System Config' },
