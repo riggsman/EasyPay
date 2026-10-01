@@ -148,7 +148,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="auth-box panel rise">
+    <div className="auth-box panel">
       <h2>Forgot password</h2>
       <p>Reset your EasyPay password with a one-time code.</p>
       {error && <div className="alert">{error}</div>}
@@ -165,24 +165,13 @@ export default function ForgotPasswordPage() {
               autoComplete="username"
             />
           </div>
-          <fieldset className="field" style={{ border: 0, padding: 0, margin: 0 }}>
-            <legend style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem' }}>
-              Send code via
-            </legend>
-            <div style={{ display: 'grid', gap: '0.5rem' }}>
+          <fieldset className="field auth-channel-fieldset">
+            <legend>Send code via</legend>
+            <div className="auth-channel-options">
               {CHANNELS.map((c) => {
                 const enabled = !!channels[c.key]
                 return (
-                  <label
-                    key={c.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.6rem',
-                      opacity: enabled ? 1 : 0.45,
-                      cursor: enabled ? 'pointer' : 'not-allowed',
-                    }}
-                  >
+                  <label key={c.id} className={`auth-channel-option${enabled ? '' : ' is-disabled'}`}>
                     <input
                       type="radio"
                       name="channel"
@@ -200,26 +189,29 @@ export default function ForgotPasswordPage() {
               })}
             </div>
           </fieldset>
-          <button className="btn btn-primary" type="submit" disabled={loading} style={{ width: '100%', marginTop: '0.5rem' }}>
-            {loading ? 'Sending…' : 'Send code'}
-          </button>
+          <div className="auth-actions">
+            <button className="btn btn-primary" type="submit" disabled={loading}>
+              {loading ? 'Sending…' : 'Send code'}
+            </button>
+          </div>
         </form>
       )}
 
       {step === 2 && (
         <form onSubmit={verifyCode} key={challengeId || 'otp-step'}>
-          <p className="muted" style={{ marginBottom: '1rem' }}>
+          <p className="muted auth-step-note">
             Enter the 6-digit code sent via {channel.toLowerCase()}
             {destinationHint ? ` to ${destinationHint}` : ''}.
           </p>
           {demoOtp && (
-            <div className="alert ok" style={{ marginBottom: '1rem' }}>
-              Demo code (mock delivery): <strong style={{ letterSpacing: '0.2em' }}>{demoOtp}</strong>
+            <div className="alert ok">
+              Demo code (mock delivery): <strong className="auth-demo-otp">{demoOtp}</strong>
             </div>
           )}
           <div className="field">
             <label>One-time code</label>
             <input
+              className="auth-otp-input"
               value={otp}
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
               inputMode="numeric"
@@ -227,40 +219,29 @@ export default function ForgotPasswordPage() {
               placeholder="••••••"
               required
               autoFocus
-              style={{ letterSpacing: '0.35em', fontSize: '1.25rem' }}
             />
           </div>
-          <button
-            className="btn btn-primary"
-            type="submit"
-            disabled={loading || otp.length !== 6 || !challengeId}
-            style={{ width: '100%' }}
-          >
-            {loading ? 'Verifying…' : 'Verify code'}
-          </button>
-          <button
-            type="button"
-            className="btn"
-            onClick={resendCode}
-            disabled={loading}
-            style={{ width: '100%', marginTop: '0.75rem' }}
-          >
-            Resend code
-          </button>
-          <button
-            type="button"
-            className="btn"
-            onClick={() => {
-              setStep(1)
-              setOtp('')
-              setDemoOtp('')
-              setError('')
-              setInfo('')
-            }}
-            style={{ width: '100%', marginTop: '0.5rem' }}
-          >
-            Change channel
-          </button>
+          <div className="auth-actions">
+            <button className="btn btn-primary" type="submit" disabled={loading || otp.length !== 6 || !challengeId}>
+              {loading ? 'Verifying…' : 'Verify code'}
+            </button>
+            <button type="button" className="btn" onClick={resendCode} disabled={loading}>
+              Resend code
+            </button>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => {
+                setStep(1)
+                setOtp('')
+                setDemoOtp('')
+                setError('')
+                setInfo('')
+              }}
+            >
+              Change channel
+            </button>
+          </div>
         </form>
       )}
 
@@ -288,24 +269,26 @@ export default function ForgotPasswordPage() {
               autoComplete="new-password"
             />
           </div>
-          <button className="btn btn-primary" type="submit" disabled={loading} style={{ width: '100%' }}>
-            {loading ? 'Saving…' : 'Update password'}
-          </button>
+          <div className="auth-actions">
+            <button className="btn btn-primary" type="submit" disabled={loading}>
+              {loading ? 'Saving…' : 'Update password'}
+            </button>
+          </div>
         </form>
       )}
 
       {step === 4 && (
-        <div>
+        <div className="auth-actions">
           <div className="alert ok">{info || 'Password updated.'}</div>
-          <button className="btn btn-primary" type="button" style={{ width: '100%' }} onClick={() => navigate('/login')}>
+          <button className="btn btn-primary" type="button" onClick={() => navigate('/login')}>
             Sign in
           </button>
         </div>
       )}
 
-      <p style={{ marginTop: '1rem' }}>
+      <div className="auth-links">
         <Link to="/login">Back to sign in</Link>
-      </p>
+      </div>
     </div>
   )
 }
