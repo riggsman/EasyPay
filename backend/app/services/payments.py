@@ -84,15 +84,19 @@ def timeline_visible_statuses(user_type: Optional[str]) -> Optional[frozenset]:
     return _COUNCIL_TIMELINE_STATUSES
 
 
-def timeline_label(to_status: str, from_status: Optional[str] = None) -> str:
-    """Human labels; FAILED is staged so payer-debit vs council-credit are distinct."""
+def timeline_label(to_status: str, from_status: Optional[str] = None, *, product_type: Optional[str] = None) -> str:
+    """Human labels; FAILED is staged so payer-debit vs part-2 provider failures are distinct."""
     if to_status == "FAILED":
         if from_status == "DEBITED":
+            if (product_type or "").upper() == "UTILITY":
+                return "Utility provider payment failed"
             return "Council credit failed"
         # Payer-side debit failures happen immediately after the debiting stage attempt
         if from_status in ("PROCESSING", "INITIATED", None):
             return "Customer account debit failed"
         return "Payment failed"
+    if to_status == "CREDITED" and (product_type or "").upper() == "UTILITY":
+        return "Utility provider paid"
     return TIMELINE_LABELS.get(to_status, to_status.replace("_", " ").title())
 
 
@@ -499,6 +503,69 @@ def _mark_credit_failure(db: Session, txn: Transaction, reason: str, actor_user_
     return advance_transaction(db, txn, "FAILED", actor_user_id, reason)
 
 
+DEBIT_SUCCESS_STATUSES = frozenset({"SUCCESSFUL", "SUCCESS", "COMPLETED"})
+DEBIT_FAIL_STATUSES = frozenset({"FAILED", "CANCELED", "CANCELLED"})
+
+
+def confirm_payer_debit(
+    db: Session,
+    txn: Transaction,
+    actor_user_id: Optional[str] = None,
+) -> tuple[Transaction, bool]:
+    """Confirm the payer MoMo debit before any part-2 provider work.
+
+    Returns ``(txn, debit_confirmed)``. When ``debit_confirmed`` is False the
+    transaction is either still PROCESSING (awaiting provider SUCCESS) or FAILED
+    at the debit stage — callers must not contact council/utility providers.
+    """
+    status = normalize_transaction_status(txn.status) if txn.status != "MANUAL_INTERVENTION" else txn.status
+    if status in ("DEBITED", "CREDITED", "SETTLED"):
+        return txn, True
+    if status in ("FAILED", "REJECTED", "MANUAL_INTERVENTION"):
+        # Credit-stage failures already passed debit confirmation
+        if (txn.failure_stage or "").upper() == "CREDIT":
+            return txn, True
+        return txn, False
+
+    # Poll Campay for the collect outcome before advancing past PROCESSING
+    if txn.payment_provider == "CAMPAY" and txn.provider_reference:
+        from app.services.providers.campay import CampayClient
+
+        client = CampayClient(db)
+        status_result = client.get_transaction_status(txn.provider_reference)
+        txn.provider_status = status_result.status
+        db.flush()
+        if status_result.status in DEBIT_FAIL_STATUSES:
+            return (
+                mark_payer_debit_failed(
+                    db,
+                    txn,
+                    f"Payer debit failed: provider status {status_result.status}",
+                    actor_user_id,
+                ),
+                False,
+            )
+        if status_result.status not in DEBIT_SUCCESS_STATUSES and not client.mock:
+            # Still awaiting MoMo SUCCESS — do not start part 2
+            if txn.status == "INITIATED":
+                txn.status = "PROCESSING"
+                _add_event(db, txn, "INITIATED", "PROCESSING", "Payment processing — awaiting debit confirmation", actor_user_id)
+            db.commit()
+            db.refresh(txn)
+            return txn, False
+
+    for state, note in [
+        ("PROCESSING", "Payment processing"),
+        ("DEBITED", "Customer account debited via Campay" if txn.payment_provider == "CAMPAY" else "Customer account debited"),
+    ]:
+        if txn.status in ("FAILED", "REJECTED", "MANUAL_INTERVENTION"):
+            return txn, False
+        if txn.status != state:
+            txn = advance_transaction(db, txn, state, actor_user_id, note)
+
+    return txn, txn.status == "DEBITED"
+
+
 def _attempt_council_credit(
     db: Session,
     txn: Transaction,
@@ -511,8 +578,23 @@ def _attempt_council_credit(
     bank_code: Optional[str] = None,
     force_fail_reason: Optional[str] = None,
 ) -> tuple[Transaction, bool, str]:
-    """Disburse net amount to council. Returns (txn, ok, message)."""
+    """Disburse net amount to council. Returns (txn, ok, message).
+
+    Hard rule: never call the MoMo/bank payout provider unless the payer debit
+    is confirmed (DEBITED) or this is a credit-stage retry/manual recovery.
+    """
     from app.services.providers.campay import CampayClient, record_intent
+
+    status = normalize_transaction_status(txn.status) if txn.status != "MANUAL_INTERVENTION" else txn.status
+    debit_ok = status == "DEBITED" or (
+        status in ("FAILED", "REJECTED", "MANUAL_INTERVENTION")
+        and (txn.failure_stage or "").upper() == "CREDIT"
+    )
+    if not debit_ok:
+        return txn, False, "Council credit blocked: payer debit not confirmed successfully"
+
+    if getattr(txn, "product_type", "LEVY") == "UTILITY":
+        return txn, False, "Council credit blocked: utility payments use the utility provider path"
 
     tenant = db.get(Tenant, txn.transaction_tenant_id)
     if not tenant:
@@ -737,42 +819,26 @@ def manual_council_credit(
 
 
 def complete_payment_happy_path(db: Session, transaction_id: str, actor_user_id: Optional[str] = None) -> Transaction:
+    """Finish a payment after debit initiation.
+
+    - Utility payments: confirm debit, then notify the utility provider.
+    - Council/levy payments: confirm debit, then credit the council via MoMo/bank.
+    Part-2 provider calls never run unless debit confirmation succeeds.
+    """
     txn = db.get(Transaction, transaction_id)
     if not txn:
         raise HTTPException(status_code=404, detail="Transaction not found")
     if txn.status in ("SETTLED", "FAILED", "REJECTED", "MANUAL_INTERVENTION"):
         return txn
 
-    # MoMo must settle only after Campay confirms SUCCESSFUL
-    if txn.payment_provider == "CAMPAY" and txn.provider_reference:
-        from app.services.providers.campay import CampayClient
+    if getattr(txn, "product_type", "LEVY") == "UTILITY":
+        from app.services.utilities import complete_utility_payment
 
-        client = CampayClient(db)
-        status_result = client.get_transaction_status(txn.provider_reference)
-        txn.provider_status = status_result.status
-        db.flush()
-        if status_result.status in ("FAILED", "CANCELED", "CANCELLED"):
-            # Fail immediately after the debiting stage — do not credit or settle
-            return mark_payer_debit_failed(
-                db,
-                txn,
-                f"Payer debit failed: provider status {status_result.status}",
-                actor_user_id,
-            )
-        if status_result.status not in ("SUCCESSFUL", "SUCCESS", "COMPLETED") and not client.mock:
-            # Leave in PROCESSING until webhook/poll confirms
-            db.commit()
-            db.refresh(txn)
-            return txn
+        return complete_utility_payment(db, txn.transaction_id, actor_user_id=actor_user_id)
 
-    for state, note in [
-        ("PROCESSING", "Payment processing"),
-        ("DEBITED", "Customer account debited via Campay" if txn.payment_provider == "CAMPAY" else "Customer account debited"),
-    ]:
-        if txn.status in ("FAILED", "REJECTED", "MANUAL_INTERVENTION"):
-            return txn
-        if txn.status != state:
-            txn = advance_transaction(db, txn, state, actor_user_id, note)
+    txn, debit_ok = confirm_payer_debit(db, txn, actor_user_id)
+    if not debit_ok:
+        return txn
 
     if txn.status == "DEBITED":
         # Force-fail hook for demo keys

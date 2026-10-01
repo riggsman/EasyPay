@@ -15,11 +15,14 @@ from app.models.utility import UtilityPaymentDetail, UtilityService
 from app.services.audit import write_audit
 from app.services.payments import (
     _add_event,
+    _mark_credit_failure,
     _next_ref,
     advance_transaction,
+    confirm_payer_debit,
     mark_payer_debit_failed,
 )
 from app.services.providers.campay import CampayClient, record_intent
+from app.services.providers.utility_bill import UtilityBillClient, record_utility_intent
 
 
 def apply_fee(fee_type: str, fee_value: Decimal, amount: Decimal) -> Decimal:
@@ -337,24 +340,10 @@ def initiate_utility_payment(
         )
         collection.status = "FAILED"
     else:
-        # Utility path: debit payer → credit utility provider → settle (receipt + email on SETTLED)
-        advance_transaction(db, txn, "PROCESSING", actor_user_id, "Payment processing")
-        advance_transaction(db, txn, "DEBITED", actor_user_id, "Customer account debited via Campay")
-        advance_transaction(
-            db,
-            txn,
-            "CREDITED",
-            actor_user_id,
-            f"{svc.name} credited ({ref_type}: {meter or bill})",
-        )
-        advance_transaction(db, txn, "SETTLED", actor_user_id, f"{svc.name} bill payment settled")
-        collection.status = "COMPLETED"
-        receipt = db.query(Receipt).filter(Receipt.transaction_id == txn.transaction_id).first()
-        if receipt:
-            receipt.revenue_name = f"{svc.name} ({ref_type}: {meter or bill})"
-            receipt.council_name = "EasyPay Utilities"
-            detail.receipt_emailed_at = utcnow()
-        # notify_payment_settled already invoked inside advance_transaction(SETTLED)
+        # Part 1 only: request MoMo debit. Part 2 (utility provider) waits for debit SUCCESS.
+        txn.status = "PROCESSING"
+        _add_event(db, txn, "INITIATED", "PROCESSING", "Payment processing — awaiting debit confirmation", actor_user_id)
+        collection.status = "PENDING"
 
     db.add(IdempotencyKey(key_value=idempotency_key, scope="utility_payment", response_ref=txn.transaction_id))
     write_audit(
@@ -374,6 +363,108 @@ def initiate_utility_payment(
     )
     db.commit()
     db.refresh(txn)
+
+    # Immediately attempt part 2 when debit is already confirmed (mock Campay SUCCESS).
+    # Live PENDING collections stay PROCESSING until confirm/webhook.
+    if txn.status == "PROCESSING":
+        txn = complete_utility_payment(db, txn.transaction_id, actor_user_id=actor_user_id)
+    return txn
+
+
+def _attempt_utility_provider_credit(
+    db: Session,
+    txn: Transaction,
+    *,
+    actor_user_id: Optional[str] = None,
+) -> tuple[Transaction, bool, str]:
+    """Part 2: notify the utility provider. Requires confirmed payer debit."""
+    if txn.status != "DEBITED":
+        return txn, False, "Utility provider request blocked: payer debit not confirmed successfully"
+    if getattr(txn, "product_type", None) != "UTILITY":
+        return txn, False, "Utility provider request blocked: not a utility payment"
+
+    detail = utility_detail_for_txn(db, txn.transaction_id)
+    if not detail:
+        return txn, False, "Utility payment detail missing"
+    svc = get_service(db, detail.utility_service_id)
+
+    client = UtilityBillClient(db)
+    result = client.pay_bill(
+        provider_hint=svc.provider_hint or svc.code,
+        service_code=svc.code,
+        service_name=svc.name,
+        amount=txn.amount,
+        currency=txn.currency or svc.currency,
+        reference_type=detail.reference_type,
+        meter_number=detail.meter_number,
+        bill_number=detail.bill_number,
+        external_reference=f"{txn.transaction_reference}-UTILITY",
+    )
+    record_utility_intent(
+        db,
+        provider_hint=svc.provider_hint or svc.code,
+        entity_id=txn.transaction_id,
+        tenant_id=txn.transaction_tenant_id,
+        amount=str(txn.amount),
+        currency=txn.currency or "XAF",
+        destination=detail.meter_number or detail.bill_number,
+        result=result,
+        external_reference=f"{txn.transaction_reference}-UTILITY",
+    )
+    txn.credit_payout_method = "UTILITY"
+    txn.credit_destination = detail.meter_number or detail.bill_number
+    txn.credit_provider_reference = result.reference
+    if not result.ok:
+        return txn, False, result.error or "Utility provider payment failed"
+    return (
+        txn,
+        True,
+        f"{svc.name} paid via provider ({detail.reference_type}: {detail.meter_number or detail.bill_number})",
+    )
+
+
+def complete_utility_payment(
+    db: Session,
+    transaction_id: str,
+    actor_user_id: Optional[str] = None,
+) -> Transaction:
+    """Confirm MoMo debit, then send the utility-provider request, then settle."""
+    txn = db.get(Transaction, transaction_id)
+    if not txn:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    if getattr(txn, "product_type", None) != "UTILITY":
+        raise HTTPException(status_code=422, detail="Not a utility payment")
+    if txn.status in ("SETTLED", "FAILED", "REJECTED", "MANUAL_INTERVENTION"):
+        return txn
+
+    txn, debit_ok = confirm_payer_debit(db, txn, actor_user_id)
+    if not debit_ok:
+        return txn
+
+    if txn.status == "DEBITED":
+        txn, ok, message = _attempt_utility_provider_credit(db, txn, actor_user_id=actor_user_id)
+        if not ok:
+            return _mark_credit_failure(db, txn, message, actor_user_id)
+        txn = advance_transaction(db, txn, "CREDITED", actor_user_id, message)
+
+    if txn.status == "CREDITED":
+        txn = advance_transaction(db, txn, "SETTLED", actor_user_id, "Utility bill payment settled")
+        detail = utility_detail_for_txn(db, txn.transaction_id)
+        if detail:
+            receipt = db.query(Receipt).filter(Receipt.transaction_id == txn.transaction_id).first()
+            if receipt:
+                receipt.revenue_name = (
+                    f"{detail.service_name_snapshot} "
+                    f"({detail.reference_type}: {detail.meter_number or detail.bill_number})"
+                )
+                receipt.council_name = "EasyPay Utilities"
+                detail.receipt_emailed_at = utcnow()
+            if txn.collection_id:
+                collection = db.get(Collection, txn.collection_id)
+                if collection:
+                    collection.status = "COMPLETED"
+            db.commit()
+            db.refresh(txn)
     return txn
 
 
