@@ -552,11 +552,16 @@ button.linkish {
   width: 100%;
   margin-bottom: 1rem;
 }
-.auth-box .field input,
+.auth-box .field input:not([type='radio']):not([type='checkbox']),
 .auth-box .field select,
 .auth-box .field textarea {
   width: 100%;
   box-sizing: border-box;
+}
+.auth-box .field input[type='radio'],
+.auth-box .field input[type='checkbox'] {
+  width: auto;
+  flex: 0 0 auto;
 }
 .auth-box fieldset.field {
   min-inline-size: 0;
