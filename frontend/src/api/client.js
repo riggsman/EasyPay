@@ -334,6 +334,19 @@ export const api = {
   tenantDashboard: () => request('/api/v1/dashboards/tenant'),
   platformDashboard: () => request('/api/v1/dashboards/platform'),
   tenants: () => request('/api/v1/tenants'),
+  createTenant: (body) => request('/api/v1/tenants', { method: 'POST', body: JSON.stringify(body) }),
+  registerTenant: (formData) =>
+    request('/api/v1/tenants/register', { method: 'POST', body: formData }),
+  uploadTenantLogo: (tenantId, file) => {
+    const fd = new FormData()
+    fd.append('file', file)
+    return request(`/api/v1/tenants/${tenantId}/logo`, { method: 'POST', body: fd })
+  },
+  tenantLogoBlob: async (tenantId) => {
+    const res = await request(`/api/v1/tenants/${tenantId}/logo`, { raw: true, cache: false })
+    if (!res.ok) throw new Error('Logo not found')
+    return res.blob()
+  },
   revenueTypes: (tenantId) => request(withTenant('/api/v1/revenue-types', tenantId)),
   collectionsReport: (params = '') => request(`/api/v1/reports/collections${params}`),
   settlements: (params) => request(`/api/v1/settlements${queryString(params)}`),
