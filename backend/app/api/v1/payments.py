@@ -196,6 +196,21 @@ def _detail(db, txn: Transaction, user_type: str) -> TransactionDetailOut:
                 **recovery,
                 "warnings": recovery.get("warnings") or [],
             }
+    utility = None
+    if getattr(txn, "product_type", "LEVY") == "UTILITY":
+        from app.services.utilities import utility_detail_for_txn
+
+        detail = utility_detail_for_txn(db, txn.transaction_id)
+        if detail:
+            utility = {
+                "utility_service_id": detail.utility_service_id,
+                "service_name": detail.service_name_snapshot,
+                "service_code": detail.service_code_snapshot,
+                "reference_type": detail.reference_type,
+                "meter_number": detail.meter_number,
+                "bill_number": detail.bill_number,
+                "bill_amount": str(detail.bill_amount),
+            }
     return TransactionDetailOut(
         **base,
         events=[TransactionEventOut(**serialize_timeline_event(e, user_type=user_type)) for e in events],
@@ -203,4 +218,5 @@ def _detail(db, txn: Transaction, user_type: str) -> TransactionDetailOut:
         receipt_id=receipt.receipt_id if receipt else None,
         receipt_pdf_url=receipt_pdf_path(receipt.receipt_id) if receipt else None,
         credit_recovery=recovery,
+        utility=utility,
     )

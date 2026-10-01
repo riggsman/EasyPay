@@ -14,7 +14,7 @@ export default function ObligationsPage() {
     <div className="rise">
       <div className="app-top">
         <h2>My Obligations</h2>
-        <Link className="btn btn-primary" to="/payer/pay">Make Payment</Link>
+        <Link className="btn btn-primary" to="/payer/pay/council">Pay council levy</Link>
       </div>
       {error && <div className="alert">{error}</div>}
       <div className="panel table-wrap">

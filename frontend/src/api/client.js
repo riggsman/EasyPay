@@ -259,6 +259,24 @@ export const api = {
   manualCredit: (id, body) =>
     request(`/api/v1/payments/${id}/manual-credit`, { method: 'POST', body: JSON.stringify(body || {}) }),
 
+  utilityStore: () => request('/api/v1/utility-services/store'),
+  utilityServicesAdmin: () => request('/api/v1/utility-services'),
+  createUtilityService: (body) =>
+    request('/api/v1/utility-services', { method: 'POST', body: JSON.stringify(body) }),
+  updateUtilityService: (id, body) =>
+    request(`/api/v1/utility-services/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  utilityQuote: (body) =>
+    request('/api/v1/utility-payments/quote', { method: 'POST', body: JSON.stringify(body) }),
+  utilityPay: (body) =>
+    request('/api/v1/utility-payments/initiate', { method: 'POST', body: JSON.stringify(body) }),
+
+  paymentProductsChooser: () => request('/api/v1/payment-products/chooser'),
+  paymentProductsAdmin: () => request('/api/v1/payment-products'),
+  createPaymentProduct: (body) =>
+    request('/api/v1/payment-products', { method: 'POST', body: JSON.stringify(body) }),
+  updatePaymentProduct: (id, body) =>
+    request(`/api/v1/payment-products/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+
   clearTokens,
   setTokens,
 }

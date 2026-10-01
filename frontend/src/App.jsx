@@ -15,12 +15,16 @@ import PaymentDetail from './pages/payer/PaymentDetail'
 import ReceiptsPage from './pages/payer/Receipts'
 import OperatingAreaPage from './pages/payer/OperatingArea'
 import ProfilePage from './pages/payer/Profile'
+import ServicesStore from './pages/payer/ServicesStore'
+import CouncilPaymentPage from './pages/payer/CouncilPayment'
 import PayerStatements, { PayerNotifications } from './pages/payer/Statements'
 import TenantObligations from './pages/tenant/Obligations'
 import TenantRevenue from './pages/tenant/Revenue'
 import PlatformTenants from './pages/platform/Tenants'
 import PlatformGeography from './pages/platform/Geography'
 import PlatformProviders from './pages/platform/Providers'
+import UtilityServicesAdmin from './pages/platform/UtilityServices'
+import PaymentProductsAdmin from './pages/platform/PaymentProducts'
 import {
   OpsDashboard,
   OpsAlerts,
@@ -104,6 +108,9 @@ export default function App() {
             <Route path="/payer" element={<PayerDashboard />} />
             <Route path="/payer/obligations" element={<ObligationsPage />} />
             <Route path="/payer/pay" element={<MakePaymentPage />} />
+            <Route path="/payer/pay/council" element={<CouncilPaymentPage />} />
+            <Route path="/payer/pay/utilities" element={<ServicesStore />} />
+            <Route path="/payer/services" element={<ServicesStore />} />
             <Route path="/payer/history" element={<PaymentHistory />} />
             <Route path="/payer/payments/:id" element={<PaymentDetail />} />
             <Route path="/payer/receipts" element={<ReceiptsPage />} />
@@ -130,6 +137,8 @@ export default function App() {
             <Route path="/platform/tenants" element={<PlatformTenants />} />
             <Route path="/platform/geography" element={<PlatformGeography />} />
             <Route path="/platform/providers" element={<PlatformProviders />} />
+            <Route path="/platform/utility-services" element={<UtilityServicesAdmin />} />
+            <Route path="/platform/payment-products" element={<PaymentProductsAdmin />} />
             <Route path="/platform/obligations" element={<TenantObligations />} />
             {sharedOpsRoutes('/platform')}
           </Route>
