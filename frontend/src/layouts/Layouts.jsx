@@ -32,8 +32,6 @@ export function PublicLayout() {
         <div className="container public-nav-inner">
           <Link to="/" className="brand">EasyPay</Link>
           <nav className="nav-links">
-            <Link to="/#how">How it works</Link>
-            <Link to="/verify">Verify</Link>
             {isAuthenticated ? (
               <>
                 <Link to={userType === 'PAYER' ? '/payer' : (userType === 'PLATFORM_ADMIN' || userType === 'SUPER_ADMIN') ? '/platform' : '/tenant'}>
@@ -43,8 +41,8 @@ export function PublicLayout() {
               </>
             ) : (
               <>
-                <Link to="/login">Sign In</Link>
-                <Link className="btn btn-primary" to="/register">Create Account</Link>
+                <Link className="nav-signin" to="/login">Sign In</Link>
+                <Link className="btn btn-primary nav-cta" to="/register">Create Account</Link>
               </>
             )}
           </nav>
