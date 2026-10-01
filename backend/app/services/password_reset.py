@@ -90,18 +90,46 @@ def available_channels(db: Session, tenant_id: Optional[str] = None) -> dict:
     }
 
 
+def _provider_is_mock(db: Session, channel: str) -> bool:
+    from app.services.providers import store as provider_store
+
+    code = {
+        "EMAIL": provider_store.PROVIDER_EMAIL,
+        "SMS": provider_store.PROVIDER_SMS,
+        "WHATSAPP": provider_store.PROVIDER_WHATSAPP,
+    }.get(channel)
+    if not code:
+        return False
+    secrets = provider_store.get_provider_secrets(db, code)
+    if str(secrets.get("mock", "")).lower() in ("1", "true", "yes", "on"):
+        return True
+    settings = get_settings()
+    return (settings.APP_ENV or "").lower() in ("development", "dev", "test", "local")
+
+
+def _success_payload(
+    *,
+    challenge_id: Optional[str],
+    channel: str,
+    destination: Optional[str],
+    demo_otp: Optional[str] = None,
+) -> dict:
+    return {
+        "message": "If an account matches, a one-time code was sent.",
+        "challenge_id": challenge_id,
+        "channel": channel,
+        "destination_hint": mask_destination(channel, destination) if destination else None,
+        "expires_in_seconds": OTP_TTL_MINUTES * 60,
+        "demo_otp": demo_otp,
+    }
+
+
 def request_otp(db: Session, *, identifier: str, channel: str) -> dict:
     channel = (channel or "").strip().upper()
     if channel not in CHANNELS:
         raise HTTPException(status_code=400, detail="Invalid channel. Use EMAIL, SMS, or WHATSAPP.")
 
-    generic = {
-        "message": "If an account matches, a one-time code was sent.",
-        "challenge_id": None,
-        "channel": channel,
-        "destination_hint": None,
-        "expires_in_seconds": OTP_TTL_MINUTES * 60,
-    }
+    generic = _success_payload(challenge_id=None, channel=channel, destination=None)
 
     user = find_user_by_identifier(db, identifier)
     if not user or not user.is_active:
@@ -133,15 +161,22 @@ def request_otp(db: Session, *, identifier: str, channel: str) -> dict:
         .filter(
             PasswordResetChallenge.user_id == user.user_id,
             PasswordResetChallenge.status == "PENDING",
+            PasswordResetChallenge.channel == channel,
         )
         .order_by(PasswordResetChallenge.created_at.desc())
         .first()
     )
+    # During cooldown, reuse the outstanding challenge so the OTP step can still open.
     if recent and (now - recent.created_at).total_seconds() < RESEND_COOLDOWN_SECONDS:
-        raise HTTPException(
-            status_code=429,
-            detail=f"Please wait {RESEND_COOLDOWN_SECONDS} seconds before requesting another code.",
-        )
+        remaining = max(0, int(OTP_TTL_MINUTES * 60 - (now - recent.created_at).total_seconds()))
+        return {
+            "message": "A code was already sent. Enter it below, or wait before requesting a new one.",
+            "challenge_id": recent.challenge_id,
+            "channel": recent.channel,
+            "destination_hint": mask_destination(recent.channel, recent.destination),
+            "expires_in_seconds": remaining,
+            "demo_otp": None,
+        }
 
     # Invalidate outstanding challenges for this user.
     for row in (
@@ -193,13 +228,13 @@ def request_otp(db: Session, *, identifier: str, channel: str) -> dict:
     if delivery_status == "SKIPPED":
         raise HTTPException(status_code=400, detail=f"{channel} delivery is currently unavailable.")
 
-    return {
-        "message": "If an account matches, a one-time code was sent.",
-        "challenge_id": challenge.challenge_id,
-        "channel": channel,
-        "destination_hint": mask_destination(channel, destination),
-        "expires_in_seconds": OTP_TTL_MINUTES * 60,
-    }
+    demo_otp = otp if _provider_is_mock(db, channel) else None
+    return _success_payload(
+        challenge_id=challenge.challenge_id,
+        channel=channel,
+        destination=destination,
+        demo_otp=demo_otp,
+    )
 
 
 def verify_otp(db: Session, *, challenge_id: str, otp: str) -> dict:

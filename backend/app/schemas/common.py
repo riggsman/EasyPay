@@ -40,6 +40,8 @@ class ForgotPasswordResponse(BaseModel):
     channel: str
     destination_hint: Optional[str] = None
     expires_in_seconds: int = 600
+    # Present only when the channel provider is in mock/demo mode (not sent over real SMS/email).
+    demo_otp: Optional[str] = None
 
 
 class VerifyOtpRequest(BaseModel):

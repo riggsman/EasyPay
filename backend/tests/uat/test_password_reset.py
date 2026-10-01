@@ -74,8 +74,10 @@ def test_uat_password_reset_email_flow_for_payer(client):
     assert challenged["channel"] == "EMAIL"
     assert challenged["destination_hint"]
     assert "@" in challenged["destination_hint"]
+    assert challenged.get("demo_otp") and len(challenged["demo_otp"]) == 6
 
-    otp = _otp_from_challenge(challenged["challenge_id"])
+    otp = challenged["demo_otp"]
+    assert otp == _otp_from_challenge(challenged["challenge_id"])
 
     # Wrong OTP rejected
     bad = client.post(
@@ -170,6 +172,26 @@ def test_uat_password_reset_sms_disabled_by_default(client):
     )
     assert r.status_code == 400, r.text
     assert "unavailable" in r.json()["detail"].lower()
+
+
+def test_uat_password_reset_cooldown_returns_existing_challenge(client):
+    _clear_challenges_for("abctrading")
+    first = client.post(
+        "/api/v1/auth/forgot-password",
+        json={"identifier": "abctrading", "channel": "EMAIL"},
+    )
+    assert first.status_code == 200, first.text
+    cid = first.json()["challenge_id"]
+    assert cid
+    assert first.json().get("demo_otp")
+
+    second = client.post(
+        "/api/v1/auth/forgot-password",
+        json={"identifier": "abctrading", "channel": "EMAIL"},
+    )
+    assert second.status_code == 200, second.text
+    assert second.json()["challenge_id"] == cid
+    assert "already sent" in second.json()["message"].lower()
 
 
 def test_uat_password_reset_staff_user_email(client):
