@@ -1,4 +1,8 @@
-"""Shared PDF branding: washed logo watermark + verification QR codes."""
+"""Shared PDF branding: washed logo watermark + verification QR codes.
+
+Watermarks are drawn in ``beforePage`` so they sit *under* page content and
+never overprint / wash out receipt text.
+"""
 from __future__ import annotations
 
 from io import BytesIO
@@ -9,7 +13,7 @@ from reportlab.lib.units import mm
 from reportlab.lib.utils import ImageReader
 from reportlab.lib import colors
 from reportlab.lib.styles import ParagraphStyle
-from reportlab.platypus import Image as RLImage, Paragraph, Table, TableStyle
+from reportlab.platypus import Image as RLImage, Paragraph, SimpleDocTemplate, Table, TableStyle
 from sqlalchemy.orm import Session
 
 from app.services.branding import (
@@ -19,13 +23,34 @@ from app.services.branding import (
 )
 
 
-def logo_watermark_callbacks(
+def _draw_centered_watermark(canvas, pagesize, reader: ImageReader) -> None:
+    canvas.saveState()
+    page_w, page_h = pagesize
+    # Opaque white base so the wash never tints through transparent flowables
+    canvas.setFillColor(colors.white)
+    canvas.rect(0, 0, page_w, page_h, fill=1, stroke=0)
+    max_w, max_h = page_w * 0.55, page_h * 0.55
+    iw, ih = reader.getSize()
+    if not iw or not ih:
+        canvas.restoreState()
+        return
+    scale = min(max_w / iw, max_h / ih)
+    w, h = iw * scale, ih * scale
+    x = (page_w - w) / 2.0
+    y = (page_h - h) / 2.0
+    # mask="auto" respects PNG alpha; drawn from beforePage so text paints on top
+    canvas.drawImage(reader, x, y, width=w, height=h, mask="auto", preserveAspectRatio=True)
+    canvas.restoreState()
+
+
+def attach_logo_watermark(
+    doc: SimpleDocTemplate,
     db: Session,
     *,
     tenant_id: Optional[str] = None,
     force_platform: bool = False,
-) -> tuple[Callable, Callable]:
-    """Return (onFirstPage, onLaterPages) drawing a centered washed logo."""
+) -> None:
+    """Attach a washed logo that paints *before* flowables (behind all text)."""
     path = resolve_logo_file(db, tenant_id=tenant_id, force_platform=force_platform)
     reader: Optional[ImageReader] = None
     if path:
@@ -34,24 +59,36 @@ def logo_watermark_callbacks(
         except Exception:  # noqa: BLE001
             reader = None
 
-    def _draw(canvas, doc) -> None:
-        if not reader:
-            return
-        canvas.saveState()
-        page_w, page_h = doc.pagesize
-        max_w, max_h = page_w * 0.55, page_h * 0.55
-        iw, ih = reader.getSize()
-        if not iw or not ih:
-            canvas.restoreState()
-            return
-        scale = min(max_w / iw, max_h / ih)
-        w, h = iw * scale, ih * scale
-        x = (page_w - w) / 2.0
-        y = (page_h - h) / 2.0
-        canvas.drawImage(reader, x, y, width=w, height=h, mask="auto", preserveAspectRatio=True)
-        canvas.restoreState()
+    if not reader:
+        return
 
-    return _draw, _draw
+    previous = getattr(doc, "beforePage", None)
+
+    def before_page() -> None:
+        _draw_centered_watermark(doc.canv, doc.pagesize, reader)
+        if callable(previous):
+            previous()
+
+    doc.beforePage = before_page  # type: ignore[method-assign]
+
+
+def logo_watermark_callbacks(
+    db: Session,
+    *,
+    tenant_id: Optional[str] = None,
+    force_platform: bool = False,
+) -> Callable[[SimpleDocTemplate], None]:
+    """Return a callable that attaches the under-text logo watermark to a doc."""
+
+    def _attach(doc: SimpleDocTemplate) -> None:
+        attach_logo_watermark(
+            doc,
+            db,
+            tenant_id=tenant_id,
+            force_platform=force_platform,
+        )
+
+    return _attach
 
 
 def build_qr_png(url: str) -> bytes:

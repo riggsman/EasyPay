@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from io import BytesIO
 from pathlib import Path
-from typing import Optional, Sequence
+from typing import Callable, Optional, Sequence
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -105,7 +105,7 @@ def create_receipt_pdf(
     terms_text: str = "",
     website: Optional[str] = None,
     verification_token: str = "",
-    watermark_callbacks: Optional[tuple] = None,
+    watermark_attach: Optional[Callable] = None,
 ) -> bytes:
     """Render the classic receipt template with EasyPay-relevant fields only.
 
@@ -292,6 +292,8 @@ def create_receipt_pdf(
                 ("FONTSIZE", (0, 0), (-1, -1), 10),
                 ("TEXTCOLOR", (0, 0), (-1, -1), _INK),
                 ("ALIGN", (1, 0), (1, -1), "RIGHT"),
+                # Opaque fills so the under-page wash cannot tint totals text
+                ("BACKGROUND", (0, 0), (-1, -2), _WHITE),
                 ("BACKGROUND", (0, -1), (-1, -1), _TOTAL_BAND),
                 ("BOX", (0, 0), (-1, -1), 0.4, _RULE),
                 ("INNERGRID", (0, 0), (-1, -1), 0.3, _RULE),
@@ -334,10 +336,12 @@ def create_receipt_pdf(
         TableStyle(
             [
                 ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-                ("TOPPADDING", (0, 0), (-1, -1), 2),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+                # Opaque white so terms text is never washed by the logo underlay
+                ("BACKGROUND", (0, 0), (-1, -1), _WHITE),
+                ("LEFTPADDING", (0, 0), (-1, -1), 4),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
             ]
         )
     )
@@ -358,11 +362,10 @@ def create_receipt_pdf(
         Paragraph(_footer_brand(website), website_style),
     ]
 
-    if watermark_callbacks:
-        on_first, on_later = watermark_callbacks
-        doc.build(story, onFirstPage=on_first, onLaterPages=on_later)
-    else:
-        doc.build(story)
+    # Watermark via beforePage (under text) — never onFirstPage overprint
+    if watermark_attach:
+        watermark_attach(doc)
+    doc.build(story)
     pdf = buffer.getvalue()
 
     if output_path:
@@ -458,7 +461,7 @@ def build_receipt_pdf(db: Session, receipt: Receipt) -> bytes:
         ),
         website=settings.APP_NAME or "EasyPay",
         verification_token=receipt.verification_token or "",
-        watermark_callbacks=logo_watermark_callbacks(
+        watermark_attach=logo_watermark_callbacks(
             db,
             tenant_id=receipt.tenant_id,
             force_platform=False,
