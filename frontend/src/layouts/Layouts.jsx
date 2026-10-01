@@ -25,36 +25,43 @@ export function PublicLayout() {
   const { isAuthenticated, userType, logout } = useAuth()
   const location = useLocation()
   const isLanding = location.pathname === '/'
+  // Login / password-reset: brand only — no public nav or footer chrome.
+  const isAuthFocus =
+    location.pathname === '/login' || location.pathname === '/forgot-password'
 
   return (
     <div className={isLanding ? 'public-shell public-shell--landing' : 'public-shell'}>
-      <header className={`public-nav rise${isLanding ? ' public-nav--overlay' : ''}`}>
+      <header className={`public-nav rise${isLanding ? ' public-nav--overlay' : ''}${isAuthFocus ? ' public-nav--auth' : ''}`}>
         <div className="container public-nav-inner">
           <Link to="/" className="brand">EasyPay</Link>
-          <nav className="nav-links">
-            <Link to="/#how">How it works</Link>
-            <Link to="/verify">Verify</Link>
-            {isAuthenticated ? (
-              <>
-                <Link to={userType === 'PAYER' ? '/payer' : (userType === 'PLATFORM_ADMIN' || userType === 'SUPER_ADMIN') ? '/platform' : '/tenant'}>
-                  Dashboard
-                </Link>
-                <button className="btn btn-ghost" type="button" onClick={logout}>Sign out</button>
-              </>
-            ) : (
-              <>
-                <Link to="/login">Sign In</Link>
-                <Link className="btn btn-primary" to="/register">Create Account</Link>
-              </>
-            )}
-          </nav>
+          {!isAuthFocus && (
+            <nav className="nav-links">
+              <Link to="/#how">How it works</Link>
+              <Link to="/verify">Verify</Link>
+              {isAuthenticated ? (
+                <>
+                  <Link to={userType === 'PAYER' ? '/payer' : (userType === 'PLATFORM_ADMIN' || userType === 'SUPER_ADMIN') ? '/platform' : '/tenant'}>
+                    Dashboard
+                  </Link>
+                  <button className="btn btn-ghost" type="button" onClick={logout}>Sign out</button>
+                </>
+              ) : (
+                <>
+                  <Link to="/login">Sign In</Link>
+                  <Link className="btn btn-primary" to="/register">Create Account</Link>
+                </>
+              )}
+            </nav>
+          )}
         </div>
       </header>
       <Outlet />
-      <div className="container footer">
-        <span>© {new Date().getFullYear()} EasyPay Collection Platform</span>
-        <span>About · Support · Verification · Terms · Privacy</span>
-      </div>
+      {!isAuthFocus && (
+        <div className="container footer">
+          <span>© {new Date().getFullYear()} EasyPay Collection Platform</span>
+          <span>About · Support · Verification · Terms · Privacy</span>
+        </div>
+      )}
     </div>
   )
 }

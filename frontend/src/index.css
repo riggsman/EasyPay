@@ -507,6 +507,12 @@ button.linkish {
   font-size: 1.6rem;
   color: var(--leaf-deep);
 }
+.public-nav--auth .public-nav-inner {
+  justify-content: center;
+}
+.public-nav--auth {
+  padding-bottom: 0.5rem;
+}
 .auth-box {
   width: min(440px, calc(100% - 2rem));
   margin: 3rem auto;
