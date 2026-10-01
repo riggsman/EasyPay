@@ -108,7 +108,22 @@ export default function ServicesStore() {
         meter_number: refMode === 'METER' ? meterNumber.trim() : null,
         bill_number: refMode === 'BILL' ? billNumber.trim() : null,
       }
-      const res = await api.utilityPay(payload)
+      let res = await api.utilityPay(payload)
+      // Part 2 (utility provider) runs only after MoMo debit is confirmed.
+      if (res.status && !['SETTLED', 'FAILED', 'REJECTED', 'MANUAL_INTERVENTION'].includes(res.status)) {
+        const confirmed = await api.confirmPayment(res.transaction_id)
+        res = {
+          ...res,
+          status: confirmed.status,
+          failure_reason: confirmed.failure_reason,
+          failure_stage: confirmed.failure_stage,
+          ok: confirmed.status === 'SETTLED',
+          receipt_id: confirmed.receipt_id || res.receipt_id,
+          receipt_number: confirmed.receipt_number || res.receipt_number,
+          receipt_pdf_url: confirmed.receipt_pdf_url || res.receipt_pdf_url,
+          events: confirmed.events || res.events,
+        }
+      }
       setResult(res)
       setStep('result')
     } catch (err) {
