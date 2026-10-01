@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../../api/client'
-import { Disclosure, EmptyRow, PageHeader } from '../../components/OpsUI'
+import { EmptyRow, PageHeader } from '../../components/OpsUI'
 import { useAuth } from '../../contexts/AuthContext'
 
 function Field({ label, children }) {
@@ -12,9 +12,18 @@ function Field({ label, children }) {
   )
 }
 
+const TABS = [
+  { id: 'campay', label: 'Campay' },
+  { id: 'email', label: 'Email' },
+  { id: 'whatsapp', label: 'WhatsApp' },
+  { id: 'sms', label: 'SMS' },
+  { id: 'overview', label: 'Overview' },
+]
+
 export default function PlatformProviders() {
   const { userType } = useAuth()
   const allowed = userType === 'SUPER_ADMIN' || userType === 'PLATFORM_ADMIN'
+  const [tab, setTab] = useState('campay')
   const [campay, setCampay] = useState({
     enabled: true,
     username: '',
@@ -91,6 +100,12 @@ export default function PlatformProviders() {
     if (!allowed) return
     load().catch((e) => setError(e.message))
   }, [allowed])
+
+  function selectTab(id) {
+    setTab(id)
+    setError('')
+    setMessage('')
+  }
 
   if (!allowed) {
     return <div className="alert">Provider configuration is restricted to system / super administrators.</div>
@@ -204,127 +219,156 @@ export default function PlatformProviders() {
       {error && <div className="alert">{error}</div>}
       {message && <div className="alert ok">{message}</div>}
 
-      <Disclosure title="Campay — Mobile Money collection, withdrawal, disbursement & bank" open>
-        <p className="muted">
-          All MOBILE_MONEY payer collections and MoMo/bank settlement payouts are routed through Campay.
-          {meta.CAMPAY?.configured ? ' Credentials on file (masked).' : ' Not configured yet.'}
-        </p>
-        <form className="panel stack" onSubmit={saveCampay} style={{ maxWidth: 640 }}>
-          <label className="row">
-            <input type="checkbox" checked={campay.enabled} onChange={(e) => setCampay({ ...campay, enabled: e.target.checked })} />
-            Enable Campay
-          </label>
-          <label className="row">
-            <input type="checkbox" checked={campay.mock} onChange={(e) => setCampay({ ...campay, mock: e.target.checked })} />
-            Mock mode (sandbox / no live HTTP)
-          </label>
-          <Field label="API base URL">
-            <input value={campay.base_url} onChange={(e) => setCampay({ ...campay, base_url: e.target.value })} required />
-          </Field>
-          <Field label="Username / App username">
-            <input value={campay.username} onChange={(e) => setCampay({ ...campay, username: e.target.value })} placeholder={meta.CAMPAY?.settings?.username || ''} />
-          </Field>
-          <Field label="Password / App password">
-            <input
-              type="password"
-              value={campay.password}
-              onChange={(e) => setCampay({ ...campay, password: e.target.value })}
-              placeholder={meta.CAMPAY?.settings?.password_configured ? '•••• stored' : ''}
-            />
-          </Field>
-          <Field label="Bank transfer path (Campay bank service)">
-            <input value={campay.bank_transfer_path} onChange={(e) => setCampay({ ...campay, bank_transfer_path: e.target.value })} />
-          </Field>
-          <div className="row">
-            <button className="btn btn-primary" type="submit">Save Campay (encrypt)</button>
-            <button className="btn btn-ghost" type="button" onClick={testToken}>Test token</button>
-          </div>
-        </form>
-      </Disclosure>
+      <div className="ops-tabs" role="tablist" aria-label="Provider configuration sections">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            aria-selected={tab === t.id}
+            className={`ops-tab${tab === t.id ? ' on' : ''}`}
+            onClick={() => selectTab(t.id)}
+          >
+            {t.label}
+            {t.id !== 'overview' && meta[t.id.toUpperCase()]?.configured ? ' · ✓' : ''}
+          </button>
+        ))}
+      </div>
 
-      <Disclosure title="Email (SMTP) — encrypted credentials" open>
-        <form className="panel stack" onSubmit={saveEmail} style={{ maxWidth: 640 }}>
-          <label className="row">
-            <input type="checkbox" checked={email.enabled} onChange={(e) => setEmail({ ...email, enabled: e.target.checked })} />
-            Enable email provider
-          </label>
-          <Field label="SMTP host"><input value={email.smtp_host} onChange={(e) => setEmail({ ...email, smtp_host: e.target.value })} /></Field>
-          <Field label="SMTP port"><input value={email.smtp_port} onChange={(e) => setEmail({ ...email, smtp_port: e.target.value })} /></Field>
-          <Field label="SMTP user"><input value={email.smtp_user} onChange={(e) => setEmail({ ...email, smtp_user: e.target.value })} /></Field>
-          <Field label="SMTP password">
-            <input
-              type="password"
-              value={email.smtp_password}
-              onChange={(e) => setEmail({ ...email, smtp_password: e.target.value })}
-              placeholder={meta.EMAIL?.settings?.smtp_password_configured ? '•••• stored' : ''}
-            />
-          </Field>
-          <Field label="From address"><input value={email.smtp_from} onChange={(e) => setEmail({ ...email, smtp_from: e.target.value })} /></Field>
-          <label className="row">
-            <input type="checkbox" checked={email.smtp_use_tls} onChange={(e) => setEmail({ ...email, smtp_use_tls: e.target.checked })} />
-            Use TLS
-          </label>
-          <button className="btn btn-primary" type="submit">Save Email (encrypt)</button>
-        </form>
-      </Disclosure>
+      {tab === 'campay' && (
+        <div role="tabpanel" className="stack">
+          <p className="muted">
+            All MOBILE_MONEY payer collections and MoMo/bank settlement payouts are routed through Campay.
+            {meta.CAMPAY?.configured ? ' Credentials on file (masked).' : ' Not configured yet.'}
+          </p>
+          <form className="panel stack" onSubmit={saveCampay} style={{ maxWidth: 640 }}>
+            <label className="row">
+              <input type="checkbox" checked={campay.enabled} onChange={(e) => setCampay({ ...campay, enabled: e.target.checked })} />
+              Enable Campay
+            </label>
+            <label className="row">
+              <input type="checkbox" checked={campay.mock} onChange={(e) => setCampay({ ...campay, mock: e.target.checked })} />
+              Mock mode (sandbox / no live HTTP)
+            </label>
+            <Field label="API base URL">
+              <input value={campay.base_url} onChange={(e) => setCampay({ ...campay, base_url: e.target.value })} required />
+            </Field>
+            <Field label="Username / App username">
+              <input value={campay.username} onChange={(e) => setCampay({ ...campay, username: e.target.value })} placeholder={meta.CAMPAY?.settings?.username || ''} />
+            </Field>
+            <Field label="Password / App password">
+              <input
+                type="password"
+                value={campay.password}
+                onChange={(e) => setCampay({ ...campay, password: e.target.value })}
+                placeholder={meta.CAMPAY?.settings?.password_configured ? '•••• stored' : ''}
+              />
+            </Field>
+            <Field label="Bank transfer path (Campay bank service)">
+              <input value={campay.bank_transfer_path} onChange={(e) => setCampay({ ...campay, bank_transfer_path: e.target.value })} />
+            </Field>
+            <div className="row">
+              <button className="btn btn-primary" type="submit">Save Campay (encrypt)</button>
+              <button className="btn btn-ghost" type="button" onClick={testToken}>Test token</button>
+            </div>
+          </form>
+        </div>
+      )}
 
-      <Disclosure title="WhatsApp — encrypted credentials" open>
-        <form className="panel stack" onSubmit={saveWhatsapp} style={{ maxWidth: 640 }}>
-          <label className="row">
-            <input type="checkbox" checked={whatsapp.enabled} onChange={(e) => setWhatsapp({ ...whatsapp, enabled: e.target.checked })} />
-            Enable WhatsApp provider
-          </label>
-          <Field label="API URL"><input value={whatsapp.api_url} onChange={(e) => setWhatsapp({ ...whatsapp, api_url: e.target.value })} /></Field>
-          <Field label="API key">
-            <input
-              type="password"
-              value={whatsapp.api_key}
-              onChange={(e) => setWhatsapp({ ...whatsapp, api_key: e.target.value })}
-              placeholder={meta.WHATSAPP?.settings?.api_key_configured ? '•••• stored' : ''}
-            />
-          </Field>
-          <button className="btn btn-primary" type="submit">Save WhatsApp (encrypt)</button>
-        </form>
-      </Disclosure>
+      {tab === 'email' && (
+        <div role="tabpanel" className="stack">
+          <p className="muted">SMTP credentials are encrypted at rest.</p>
+          <form className="panel stack" onSubmit={saveEmail} style={{ maxWidth: 640 }}>
+            <label className="row">
+              <input type="checkbox" checked={email.enabled} onChange={(e) => setEmail({ ...email, enabled: e.target.checked })} />
+              Enable email provider
+            </label>
+            <Field label="SMTP host"><input value={email.smtp_host} onChange={(e) => setEmail({ ...email, smtp_host: e.target.value })} /></Field>
+            <Field label="SMTP port"><input value={email.smtp_port} onChange={(e) => setEmail({ ...email, smtp_port: e.target.value })} /></Field>
+            <Field label="SMTP user"><input value={email.smtp_user} onChange={(e) => setEmail({ ...email, smtp_user: e.target.value })} /></Field>
+            <Field label="SMTP password">
+              <input
+                type="password"
+                value={email.smtp_password}
+                onChange={(e) => setEmail({ ...email, smtp_password: e.target.value })}
+                placeholder={meta.EMAIL?.settings?.smtp_password_configured ? '•••• stored' : ''}
+              />
+            </Field>
+            <Field label="From address"><input value={email.smtp_from} onChange={(e) => setEmail({ ...email, smtp_from: e.target.value })} /></Field>
+            <label className="row">
+              <input type="checkbox" checked={email.smtp_use_tls} onChange={(e) => setEmail({ ...email, smtp_use_tls: e.target.checked })} />
+              Use TLS
+            </label>
+            <button className="btn btn-primary" type="submit">Save Email (encrypt)</button>
+          </form>
+        </div>
+      )}
 
-      <Disclosure title="SMS — encrypted credentials (also toggleable)" open>
-        <p className="muted">
-          SMS remains gated by <code>NOTIFICATIONS_SMS_ENABLED</code> on the server plus the channel toggle under System Config.
-        </p>
-        <form className="panel stack" onSubmit={saveSms} style={{ maxWidth: 640 }}>
-          <label className="row">
-            <input type="checkbox" checked={sms.enabled} onChange={(e) => setSms({ ...sms, enabled: e.target.checked })} />
-            Enable SMS provider credentials
-          </label>
-          <Field label="API URL"><input value={sms.api_url} onChange={(e) => setSms({ ...sms, api_url: e.target.value })} /></Field>
-          <Field label="API key">
-            <input
-              type="password"
-              value={sms.api_key}
-              onChange={(e) => setSms({ ...sms, api_key: e.target.value })}
-              placeholder={meta.SMS?.settings?.api_key_configured ? '•••• stored' : ''}
-            />
-          </Field>
-          <button className="btn btn-primary" type="submit">Save SMS (encrypt)</button>
-        </form>
-      </Disclosure>
+      {tab === 'whatsapp' && (
+        <div role="tabpanel" className="stack">
+          <p className="muted">WhatsApp API credentials are encrypted at rest.</p>
+          <form className="panel stack" onSubmit={saveWhatsapp} style={{ maxWidth: 640 }}>
+            <label className="row">
+              <input type="checkbox" checked={whatsapp.enabled} onChange={(e) => setWhatsapp({ ...whatsapp, enabled: e.target.checked })} />
+              Enable WhatsApp provider
+            </label>
+            <Field label="API URL"><input value={whatsapp.api_url} onChange={(e) => setWhatsapp({ ...whatsapp, api_url: e.target.value })} /></Field>
+            <Field label="API key">
+              <input
+                type="password"
+                value={whatsapp.api_key}
+                onChange={(e) => setWhatsapp({ ...whatsapp, api_key: e.target.value })}
+                placeholder={meta.WHATSAPP?.settings?.api_key_configured ? '•••• stored' : ''}
+              />
+            </Field>
+            <button className="btn btn-primary" type="submit">Save WhatsApp (encrypt)</button>
+          </form>
+        </div>
+      )}
 
-      <Disclosure title="Configured providers">
-        <table className="data">
-          <thead><tr><th>Provider</th><th>Enabled</th><th>Configured</th><th>Updated</th></tr></thead>
-          <tbody>
-            {Object.values(meta).map((r) => (
-              <tr key={r.provider_code}>
-                <td>{r.display_name}</td>
-                <td><span className="pill">{r.enabled ? 'ON' : 'OFF'}</span></td>
-                <td>{r.configured ? 'Yes (encrypted)' : 'No'}</td>
-                <td className="muted">{r.updated_at ? new Date(r.updated_at).toLocaleString() : '—'}</td>
-              </tr>
-            ))}
-            {!Object.keys(meta).length && <EmptyRow cols={4} />}
-          </tbody>
-        </table>
-      </Disclosure>
+      {tab === 'sms' && (
+        <div role="tabpanel" className="stack">
+          <p className="muted">
+            SMS remains gated by <code>NOTIFICATIONS_SMS_ENABLED</code> on the server plus the channel toggle under System Config.
+          </p>
+          <form className="panel stack" onSubmit={saveSms} style={{ maxWidth: 640 }}>
+            <label className="row">
+              <input type="checkbox" checked={sms.enabled} onChange={(e) => setSms({ ...sms, enabled: e.target.checked })} />
+              Enable SMS provider credentials
+            </label>
+            <Field label="API URL"><input value={sms.api_url} onChange={(e) => setSms({ ...sms, api_url: e.target.value })} /></Field>
+            <Field label="API key">
+              <input
+                type="password"
+                value={sms.api_key}
+                onChange={(e) => setSms({ ...sms, api_key: e.target.value })}
+                placeholder={meta.SMS?.settings?.api_key_configured ? '•••• stored' : ''}
+              />
+            </Field>
+            <button className="btn btn-primary" type="submit">Save SMS (encrypt)</button>
+          </form>
+        </div>
+      )}
+
+      {tab === 'overview' && (
+        <div className="panel table-wrap" role="tabpanel">
+          <h3>Configured providers</h3>
+          <table className="data">
+            <thead><tr><th>Provider</th><th>Enabled</th><th>Configured</th><th>Updated</th></tr></thead>
+            <tbody>
+              {Object.values(meta).map((r) => (
+                <tr key={r.provider_code}>
+                  <td>{r.display_name}</td>
+                  <td><span className="pill">{r.enabled ? 'ON' : 'OFF'}</span></td>
+                  <td>{r.configured ? 'Yes (encrypted)' : 'No'}</td>
+                  <td className="muted">{r.updated_at ? new Date(r.updated_at).toLocaleString() : '—'}</td>
+                </tr>
+              ))}
+              {!Object.keys(meta).length && <EmptyRow cols={4} />}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }
