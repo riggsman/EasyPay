@@ -1,0 +1,2731 @@
+{
+  "unit_code": "CM",
+  "unit_name": "Cameroon",
+  "unit_type": "COUNTRY",
+  "country_code": "CM",
+  "children": [
+    {
+      "unit_code": "CM-AD",
+      "unit_name": "Adamawa",
+      "unit_type": "REGION",
+      "country_code": "CM",
+      "children": [
+        {
+          "unit_code": "CM-AD-DJEREM",
+          "unit_name": "Djérem",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-AD-DJEREM-NGAOUNDAL",
+              "unit_name": "Ngaoundal",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-AD-DJEREM-TIBATI",
+              "unit_name": "Tibati",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-AD-FARO-ET-DEO",
+          "unit_name": "Faro-et-Déo",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-AD-FARO-ET-DEO-GALIM-TIGNERE",
+              "unit_name": "Galim-Tignere",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-AD-FARO-ET-DEO-KONTCHA",
+              "unit_name": "Kontcha",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-AD-FARO-ET-DEO-MAYO-BALEO",
+              "unit_name": "Mayo-Baleo",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-AD-FARO-ET-DEO-TIGNERE",
+              "unit_name": "Tignere",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-AD-MAYO-BANYO",
+          "unit_name": "Mayo-Banyo",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-AD-MAYO-BANYO-BANKIM",
+              "unit_name": "Bankim",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-AD-MAYO-BANYO-BANYO",
+              "unit_name": "Banyo",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-AD-MAYO-BANYO-MAYO-DARLE",
+              "unit_name": "Mayo-Darle",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-AD-MBERE",
+          "unit_name": "Mbéré",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-AD-MBERE-DIR",
+              "unit_name": "Dir",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-AD-MBERE-DJOHONG",
+              "unit_name": "Djohong",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-AD-MBERE-MEIGANGA",
+              "unit_name": "Meiganga",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-AD-MBERE-NGAOUI",
+              "unit_name": "Ngaoui",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-AD-VINA",
+          "unit_name": "Vina",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-AD-VINA-BELEL",
+              "unit_name": "Belel",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-AD-VINA-MARTAP",
+              "unit_name": "Martap",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-AD-VINA-MBE",
+              "unit_name": "Mbe",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-AD-VINA-NGANHA",
+              "unit_name": "Nganha",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-AD-VINA-NGAOUNDERE-1",
+              "unit_name": "Ngaoundere 1",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-AD-VINA-NGAOUNDERE-2",
+              "unit_name": "Ngaoundere 2",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-AD-VINA-NGAOUNDERE-3",
+              "unit_name": "Ngaoundere 3",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-AD-VINA-NYAMBAKA",
+              "unit_name": "Nyambaka",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit_code": "CM-CE",
+      "unit_name": "Centre",
+      "unit_type": "REGION",
+      "country_code": "CM",
+      "children": [
+        {
+          "unit_code": "CM-CE-HAUTE-SANAGA",
+          "unit_name": "Haute-Sanaga",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-CE-HAUTE-SANAGA-BIBEY",
+              "unit_name": "Bibey",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-HAUTE-SANAGA-LEMBE-YEZOUM",
+              "unit_name": "Lembe Yezoum",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-HAUTE-SANAGA-MBANDJOCK",
+              "unit_name": "Mbandjock",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-HAUTE-SANAGA-MINTA",
+              "unit_name": "Minta",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-HAUTE-SANAGA-NANGA-EBOKO",
+              "unit_name": "Nanga-Eboko",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-HAUTE-SANAGA-NKOTENG",
+              "unit_name": "Nkoteng",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-HAUTE-SANAGA-NSEM",
+              "unit_name": "Nsem",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-CE-LEKIE",
+          "unit_name": "Lekié",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-CE-LEKIE-BATCHENGA",
+              "unit_name": "Batchenga",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-LEKIE-EBEBDA",
+              "unit_name": "Ebebda",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-LEKIE-ELIG-MFOMO",
+              "unit_name": "Elig-Mfomo",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-LEKIE-EVODOULA",
+              "unit_name": "Evodoula",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-LEKIE-LOBO",
+              "unit_name": "Lobo",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-LEKIE-MONATELE",
+              "unit_name": "Monatele",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-LEKIE-OBALA",
+              "unit_name": "Obala",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-LEKIE-OKOLA",
+              "unit_name": "Okola",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-LEKIE-SAA",
+              "unit_name": "Saa",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-CE-MBAM-ET-INOUBOU",
+          "unit_name": "Mbam-et-Inoubou",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-CE-MBAM-ET-INOUBOU-BAFIA",
+              "unit_name": "Bafia",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-MBAM-ET-INOUBOU-BOKITO",
+              "unit_name": "Bokito",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-MBAM-ET-INOUBOU-DEUK",
+              "unit_name": "Deuk",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-MBAM-ET-INOUBOU-KIIKI",
+              "unit_name": "Kiiki",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-MBAM-ET-INOUBOU-KON-YAMBETTA",
+              "unit_name": "Kon Yambetta",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-MBAM-ET-INOUBOU-MAKENENE",
+              "unit_name": "Makenene",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-MBAM-ET-INOUBOU-NDIKINIMEKI",
+              "unit_name": "Ndikinimeki",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-MBAM-ET-INOUBOU-NITOUKOU",
+              "unit_name": "Nitoukou",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-MBAM-ET-INOUBOU-OMBESSA",
+              "unit_name": "Ombessa",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-CE-MBAM-ET-KIM",
+          "unit_name": "Mbam-et-Kim",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-CE-MBAM-ET-KIM-MBANGASSINA",
+              "unit_name": "Mbangassina",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-MBAM-ET-KIM-NGAMBE-TIKAR",
+              "unit_name": "Ngambe-Tikar",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-MBAM-ET-KIM-NGORO",
+              "unit_name": "Ngoro",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-MBAM-ET-KIM-NTUI",
+              "unit_name": "Ntui",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-MBAM-ET-KIM-YOKO",
+              "unit_name": "Yoko",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-CE-MEFOU-ET-AFAMBA",
+          "unit_name": "Mefou-et-Afamba",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-CE-MEFOU-ET-AFAMBA-AFANLOUM",
+              "unit_name": "Afanloum",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-MEFOU-ET-AFAMBA-ASSAMBA",
+              "unit_name": "Assamba",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-MEFOU-ET-AFAMBA-AWAE",
+              "unit_name": "Awae",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-MEFOU-ET-AFAMBA-EDZENDOUAN",
+              "unit_name": "Edzendouan",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-MEFOU-ET-AFAMBA-ESSE",
+              "unit_name": "Esse",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-MEFOU-ET-AFAMBA-MFOU",
+              "unit_name": "Mfou",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-MEFOU-ET-AFAMBA-NKOLAFAMBA",
+              "unit_name": "Nkolafamba",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-MEFOU-ET-AFAMBA-SOA",
+              "unit_name": "Soa",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-CE-MEFOU-ET-AKONO",
+          "unit_name": "Mefou-et-Akono",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-CE-MEFOU-ET-AKONO-AKONO",
+              "unit_name": "Akono",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-MEFOU-ET-AKONO-BIKOK",
+              "unit_name": "Bikok",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-MEFOU-ET-AKONO-MBANKOMO",
+              "unit_name": "Mbankomo",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-MEFOU-ET-AKONO-NGOUMOU",
+              "unit_name": "Ngoumou",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-CE-MFOUNDI",
+          "unit_name": "Mfoundi",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-CE-MFOUNDI-YAOUNDE-1",
+              "unit_name": "Yaounde 1",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-MFOUNDI-YAOUNDE-2",
+              "unit_name": "Yaounde 2",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-MFOUNDI-YAOUNDE-3",
+              "unit_name": "Yaounde 3",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-MFOUNDI-YAOUNDE-4",
+              "unit_name": "Yaounde 4",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-MFOUNDI-YAOUNDE-5",
+              "unit_name": "Yaounde 5",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-MFOUNDI-YAOUNDE-6",
+              "unit_name": "Yaounde 6",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-MFOUNDI-YAOUNDE-7",
+              "unit_name": "Yaounde 7",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-CE-NYONG-ET-KELLE",
+          "unit_name": "Nyong-et-Kellé",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-CE-NYONG-ET-KELLE-BIYOUHA",
+              "unit_name": "Biyouha",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-NYONG-ET-KELLE-BONDJOCK",
+              "unit_name": "Bondjock",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-NYONG-ET-KELLE-BOT-MAKAK",
+              "unit_name": "Bot-Makak",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-NYONG-ET-KELLE-DIBANG",
+              "unit_name": "Dibang",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-NYONG-ET-KELLE-ESEKA",
+              "unit_name": "Eseka",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-NYONG-ET-KELLE-MAKAK",
+              "unit_name": "Makak",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-NYONG-ET-KELLE-MATOMB",
+              "unit_name": "Matomb",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-NYONG-ET-KELLE-MESSONDO",
+              "unit_name": "Messondo",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-NYONG-ET-KELLE-NGOG-MAPUBI",
+              "unit_name": "Ngog-Mapubi",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-NYONG-ET-KELLE-NGUIBASSAL",
+              "unit_name": "Nguibassal",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-CE-NYONG-ET-MFOUMOU",
+          "unit_name": "Nyong-et-Mfoumou",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-CE-NYONG-ET-MFOUMOU-AKONOLINGA",
+              "unit_name": "Akonolinga",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-NYONG-ET-MFOUMOU-AYOS",
+              "unit_name": "Ayos",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-NYONG-ET-MFOUMOU-ENDOM",
+              "unit_name": "Endom",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-NYONG-ET-MFOUMOU-MENGANG",
+              "unit_name": "Mengang",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-NYONG-ET-MFOUMOU-NYAKOKOMBO",
+              "unit_name": "Nyakokombo",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-CE-NYONG-ET-SO-O",
+          "unit_name": "Nyong-et-So'o",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-CE-NYONG-ET-SO-O-AKOEMAN",
+              "unit_name": "Akoeman",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-NYONG-ET-SO-O-DZENG",
+              "unit_name": "Dzeng",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-NYONG-ET-SO-O-MBALMAYO",
+              "unit_name": "Mbalmayo",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-NYONG-ET-SO-O-MENGUEME",
+              "unit_name": "Mengueme",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-NYONG-ET-SO-O-NGOMEDZAP",
+              "unit_name": "Ngomedzap",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-CE-NYONG-ET-SO-O-NKOLMETET",
+              "unit_name": "Nkolmetet",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit_code": "CM-ES",
+      "unit_name": "East",
+      "unit_type": "REGION",
+      "country_code": "CM",
+      "children": [
+        {
+          "unit_code": "CM-ES-BOUMBA-ET-NGOKO",
+          "unit_name": "Boumba-et-Ngoko",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-ES-BOUMBA-ET-NGOKO-GARI-GOMBO",
+              "unit_name": "Gari Gombo",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-ES-BOUMBA-ET-NGOKO-MOLOUNDOU",
+              "unit_name": "Moloundou",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-ES-BOUMBA-ET-NGOKO-SALAPOUMBE",
+              "unit_name": "Salapoumbe",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-ES-BOUMBA-ET-NGOKO-YOKADOUMA",
+              "unit_name": "Yokadouma",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-ES-HAUT-NYONG",
+          "unit_name": "Haut-Nyong",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-ES-HAUT-NYONG-ABONG-MBANG",
+              "unit_name": "Abong-Mbang",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-ES-HAUT-NYONG-BEBEND",
+              "unit_name": "Bebend",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-ES-HAUT-NYONG-DIMAKO",
+              "unit_name": "Dimako",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-ES-HAUT-NYONG-DJA",
+              "unit_name": "Dja",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-ES-HAUT-NYONG-DOUMAINTANG",
+              "unit_name": "Doumaintang",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-ES-HAUT-NYONG-DOUME",
+              "unit_name": "Doume",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-ES-HAUT-NYONG-LOMIE",
+              "unit_name": "Lomie",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-ES-HAUT-NYONG-MBOANZ",
+              "unit_name": "Mboanz",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-ES-HAUT-NYONG-MBOMA",
+              "unit_name": "Mboma",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-ES-HAUT-NYONG-MESSAMENA",
+              "unit_name": "Messamena",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-ES-HAUT-NYONG-MESSOK",
+              "unit_name": "Messok",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-ES-HAUT-NYONG-NGOYLA",
+              "unit_name": "Ngoyla",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-ES-HAUT-NYONG-NGUELEMENDOUKA",
+              "unit_name": "Nguelemendouka",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-ES-HAUT-NYONG-SOMALOMO",
+              "unit_name": "Somalomo",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-ES-KADEY",
+          "unit_name": "Kadey",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-ES-KADEY-BATOURI",
+              "unit_name": "Batouri",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-ES-KADEY-BOMBE",
+              "unit_name": "Bombe",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-ES-KADEY-KETTE",
+              "unit_name": "Kette",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-ES-KADEY-MBANG",
+              "unit_name": "Mbang",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-ES-KADEY-MBOTORO",
+              "unit_name": "Mbotoro",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-ES-KADEY-NDELELE",
+              "unit_name": "Ndelele",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-ES-KADEY-NDEM-NAM",
+              "unit_name": "Ndem Nam",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-ES-LOM-ET-DJEREM",
+          "unit_name": "Lom-et-Djérem",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-ES-LOM-ET-DJEREM-BELABO",
+              "unit_name": "Belabo",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-ES-LOM-ET-DJEREM-BERTOUA-1",
+              "unit_name": "Bertoua 1",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-ES-LOM-ET-DJEREM-BERTOUA-2",
+              "unit_name": "Bertoua 2",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-ES-LOM-ET-DJEREM-BETARE-OYA",
+              "unit_name": "Betare-Oya",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-ES-LOM-ET-DJEREM-DIANG",
+              "unit_name": "Diang",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-ES-LOM-ET-DJEREM-GAROUA-BOULAI",
+              "unit_name": "Garoua-Boulai",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-ES-LOM-ET-DJEREM-MANDJOU",
+              "unit_name": "Mandjou",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-ES-LOM-ET-DJEREM-NGOURA",
+              "unit_name": "Ngoura",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit_code": "CM-EN",
+      "unit_name": "Far North",
+      "unit_type": "REGION",
+      "country_code": "CM",
+      "children": [
+        {
+          "unit_code": "CM-EN-DIAMARE",
+          "unit_name": "Diamaré",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-EN-DIAMARE-BOGO",
+              "unit_name": "Bogo",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-DIAMARE-DARGALA",
+              "unit_name": "Dargala",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-DIAMARE-GAZAWA",
+              "unit_name": "Gazawa",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-DIAMARE-MAROUA-1",
+              "unit_name": "Maroua 1",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-DIAMARE-MAROUA-2",
+              "unit_name": "Maroua 2",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-DIAMARE-MAROUA-3",
+              "unit_name": "Maroua 3",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-DIAMARE-MERI",
+              "unit_name": "Meri",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-DIAMARE-NDOUKOULA",
+              "unit_name": "Ndoukoula",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-DIAMARE-PETTE",
+              "unit_name": "Pette",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-EN-LOGONE-ET-CHARI",
+          "unit_name": "Logone-et-Chari",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-EN-LOGONE-ET-CHARI-BLANGOUA",
+              "unit_name": "Blangoua",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-LOGONE-ET-CHARI-DARAK",
+              "unit_name": "Darak",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-LOGONE-ET-CHARI-FOTOKOL",
+              "unit_name": "Fotokol",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-LOGONE-ET-CHARI-GOULFEY",
+              "unit_name": "Goulfey",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-LOGONE-ET-CHARI-HILE-ALIFA",
+              "unit_name": "Hile-Alifa",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-LOGONE-ET-CHARI-KOUSSERI",
+              "unit_name": "Kousseri",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-LOGONE-ET-CHARI-LOGONE-BIRNI",
+              "unit_name": "Logone-Birni",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-LOGONE-ET-CHARI-MAKARY",
+              "unit_name": "Makary",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-LOGONE-ET-CHARI-WAZA",
+              "unit_name": "Waza",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-LOGONE-ET-CHARI-ZINA",
+              "unit_name": "Zina",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-EN-MAYO-DANAY",
+          "unit_name": "Mayo-Danay",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-EN-MAYO-DANAY-DATCHEKA",
+              "unit_name": "Datcheka",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-MAYO-DANAY-GOBO",
+              "unit_name": "Gobo",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-MAYO-DANAY-GUERE",
+              "unit_name": "Guere",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-MAYO-DANAY-KAI-KAI",
+              "unit_name": "Kai-Kai",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-MAYO-DANAY-KALFOU",
+              "unit_name": "Kalfou",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-MAYO-DANAY-KAR-HAY",
+              "unit_name": "Kar-Hay",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-MAYO-DANAY-MAGA",
+              "unit_name": "Maga",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-MAYO-DANAY-TCHATIBALI",
+              "unit_name": "Tchatibali",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-MAYO-DANAY-VELE",
+              "unit_name": "Vele",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-MAYO-DANAY-WINA",
+              "unit_name": "Wina",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-MAYO-DANAY-YAGOUA",
+              "unit_name": "Yagoua",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-EN-MAYO-KANI",
+          "unit_name": "Mayo-Kani",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-EN-MAYO-KANI-GUIDIGUIS",
+              "unit_name": "Guidiguis",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-MAYO-KANI-KAELE",
+              "unit_name": "Kaele",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-MAYO-KANI-MINDIF",
+              "unit_name": "Mindif",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-MAYO-KANI-MOULVOUDAYE",
+              "unit_name": "Moulvoudaye",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-MAYO-KANI-MOUTOURWA",
+              "unit_name": "Moutourwa",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-MAYO-KANI-PORHI",
+              "unit_name": "Porhi",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-MAYO-KANI-TAIBONG",
+              "unit_name": "Taibong",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-EN-MAYO-SAVA",
+          "unit_name": "Mayo-Sava",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-EN-MAYO-SAVA-KOLOFATA",
+              "unit_name": "Kolofata",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-MAYO-SAVA-MORA",
+              "unit_name": "Mora",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-MAYO-SAVA-TOKOMBERE",
+              "unit_name": "Tokombere",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-EN-MAYO-TSANAGA",
+          "unit_name": "Mayo-Tsanaga",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-EN-MAYO-TSANAGA-BOURRHA",
+              "unit_name": "Bourrha",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-MAYO-TSANAGA-HINA",
+              "unit_name": "Hina",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-MAYO-TSANAGA-KOZA",
+              "unit_name": "Koza",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-MAYO-TSANAGA-MAYO-MOSKOTA",
+              "unit_name": "Mayo-Moskota",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-MAYO-TSANAGA-MOGODE",
+              "unit_name": "Mogode",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-MAYO-TSANAGA-MOKOLO",
+              "unit_name": "Mokolo",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-EN-MAYO-TSANAGA-SOULEDE-ROUA",
+              "unit_name": "Soulede-Roua",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit_code": "CM-LT",
+      "unit_name": "Littoral",
+      "unit_type": "REGION",
+      "country_code": "CM",
+      "children": [
+        {
+          "unit_code": "CM-LT-MOUNGO",
+          "unit_name": "Moungo",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-LT-MOUNGO-BARE-BAKEM",
+              "unit_name": "Bare-Bakem",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-LT-MOUNGO-DIBOMBARI",
+              "unit_name": "Dibombari",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-LT-MOUNGO-FIKO",
+              "unit_name": "Fiko",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-LT-MOUNGO-LOUM",
+              "unit_name": "Loum",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-LT-MOUNGO-MANJO",
+              "unit_name": "Manjo",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-LT-MOUNGO-MBANGA",
+              "unit_name": "Mbanga",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-LT-MOUNGO-MELONG",
+              "unit_name": "Melong",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-LT-MOUNGO-MOMBO",
+              "unit_name": "Mombo",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-LT-MOUNGO-NJOMBE-PENJA",
+              "unit_name": "Njombe-Penja",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-LT-MOUNGO-NKONGSAMBA-1",
+              "unit_name": "Nkongsamba 1",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-LT-MOUNGO-NKONGSAMBA-2",
+              "unit_name": "Nkongsamba 2",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-LT-MOUNGO-NKONGSAMBA-3",
+              "unit_name": "Nkongsamba 3",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-LT-MOUNGO-NLONAKO",
+              "unit_name": "Nlonako",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-LT-NKAM",
+          "unit_name": "Nkam",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-LT-NKAM-NKONDJOCK",
+              "unit_name": "Nkondjock",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-LT-NKAM-NORD-MAKOMBE",
+              "unit_name": "Nord-Makombe",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-LT-NKAM-YABASSI",
+              "unit_name": "Yabassi",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-LT-NKAM-YINGUI",
+              "unit_name": "Yingui",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-LT-SANAGA-MARITIME",
+          "unit_name": "Sanaga-Maritime",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-LT-SANAGA-MARITIME-DIBAMBA",
+              "unit_name": "Dibamba",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-LT-SANAGA-MARITIME-DIZANGUE",
+              "unit_name": "Dizangue",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-LT-SANAGA-MARITIME-EDEA-1",
+              "unit_name": "Edea 1",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-LT-SANAGA-MARITIME-EDEA-2",
+              "unit_name": "Edea 2",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-LT-SANAGA-MARITIME-MASSOCK-SONGLOULOU",
+              "unit_name": "Massock-Songloulou",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-LT-SANAGA-MARITIME-MOUANKO",
+              "unit_name": "Mouanko",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-LT-SANAGA-MARITIME-NDOM",
+              "unit_name": "Ndom",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-LT-SANAGA-MARITIME-NGAMBE",
+              "unit_name": "Ngambe",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-LT-SANAGA-MARITIME-NGWEI",
+              "unit_name": "Ngwei",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-LT-SANAGA-MARITIME-NYANON",
+              "unit_name": "Nyanon",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-LT-SANAGA-MARITIME-POUMA",
+              "unit_name": "Pouma",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-LT-WOURI",
+          "unit_name": "Wouri",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-LT-WOURI-DOUALA-1",
+              "unit_name": "Douala 1",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-LT-WOURI-DOUALA-2",
+              "unit_name": "Douala 2",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-LT-WOURI-DOUALA-3",
+              "unit_name": "Douala 3",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-LT-WOURI-DOUALA-4",
+              "unit_name": "Douala 4",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-LT-WOURI-DOUALA-5",
+              "unit_name": "Douala 5",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-LT-WOURI-DOUALA-6",
+              "unit_name": "Douala 6",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit_code": "CM-NO",
+      "unit_name": "North",
+      "unit_type": "REGION",
+      "country_code": "CM",
+      "children": [
+        {
+          "unit_code": "CM-NO-BENOUE",
+          "unit_name": "Bénoué",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-NO-BENOUE-BASCHEO",
+              "unit_name": "Bascheo",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NO-BENOUE-BIBEMI",
+              "unit_name": "Bibemi",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NO-BENOUE-DEMBO",
+              "unit_name": "Dembo",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NO-BENOUE-DEMSA",
+              "unit_name": "Demsa",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NO-BENOUE-GAROUA-1",
+              "unit_name": "Garoua 1",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NO-BENOUE-GAROUA-2",
+              "unit_name": "Garoua 2",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NO-BENOUE-GAROUA-3",
+              "unit_name": "Garoua 3",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NO-BENOUE-LAGDO",
+              "unit_name": "Lagdo",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NO-BENOUE-MAYO-HOURNA",
+              "unit_name": "Mayo-Hourna",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NO-BENOUE-PITOA",
+              "unit_name": "Pitoa",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NO-BENOUE-TCHEBOA",
+              "unit_name": "Tcheboa",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NO-BENOUE-TOUROUA",
+              "unit_name": "Touroua",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-NO-FARO",
+          "unit_name": "Faro",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-NO-FARO-BEKA",
+              "unit_name": "Beka",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NO-FARO-POLI",
+              "unit_name": "Poli",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-NO-MAYO-LOUTI",
+          "unit_name": "Mayo-Louti",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-NO-MAYO-LOUTI-FIGUIL",
+              "unit_name": "Figuil",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NO-MAYO-LOUTI-GUIDER",
+              "unit_name": "Guider",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NO-MAYO-LOUTI-MAYO-OULO",
+              "unit_name": "Mayo-Oulo",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-NO-MAYO-REY",
+          "unit_name": "Mayo-Rey",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-NO-MAYO-REY-MADINGRING",
+              "unit_name": "Madingring",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NO-MAYO-REY-REY-BOUBA",
+              "unit_name": "Rey-Bouba",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NO-MAYO-REY-TCHOLLIRE",
+              "unit_name": "Tchollire",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NO-MAYO-REY-TOUBORO",
+              "unit_name": "Touboro",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit_code": "CM-NW",
+      "unit_name": "Northwest",
+      "unit_type": "REGION",
+      "country_code": "CM",
+      "children": [
+        {
+          "unit_code": "CM-NW-BOYO",
+          "unit_name": "Boyo",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-NW-BOYO-BELO",
+              "unit_name": "Belo",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NW-BOYO-BUM",
+              "unit_name": "Bum",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NW-BOYO-FUNDONG",
+              "unit_name": "Fundong",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NW-BOYO-NJINIKOM",
+              "unit_name": "Njinikom",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-NW-BUI",
+          "unit_name": "Bui",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-NW-BUI-JAKIRI",
+              "unit_name": "Jakiri",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NW-BUI-KUMBO",
+              "unit_name": "Kumbo",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NW-BUI-MBVEN",
+              "unit_name": "Mbven",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NW-BUI-NKUM",
+              "unit_name": "Nkum",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NW-BUI-NONI",
+              "unit_name": "Noni",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NW-BUI-OKU",
+              "unit_name": "Oku",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-NW-DONGA-MANTUNG",
+          "unit_name": "Donga-Mantung",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-NW-DONGA-MANTUNG-AKO",
+              "unit_name": "Ako",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NW-DONGA-MANTUNG-MISAJE",
+              "unit_name": "Misaje",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NW-DONGA-MANTUNG-NDU",
+              "unit_name": "Ndu",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NW-DONGA-MANTUNG-NKAMBE",
+              "unit_name": "Nkambe",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NW-DONGA-MANTUNG-NWA",
+              "unit_name": "Nwa",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-NW-MENCHUM",
+          "unit_name": "Menchum",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-NW-MENCHUM-FUNGOM",
+              "unit_name": "Fungom",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NW-MENCHUM-FURU-AWA",
+              "unit_name": "Furu-Awa",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NW-MENCHUM-MENCHUM-VALLEY",
+              "unit_name": "Menchum-Valley",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NW-MENCHUM-WUM",
+              "unit_name": "Wum",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-NW-MEZAM",
+          "unit_name": "Mezam",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-NW-MEZAM-BAFUT",
+              "unit_name": "Bafut",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NW-MEZAM-BALI",
+              "unit_name": "Bali",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NW-MEZAM-BAMENDA-1",
+              "unit_name": "Bamenda 1",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NW-MEZAM-BAMENDA-2",
+              "unit_name": "Bamenda 2",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NW-MEZAM-BAMENDA-3",
+              "unit_name": "Bamenda 3",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NW-MEZAM-SANTA",
+              "unit_name": "Santa",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NW-MEZAM-TUBAH",
+              "unit_name": "Tubah",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-NW-MOMO",
+          "unit_name": "Momo",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-NW-MOMO-BATIBO",
+              "unit_name": "Batibo",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NW-MOMO-MBENGWI",
+              "unit_name": "Mbengwi",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NW-MOMO-NGIE",
+              "unit_name": "Ngie",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NW-MOMO-NJIKWA",
+              "unit_name": "Njikwa",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NW-MOMO-WIDIKUM",
+              "unit_name": "Widikum",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-NW-NGO-KETUNJIA",
+          "unit_name": "Ngo-Ketunjia",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-NW-NGO-KETUNJIA-BABESSI",
+              "unit_name": "Babessi",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NW-NGO-KETUNJIA-BALIKUMBAT",
+              "unit_name": "Balikumbat",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-NW-NGO-KETUNJIA-NDOP",
+              "unit_name": "Ndop",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit_code": "CM-SU",
+      "unit_name": "South",
+      "unit_type": "REGION",
+      "country_code": "CM",
+      "children": [
+        {
+          "unit_code": "CM-SU-DJA-ET-LOBO",
+          "unit_name": "Dja-et-Lobo",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-SU-DJA-ET-LOBO-BENGBIS",
+              "unit_name": "Bengbis",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SU-DJA-ET-LOBO-DJOUM",
+              "unit_name": "Djoum",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SU-DJA-ET-LOBO-MEYOMESSALA",
+              "unit_name": "Meyomessala",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SU-DJA-ET-LOBO-MEYOMESSI",
+              "unit_name": "Meyomessi",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SU-DJA-ET-LOBO-MINTOM",
+              "unit_name": "Mintom",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SU-DJA-ET-LOBO-OVENG",
+              "unit_name": "Oveng",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SU-DJA-ET-LOBO-SANGMELIMA",
+              "unit_name": "Sangmelima",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SU-DJA-ET-LOBO-ZOETELE",
+              "unit_name": "Zoetele",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-SU-MVILA",
+          "unit_name": "Mvila",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-SU-MVILA-BIWONG-BANE",
+              "unit_name": "Biwong-Bane",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SU-MVILA-BIWONG-BULU",
+              "unit_name": "Biwong-Bulu",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SU-MVILA-EBOLOWA-1",
+              "unit_name": "Ebolowa 1",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SU-MVILA-EBOLOWA-2",
+              "unit_name": "Ebolowa 2",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SU-MVILA-EFOULAN",
+              "unit_name": "Efoulan",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SU-MVILA-MENGONG",
+              "unit_name": "Mengong",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SU-MVILA-MVANGANE",
+              "unit_name": "Mvangane",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SU-MVILA-NGOULEMAKONG",
+              "unit_name": "Ngoulemakong",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-SU-OCEAN",
+          "unit_name": "Océan",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-SU-OCEAN-AKOM-2",
+              "unit_name": "Akom 2",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SU-OCEAN-BIPINDI",
+              "unit_name": "Bipindi",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SU-OCEAN-CAMPO",
+              "unit_name": "Campo",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SU-OCEAN-KRIBI-1",
+              "unit_name": "Kribi 1",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SU-OCEAN-KRIBI-2",
+              "unit_name": "Kribi 2",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SU-OCEAN-LOKOUNDJE",
+              "unit_name": "Lokoundje",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SU-OCEAN-LOLODORF",
+              "unit_name": "Lolodorf",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SU-OCEAN-MVENGUE",
+              "unit_name": "Mvengue",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SU-OCEAN-NIETE",
+              "unit_name": "Niete",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-SU-VALLEE-DU-NTEM",
+          "unit_name": "Vallée-du-Ntem",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-SU-VALLEE-DU-NTEM-AMBAM",
+              "unit_name": "Ambam",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SU-VALLEE-DU-NTEM-KYE-OSSI",
+              "unit_name": "Kye-Ossi",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SU-VALLEE-DU-NTEM-MAAN",
+              "unit_name": "Maan",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SU-VALLEE-DU-NTEM-OLAMZE",
+              "unit_name": "Olamze",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit_code": "CM-SW",
+      "unit_name": "Southwest",
+      "unit_type": "REGION",
+      "country_code": "CM",
+      "children": [
+        {
+          "unit_code": "CM-SW-FAKO",
+          "unit_name": "Fako",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-SW-FAKO-BUEA",
+              "unit_name": "Buea",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SW-FAKO-LIMBE-1",
+              "unit_name": "Limbe 1",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SW-FAKO-LIMBE-2",
+              "unit_name": "Limbe 2",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SW-FAKO-LIMBE-3",
+              "unit_name": "Limbe 3",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SW-FAKO-MUYUKA",
+              "unit_name": "Muyuka",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SW-FAKO-TIKO",
+              "unit_name": "Tiko",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SW-FAKO-WEST-COAST",
+              "unit_name": "West-Coast",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-SW-KUPE-MANENGUBA",
+          "unit_name": "Kupe-Manenguba",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-SW-KUPE-MANENGUBA-BANGEM",
+              "unit_name": "Bangem",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SW-KUPE-MANENGUBA-NGUTI",
+              "unit_name": "Nguti",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SW-KUPE-MANENGUBA-TOMBEL",
+              "unit_name": "Tombel",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-SW-LEBIALEM",
+          "unit_name": "Lebialem",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-SW-LEBIALEM-ALOU",
+              "unit_name": "Alou",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SW-LEBIALEM-FONTEM",
+              "unit_name": "Fontem",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SW-LEBIALEM-WABANE",
+              "unit_name": "Wabane",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-SW-MANYU",
+          "unit_name": "Manyu",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-SW-MANYU-AKWAYA",
+              "unit_name": "Akwaya",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SW-MANYU-EYUMODJOCK",
+              "unit_name": "Eyumodjock",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SW-MANYU-MAMFE",
+              "unit_name": "Mamfe",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SW-MANYU-UPPER-BAYANG",
+              "unit_name": "Upper Bayang",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-SW-MEME",
+          "unit_name": "Meme",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-SW-MEME-KONYE",
+              "unit_name": "Konye",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SW-MEME-KUMBA-1",
+              "unit_name": "Kumba 1",
+              "unit_type": "COUNCIL",
+              "country_code": "CM",
+              "aliases": [
+                "KUMBA-01"
+              ]
+            },
+            {
+              "unit_code": "CM-SW-MEME-KUMBA-2",
+              "unit_name": "Kumba 2",
+              "unit_type": "COUNCIL",
+              "country_code": "CM",
+              "aliases": [
+                "KUMBA-02"
+              ]
+            },
+            {
+              "unit_code": "CM-SW-MEME-KUMBA-3",
+              "unit_name": "Kumba 3",
+              "unit_type": "COUNCIL",
+              "country_code": "CM",
+              "aliases": [
+                "KUMBA-03"
+              ]
+            },
+            {
+              "unit_code": "CM-SW-MEME-MBONGE",
+              "unit_name": "Mbonge",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-SW-NDIAN",
+          "unit_name": "Ndian",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-SW-NDIAN-BAMUSSO",
+              "unit_name": "Bamusso",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SW-NDIAN-DIKOME-BALUE",
+              "unit_name": "Dikome Balue",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SW-NDIAN-EKONDO-TITI",
+              "unit_name": "Ekondo Titi",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SW-NDIAN-IDABATO",
+              "unit_name": "Idabato",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SW-NDIAN-ISANGELE",
+              "unit_name": "Isangele",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SW-NDIAN-KOMBO-ABEDIMO",
+              "unit_name": "Kombo Abedimo",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SW-NDIAN-KOMBO-ITINDI",
+              "unit_name": "Kombo Itindi",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SW-NDIAN-MUNDEMBA",
+              "unit_name": "Mundemba",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-SW-NDIAN-TOKO",
+              "unit_name": "Toko",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unit_code": "CM-OU",
+      "unit_name": "West",
+      "unit_type": "REGION",
+      "country_code": "CM",
+      "children": [
+        {
+          "unit_code": "CM-OU-BAMBOUTOS",
+          "unit_name": "Bamboutos",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-OU-BAMBOUTOS-BABADJOU",
+              "unit_name": "Babadjou",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-BAMBOUTOS-BATCHAM",
+              "unit_name": "Batcham",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-BAMBOUTOS-GALIM",
+              "unit_name": "Galim",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-BAMBOUTOS-MBOUDA",
+              "unit_name": "Mbouda",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-OU-HAUT-NKAM",
+          "unit_name": "Haut-Nkam",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-OU-HAUT-NKAM-BAFANG",
+              "unit_name": "Bafang",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-HAUT-NKAM-BAKOU",
+              "unit_name": "Bakou",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-HAUT-NKAM-BANA",
+              "unit_name": "Bana",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-HAUT-NKAM-BANDJA",
+              "unit_name": "Bandja",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-HAUT-NKAM-BANKA",
+              "unit_name": "Banka",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-HAUT-NKAM-BANWA",
+              "unit_name": "Banwa",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-HAUT-NKAM-KEKEM",
+              "unit_name": "Kekem",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-OU-HAUTS-PLATEAUX",
+          "unit_name": "Hauts-Plateaux",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-OU-HAUTS-PLATEAUX-BAHAM",
+              "unit_name": "Baham",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-HAUTS-PLATEAUX-BAMENDJOU",
+              "unit_name": "Bamendjou",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-HAUTS-PLATEAUX-BANGOU",
+              "unit_name": "Bangou",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-HAUTS-PLATEAUX-BATIE",
+              "unit_name": "Batie",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-OU-KOUNG-KHI",
+          "unit_name": "Koung-Khi",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-OU-KOUNG-KHI-BAYANGAM",
+              "unit_name": "Bayangam",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-KOUNG-KHI-DJEBEM",
+              "unit_name": "Djebem",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-KOUNG-KHI-POUMOUGNE",
+              "unit_name": "Poumougne",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-OU-MENOUA",
+          "unit_name": "Menoua",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-OU-MENOUA-DSCHANG",
+              "unit_name": "Dschang",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-MENOUA-FOKOUE",
+              "unit_name": "Fokoue",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-MENOUA-FONGO-TONGO",
+              "unit_name": "Fongo-Tongo",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-MENOUA-NKONG-NI",
+              "unit_name": "Nkong-Ni",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-MENOUA-PENKA-MICHEL",
+              "unit_name": "Penka-Michel",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-MENOUA-SANTCHOU",
+              "unit_name": "Santchou",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-OU-MIFI",
+          "unit_name": "Mifi",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-OU-MIFI-BAFOUSSAM-1",
+              "unit_name": "Bafoussam 1",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-MIFI-BAFOUSSAM-2",
+              "unit_name": "Bafoussam 2",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-MIFI-BAFOUSSAM-3",
+              "unit_name": "Bafoussam 3",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-OU-NDE",
+          "unit_name": "Ndé",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-OU-NDE-BANGANGTE",
+              "unit_name": "Bangangte",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-NDE-BASSAMBA",
+              "unit_name": "Bassamba",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-NDE-BAZOU",
+              "unit_name": "Bazou",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-NDE-TONGA",
+              "unit_name": "Tonga",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        },
+        {
+          "unit_code": "CM-OU-NOUN",
+          "unit_name": "Noun",
+          "unit_type": "DIVISION",
+          "country_code": "CM",
+          "children": [
+            {
+              "unit_code": "CM-OU-NOUN-BANGOURAIN",
+              "unit_name": "Bangourain",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-NOUN-FOUMBAN",
+              "unit_name": "Foumban",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-NOUN-FOUMBOT",
+              "unit_name": "Foumbot",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-NOUN-KOUOPTAMO",
+              "unit_name": "Kouoptamo",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-NOUN-KOUTABA",
+              "unit_name": "Koutaba",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-NOUN-MAGBA",
+              "unit_name": "Magba",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-NOUN-MALANTOUEN",
+              "unit_name": "Malantouen",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-NOUN-MASSANGAM",
+              "unit_name": "Massangam",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            },
+            {
+              "unit_code": "CM-OU-NOUN-NJIMOM",
+              "unit_name": "Njimom",
+              "unit_type": "COUNCIL",
+              "country_code": "CM"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "_meta": {
+    "source": "open-admin-data/cameroon-administrative-divisions (CC-BY-4.0)",
+    "source_url": "https://github.com/open-admin-data/cameroon-administrative-divisions",
+    "hierarchy": "COUNTRY > REGION > DIVISION > COUNCIL",
+    "counts": {
+      "regions": 10,
+      "divisions": 58,
+      "councils": 360
+    }
+  }
+}
