@@ -35,7 +35,7 @@ def test_washed_logo_and_default_platform_logo():
         assert path.is_file()
         resolved = resolve_logo_file(db, tenant_id=None, force_platform=True)
         assert resolved and resolved.is_file()
-        png = washed_logo_png(resolved, wash_opacity=0.6)
+        png = washed_logo_png(resolved, wash_opacity=0.75)
         assert png[:8] == b"\x89PNG\r\n\x1a\n"
         assert len(png) > 200
     finally:
@@ -75,7 +75,12 @@ def test_receipt_pdf_includes_branding(client):
 
 
 def test_create_receipt_pdf_template_layout():
-    from app.services.receipts_pdf import create_receipt_pdf
+    from app.core.config import get_settings
+    from app.services.receipts_pdf import create_receipt_pdf, _footer_brand
+
+    assert _footer_brand("http://localhost:3000") == "EASYPAY"
+    assert _footer_brand("EasyPay") == "EASYPAY"
+    assert get_settings().PDF_LOGO_WASH_OPACITY == 0.75
 
     pdf = create_receipt_pdf(
         receipt_no="111220998",
@@ -91,11 +96,14 @@ def test_create_receipt_pdf_template_layout():
         grand_total=1050.0,
         currency="XAF",
         terms_text="Sample terms",
-        website="http://localhost:5173",
+        website="EasyPay",
         verification_token="v_template",
     )
     assert pdf[:4] == b"%PDF"
     assert len(pdf) > 1000
+    # Printed verify URLs / localhost must not appear as literal PDF text objects
+    assert b"localhost:3000" not in pdf
+    assert b"/verify" not in pdf
 
 
 def test_deep_link_token_still_verifies(client):

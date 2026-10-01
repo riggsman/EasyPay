@@ -126,13 +126,27 @@ def resolve_logo_file(
 
 
 def washed_logo_png(path: Path, wash_opacity: Optional[float] = None) -> bytes:
-    """Return PNG bytes with alpha scaled to the configured wash opacity (default 60%)."""
+    """Return a soft under-text watermark PNG.
+
+    ``PDF_LOGO_WASH_OPACITY`` controls relative strength (default 0.75 = +25% vs
+    the original 0.60). Values are mapped into a low underlay alpha so the mark
+    stays visible in page gaps without tinting or washing out opaque text.
+    """
     settings = get_settings()
-    opacity = wash_opacity if wash_opacity is not None else float(settings.PDF_LOGO_WASH_OPACITY)
-    opacity = max(0.05, min(1.0, opacity))
+    strength = wash_opacity if wash_opacity is not None else float(settings.PDF_LOGO_WASH_OPACITY)
+    strength = max(0.05, min(1.0, strength))
+    # Keep underlay gentle: at 0.60 → ~0.16 alpha, at 0.75 → ~0.185 alpha
+    underlay_alpha = 0.08 + (strength * 0.14)
+    # Stronger wash setting also stays light (more white blend)
+    white_blend = 0.62 + (strength * 0.18)
+    white_blend = min(0.88, white_blend)
+
     img = Image.open(path).convert("RGBA")
-    r, g, b, a = img.split()
-    a = a.point(lambda p: int(p * opacity))
+    white = Image.new("RGBA", img.size, (255, 255, 255, 255))
+    softened = Image.blend(img, white, white_blend)
+    softened.putalpha(img.split()[-1])
+    r, g, b, a = softened.split()
+    a = a.point(lambda p: int(p * underlay_alpha))
     out = Image.merge("RGBA", (r, g, b, a))
     buf = BytesIO()
     out.save(buf, format="PNG")

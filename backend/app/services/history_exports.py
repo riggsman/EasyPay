@@ -258,12 +258,13 @@ def build_history_pdf(
             meta,
         )
     )
-    on_first, on_later = logo_watermark_callbacks(
+    attach = logo_watermark_callbacks(
         db,
         tenant_id=None if force_platform else payer.tenant_id,
         force_platform=force_platform,
     )
-    doc.build(story, onFirstPage=on_first, onLaterPages=on_later)
+    attach(doc)
+    doc.build(story)
     return buffer.getvalue()
 
 

@@ -2,18 +2,17 @@
 
 Template structure (from create_receipt_pdf):
   logo (left) + RECEIPT title / number / date (right)
-  Bill To (payer) + Paid To (council) — no ship-to
+  Bill To (payer) + Paid To (business) — no ship-to
   line items table (qty / description / unit / amount)
   sub-total, service fee, grand total
   terms + verification QR
-  website footer from PUBLIC_BASE_URL
+  EasyPay footer brand mark
 """
 from __future__ import annotations
 
 from io import BytesIO
 from pathlib import Path
-from typing import Optional, Sequence
-from urllib.parse import urlparse
+from typing import Callable, Optional, Sequence
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -35,12 +34,13 @@ from app.models.geography import GeographicUnit
 from app.models.payer import Payer
 from app.models.receipt import Receipt
 from app.models.tenant import Tenant
-from app.services.branding import absolute_logo_path, public_base_url, public_verify_url, resolve_logo_file
+from app.services.branding import absolute_logo_path, public_verify_url, resolve_logo_file
 from app.services.pdf_branding import logo_watermark_callbacks, qr_flowable
 
 # Template palette — clean invoice look, EasyPay green accents
 _INK = colors.HexColor("#14231c")
 _MUTED = colors.HexColor("#5b6b62")
+_BLACK = colors.black
 _RULE = colors.HexColor("#c5d6cc")
 _BAND = colors.HexColor("#134832")
 _BAND_SOFT = colors.HexColor("#edf5f0")
@@ -56,11 +56,12 @@ def _money(value: float | int, currency: str) -> str:
     return f"{float(value):,.2f} {currency}"
 
 
-def _website_label(url: Optional[str] = None) -> str:
-    raw = (url or public_base_url()).strip()
-    parsed = urlparse(raw if "://" in raw else f"https://{raw}")
-    host = (parsed.netloc or parsed.path or raw).upper()
-    return host.removeprefix("WWW.")
+def _footer_brand(label: Optional[str] = None) -> str:
+    """Public footer mark — EasyPay only (never localhost / verify URLs)."""
+    text = (label or "EasyPay").strip()
+    if not text or "localhost" in text.lower() or "://" in text:
+        return "EASYPAY"
+    return text.upper()
 
 
 def _header_logo_flowable(logo_path: Optional[Path], logo_text: str = "LOGO") -> object:
@@ -104,7 +105,7 @@ def create_receipt_pdf(
     terms_text: str = "",
     website: Optional[str] = None,
     verification_token: str = "",
-    watermark_callbacks: Optional[tuple] = None,
+    watermark_attach: Optional[Callable] = None,
 ) -> bytes:
     """Render the classic receipt template with EasyPay-relevant fields only.
 
@@ -167,7 +168,7 @@ def create_receipt_pdf(
         parent=styles["Normal"],
         fontSize=8,
         leading=11,
-        textColor=_MUTED,
+        textColor=_BLACK,
     )
     website_style = ParagraphStyle(
         "RcptWeb",
@@ -291,6 +292,8 @@ def create_receipt_pdf(
                 ("FONTSIZE", (0, 0), (-1, -1), 10),
                 ("TEXTCOLOR", (0, 0), (-1, -1), _INK),
                 ("ALIGN", (1, 0), (1, -1), "RIGHT"),
+                # Opaque fills so the under-page wash cannot tint totals text
+                ("BACKGROUND", (0, 0), (-1, -2), _WHITE),
                 ("BACKGROUND", (0, -1), (-1, -1), _TOTAL_BAND),
                 ("BOX", (0, 0), (-1, -1), 0.4, _RULE),
                 ("INNERGRID", (0, 0), (-1, -1), 0.3, _RULE),
@@ -314,29 +317,31 @@ def create_receipt_pdf(
     )
 
     default_terms = (
-        "This receipt confirms a settled council levy payment recorded by EasyPay. "
+        "This receipt confirms a settled payment recorded by EasyPay. "
         "Verify authenticity by scanning the QR code or entering the receipt number / "
-        "verification code on the EasyPay verify page. Revoked receipts will not verify."
+        "verification code. Revoked receipts will not verify."
     )
     terms = terms_text or default_terms
-    verify_url = public_verify_url(verification_token) if verification_token else public_base_url() + "/verify"
+    # QR still encodes the verify deep-link; never print the URL (avoids localhost in PDFs).
+    verify_url = public_verify_url(verification_token) if verification_token else ""
     terms_left = [
         Paragraph("TERMS & VERIFICATION", section_label),
         Paragraph(terms, terms_style),
         Spacer(1, 4),
         Paragraph(f"<b>Verification code:</b> {verification_token or '—'}", body),
-        Paragraph(f"<font size='7' color='#7a8a80'>{verify_url}</font>", small),
     ]
-    qr = qr_flowable(verify_url, size_mm=28) if verification_token else Spacer(1, 1)
+    qr = qr_flowable(verify_url, size_mm=28) if verification_token and verify_url else Spacer(1, 1)
     terms_table = Table([[terms_left, qr]], colWidths=[140 * mm, 38 * mm])
     terms_table.setStyle(
         TableStyle(
             [
                 ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-                ("TOPPADDING", (0, 0), (-1, -1), 2),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+                # Opaque white so terms text is never washed by the logo underlay
+                ("BACKGROUND", (0, 0), (-1, -1), _WHITE),
+                ("LEFTPADDING", (0, 0), (-1, -1), 4),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
             ]
         )
     )
@@ -354,14 +359,13 @@ def create_receipt_pdf(
         HRFlowable(width="100%", thickness=0.6, color=_RULE, spaceBefore=2, spaceAfter=8),
         terms_table,
         Spacer(1, 16),
-        Paragraph(_website_label(website), website_style),
+        Paragraph(_footer_brand(website), website_style),
     ]
 
-    if watermark_callbacks:
-        on_first, on_later = watermark_callbacks
-        doc.build(story, onFirstPage=on_first, onLaterPages=on_later)
-    else:
-        doc.build(story)
+    # Watermark via beforePage (under text) — never onFirstPage overprint
+    if watermark_attach:
+        watermark_attach(doc)
+    doc.build(story)
     pdf = buffer.getvalue()
 
     if output_path:
@@ -412,7 +416,7 @@ def build_receipt_pdf(db: Session, receipt: Receipt) -> bytes:
     items = [
         {
             "qty": 1,
-            "description": receipt.revenue_name or "Council levy payment",
+            "description": receipt.revenue_name or "Payment",
             "price": amount,
             "amount": amount,
         }
@@ -441,7 +445,7 @@ def build_receipt_pdf(db: Session, receipt: Receipt) -> bytes:
         logo_path=header_logo,
         bill_to_name=receipt.payer_display_name or (payer.full_name if payer else "Payer"),
         bill_to_address=bill_to_address,
-        paid_to_name=receipt.council_name or (tenant.organization_name if tenant else "Council"),
+        paid_to_name=receipt.council_name or (tenant.organization_name if tenant else "EasyPay"),
         paid_to_address=paid_to_address,
         items=items,
         sub_total=amount,
@@ -451,13 +455,13 @@ def build_receipt_pdf(db: Session, receipt: Receipt) -> bytes:
         payment_channel=(receipt.payment_channel or "").replace("_", " "),
         status=receipt.status or "ISSUED",
         terms_text=(
-            "Official EasyPay council levy receipt. Amounts are final for the settled payment shown. "
-            "Scan the QR code or use the verification code on the public verify page. "
+            "Official EasyPay receipt. Amounts are final for the settled payment shown. "
+            "Scan the QR code or use the verification code to confirm authenticity. "
             "Revoked receipts return NOT VERIFIED."
         ),
-        website=public_base_url(),
+        website=settings.APP_NAME or "EasyPay",
         verification_token=receipt.verification_token or "",
-        watermark_callbacks=logo_watermark_callbacks(
+        watermark_attach=logo_watermark_callbacks(
             db,
             tenant_id=receipt.tenant_id,
             force_platform=False,

@@ -44,8 +44,8 @@ class Settings(BaseSettings):
     PUBLIC_BASE_URL: str = "http://localhost:3000"
     # Directory for tenant/platform logo files (relative to backend/ unless absolute)
     LOGO_STORAGE_DIR: str = "var/logos"
-    # Logo watermark wash: 0.6 = 60% opacity (washed background mark)
-    PDF_LOGO_WASH_OPACITY: float = 0.6
+    # Logo watermark wash: 0.75 = 75% opacity (25% stronger than prior 60% wash)
+    PDF_LOGO_WASH_OPACITY: float = 0.75
 
     @property
     def cors_origin_list(self) -> List[str]:
