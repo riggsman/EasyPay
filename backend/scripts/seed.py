@@ -2,6 +2,7 @@
 
 Creates:
   - Platform, Cameroon/Southwest/Kumba geography, 3 council tenants
+    (full national regions/divisions/councils: scripts/populate_cameroon_geography.py)
   - SUPER ADMIN (wireitapp@gmail.com / 682835503), council admins, demo payers
   - Revenue types, fees, commissions, payment channels
   - Campay / Email / WhatsApp / SMS provider configs (Campay mock)
