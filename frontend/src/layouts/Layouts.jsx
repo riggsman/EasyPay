@@ -31,21 +31,32 @@ export function PublicLayout() {
       <header className={`public-nav rise${isLanding ? ' public-nav--overlay' : ''}`}>
         <div className="container public-nav-inner">
           <Link to="/" className="brand">EasyPay</Link>
-          <nav className="nav-links">
-            {isAuthenticated ? (
-              <>
-                <Link to={userType === 'PAYER' ? '/payer' : (userType === 'PLATFORM_ADMIN' || userType === 'SUPER_ADMIN') ? '/platform' : '/tenant'}>
-                  Dashboard
-                </Link>
-                <button className="btn btn-ghost" type="button" onClick={logout}>Sign out</button>
-              </>
-            ) : (
-              <>
-                <Link className="nav-signin" to="/login">Sign In</Link>
-                <Link className="btn btn-primary nav-cta" to="/register">Create Account</Link>
-              </>
-            )}
-          </nav>
+          {/* Landing CTAs live in the hero — hide the top-bar link cluster on home */}
+          {!isLanding && (
+            <nav className="nav-links">
+              {isAuthenticated ? (
+                <>
+                  <Link to={userType === 'PAYER' ? '/payer' : (userType === 'PLATFORM_ADMIN' || userType === 'SUPER_ADMIN') ? '/platform' : '/tenant'}>
+                    Dashboard
+                  </Link>
+                  <button className="btn btn-ghost" type="button" onClick={logout}>Sign out</button>
+                </>
+              ) : (
+                <>
+                  <Link className="nav-signin" to="/login">Sign In</Link>
+                  <Link className="btn btn-primary nav-cta" to="/register">Create Account</Link>
+                </>
+              )}
+            </nav>
+          )}
+          {isLanding && isAuthenticated && (
+            <nav className="nav-links">
+              <Link to={userType === 'PAYER' ? '/payer' : (userType === 'PLATFORM_ADMIN' || userType === 'SUPER_ADMIN') ? '/platform' : '/tenant'}>
+                Dashboard
+              </Link>
+              <button className="btn btn-ghost" type="button" onClick={logout}>Sign out</button>
+            </nav>
+          )}
         </div>
       </header>
       <Outlet />
@@ -293,6 +304,7 @@ export function PayerLayout() {
       label: 'Portal',
       items: [
         { to: '/payer', label: 'Dashboard', end: true },
+        { to: '/payer/services', label: 'Services' },
         { to: '/payer/obligations', label: 'Obligations' },
         { to: '/payer/pay', label: 'Make Payment' },
         { to: '/payer/history', label: 'Transactions' },
@@ -347,6 +359,7 @@ export function PlatformLayout() {
       dropdown: true,
       items: [
         { to: '/platform/providers', label: 'Providers (Campay / Email / WA / SMS)' },
+        { to: '/platform/utility-services', label: 'Utility services' },
         { to: '/platform/fees', label: 'Fees' },
         { to: '/platform/commissions', label: 'Commissions' },
         { to: '/platform/config', label: 'System Config' },

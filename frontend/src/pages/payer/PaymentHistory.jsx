@@ -116,7 +116,10 @@ export default function PaymentHistory() {
           <tbody>
             {rows.map((t) => (
               <tr key={t.transaction_id}>
-                <td>{t.transaction_reference}</td>
+                <td>
+                  {t.transaction_reference}
+                  {t.product_type === 'UTILITY' ? <div className="muted" style={{ fontSize: '0.8rem' }}>Utility</div> : null}
+                </td>
                 <td>{formatMoney(t.amount, t.currency)}</td>
                 <td>{formatMoney(t.total_amount, t.currency)}</td>
                 <td>

@@ -237,6 +237,7 @@ class TransactionOut(ORMModel):
     transaction_tenant_id: str
     transaction_geographic_unit_id: str
     obligation_id: Optional[str] = None
+    product_type: str = "LEVY"
     amount: Decimal
     service_fee: Decimal
     # Omitted/null for PAYER responses — council/platform only
@@ -272,6 +273,7 @@ class TransactionDetailOut(TransactionOut):
     receipt_id: Optional[str] = None
     receipt_pdf_url: Optional[str] = None
     credit_recovery: Optional[dict] = None
+    utility: Optional[dict] = None
 
 
 class ManualCreditRequest(BaseModel):

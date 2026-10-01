@@ -38,6 +38,8 @@ class Transaction(Base, TimestampMixin, StatusMixin):
     obligation_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("obligations.obligation_id"))
     revenue_type_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("revenue_types.revenue_type_id"))
     collection_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("collections.collection_id"))
+    # LEVY (council obligation) | UTILITY (bill-pay store)
+    product_type: Mapped[str] = mapped_column(String(32), default="LEVY", nullable=False, index=True)
     amount: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
     service_fee: Mapped[Decimal] = mapped_column(Numeric(18, 2), default=Decimal("0"))
     commission_amount: Mapped[Decimal] = mapped_column(Numeric(18, 2), default=Decimal("0"))

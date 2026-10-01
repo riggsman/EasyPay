@@ -17,6 +17,7 @@ from app.api.v1 import (
     campay,
     providers,
     history_exports,
+    utilities,
 )
 
 api_router = APIRouter(prefix="/api/v1")
@@ -30,6 +31,7 @@ api_router.include_router(history_exports.router, tags=["history-exports"])
 api_router.include_router(revenue.router, tags=["revenue"])
 api_router.include_router(obligations.router, tags=["obligations"])
 api_router.include_router(payments.router, tags=["payments"])
+api_router.include_router(utilities.router, tags=["utilities"])
 api_router.include_router(receipts.router, tags=["receipts"])
 api_router.include_router(settlements.router, tags=["settlements"])
 api_router.include_router(reports.router, tags=["reports"])

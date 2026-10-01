@@ -32,7 +32,10 @@ export default function PayerDashboard() {
             <Link to="/payer/area">Change Area</Link>
           </p>
         </div>
-        <Link className="btn btn-primary" to="/payer/pay">Make Payment</Link>
+        <div className="row">
+          <Link className="btn btn-ghost" to="/payer/services">Pay utility bill</Link>
+          <Link className="btn btn-primary" to="/payer/pay">Make Payment</Link>
+        </div>
       </div>
       {error && <div className="alert">{error}</div>}
       <div className="stat-grid">

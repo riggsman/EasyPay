@@ -22,6 +22,7 @@ from app.models.settlement import Settlement, SettlementLine, ReconciliationReco
 from app.models.notification import NotificationDelivery
 from app.models.provider import ProviderConfiguration, ProviderPaymentIntent
 from app.models.history_export import HistoryExport
+from app.models.utility import UtilityPaymentDetail, UtilityService
 
 __all__ = [
     "Base",
@@ -61,4 +62,6 @@ __all__ = [
     "ProviderConfiguration",
     "ProviderPaymentIntent",
     "HistoryExport",
+    "UtilityService",
+    "UtilityPaymentDetail",
 ]

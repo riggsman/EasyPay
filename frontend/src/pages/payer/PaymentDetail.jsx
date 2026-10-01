@@ -56,7 +56,17 @@ export default function PaymentDetail() {
         <span className={`pill${['FAILED', 'REJECTED', 'MANUAL_INTERVENTION'].includes(txn.status) ? ' failed' : ''}`}>
           {txn.status === 'REJECTED' ? 'FAILED' : txn.status}
         </span>
+        {txn.product_type === 'UTILITY' && <span className="pill">Utility</span>}
       </div>
+      {txn.utility && (
+        <div className="panel">
+          <strong>{txn.utility.service_name}</strong>
+          <p className="muted" style={{ marginBottom: 0 }}>
+            {txn.utility.reference_type === 'METER' ? 'Meter' : 'Bill'}:{' '}
+            {txn.utility.meter_number || txn.utility.bill_number}
+          </p>
+        </div>
+      )}
       {txn.failure_reason && (
         <Disclosure title="View failure reason" open>
           <p className="failure-reason-inline">{txn.failure_reason}</p>

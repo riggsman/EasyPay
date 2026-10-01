@@ -14,12 +14,14 @@ import PaymentDetail from './pages/payer/PaymentDetail'
 import ReceiptsPage from './pages/payer/Receipts'
 import OperatingAreaPage from './pages/payer/OperatingArea'
 import ProfilePage from './pages/payer/Profile'
+import ServicesStore from './pages/payer/ServicesStore'
 import PayerStatements, { PayerNotifications } from './pages/payer/Statements'
 import TenantObligations from './pages/tenant/Obligations'
 import TenantRevenue from './pages/tenant/Revenue'
 import PlatformTenants from './pages/platform/Tenants'
 import PlatformGeography from './pages/platform/Geography'
 import PlatformProviders from './pages/platform/Providers'
+import UtilityServicesAdmin from './pages/platform/UtilityServices'
 import {
   OpsDashboard,
   OpsAlerts,
@@ -100,6 +102,7 @@ export default function App() {
         <Route element={<RequireAuth allow={['PAYER']} />}>
           <Route element={<PayerLayout />}>
             <Route path="/payer" element={<PayerDashboard />} />
+            <Route path="/payer/services" element={<ServicesStore />} />
             <Route path="/payer/obligations" element={<ObligationsPage />} />
             <Route path="/payer/pay" element={<MakePaymentPage />} />
             <Route path="/payer/history" element={<PaymentHistory />} />
@@ -128,6 +131,7 @@ export default function App() {
             <Route path="/platform/tenants" element={<PlatformTenants />} />
             <Route path="/platform/geography" element={<PlatformGeography />} />
             <Route path="/platform/providers" element={<PlatformProviders />} />
+            <Route path="/platform/utility-services" element={<UtilityServicesAdmin />} />
             <Route path="/platform/obligations" element={<TenantObligations />} />
             {sharedOpsRoutes('/platform')}
           </Route>

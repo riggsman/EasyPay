@@ -337,6 +337,57 @@ table.data th {
 .section-green-soft h2 {
   color: var(--leaf-deep);
 }
+
+.service-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+.service-card {
+  display: grid;
+  gap: 0.45rem;
+  text-align: left;
+  padding: 1.15rem;
+  border-radius: var(--radius);
+  border: 1px solid rgba(20, 35, 28, 0.1);
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--svc-accent, #1f6b4a) 12%, #fff), #fff);
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+.service-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(19, 72, 50, 0.12);
+}
+.service-card-icon {
+  width: 2.4rem;
+  height: 2.4rem;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--svc-accent, #1f6b4a) 18%, #fff);
+  font-size: 1.2rem;
+}
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(8, 32, 22, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+.modal-panel {
+  width: min(520px, 100%);
+  max-height: min(90vh, 720px);
+  overflow: auto;
+  background: #fff;
+  border-radius: 18px;
+  padding: 1.25rem 1.35rem 1.5rem;
+  box-shadow: 0 24px 60px rgba(8, 32, 22, 0.28);
+}
 .steps {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));

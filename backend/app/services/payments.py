@@ -228,12 +228,24 @@ def _next_ref(db: Session, prefix: str) -> str:
     # Simple sequential reference
     year = utcnow().year
     if prefix == "TXN":
-        n = db.query(Transaction).count() + 1
+        n = db.query(Transaction).filter(Transaction.product_type != "UTILITY").count() + 1
+    elif prefix == "UTL":
+        n = db.query(Transaction).filter(Transaction.product_type == "UTILITY").count() + 1
     elif prefix == "RCPT":
         n = db.query(Receipt).count() + 1
     else:
-        n = 1
-    return f"{prefix}-{year}-{n:07d}"
+        n = db.query(Transaction).filter(Transaction.transaction_reference.like(f"{prefix}-%")).count() + 1
+    # Avoid collisions if soft-deletes/filters leave gaps reused under race — bump until free
+    for _ in range(50):
+        candidate = f"{prefix}-{year}-{n:07d}"
+        if prefix == "RCPT":
+            exists = db.query(Receipt).filter(Receipt.receipt_number == candidate).first()
+        else:
+            exists = db.query(Transaction).filter(Transaction.transaction_reference == candidate).first()
+        if not exists:
+            return candidate
+        n += 1
+    return f"{prefix}-{year}-{new_id('')[:8]}"
 
 
 def resolve_payment_context(db: Session, payer: Payer, data: PaymentResolveRequest) -> PaymentResolveResponse:
