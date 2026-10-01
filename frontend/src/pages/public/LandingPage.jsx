@@ -1,13 +1,18 @@
 import { Link } from 'react-router-dom'
 import heroImage from '../../assets/landing-hero.jpg'
 
+const HERO_BG = {
+  backgroundColor: '#134832',
+  backgroundImage: `linear-gradient(115deg, rgba(10, 42, 28, 0.88) 0%, rgba(19, 72, 50, 0.72) 42%, rgba(31, 107, 74, 0.55) 100%), url(${heroImage})`,
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+  backgroundRepeat: 'no-repeat',
+}
+
 export default function LandingPage() {
   return (
     <>
-      <section
-        className="hero hero-fullbleed"
-        style={{ '--hero-image': `url(${heroImage})` }}
-      >
+      <section className="hero hero-fullbleed" style={HERO_BG}>
         <div className="hero-veil" aria-hidden="true" />
         <div className="container hero-copy">
           <div className="brand-hero rise">EasyPay</div>
