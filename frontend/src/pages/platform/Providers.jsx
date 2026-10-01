@@ -13,17 +13,17 @@ function Field({ label, children }) {
 }
 
 const TABS = [
+  { id: 'overview', label: 'Overview' },
   { id: 'campay', label: 'Campay' },
   { id: 'email', label: 'Email' },
   { id: 'whatsapp', label: 'WhatsApp' },
   { id: 'sms', label: 'SMS' },
-  { id: 'overview', label: 'Overview' },
 ]
 
 export default function PlatformProviders() {
   const { userType } = useAuth()
   const allowed = userType === 'SUPER_ADMIN' || userType === 'PLATFORM_ADMIN'
-  const [tab, setTab] = useState('campay')
+  const [tab, setTab] = useState('overview')
   const [campay, setCampay] = useState({
     enabled: true,
     username: '',
