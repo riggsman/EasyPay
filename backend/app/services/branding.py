@@ -126,7 +126,7 @@ def resolve_logo_file(
 
 
 def washed_logo_png(path: Path, wash_opacity: Optional[float] = None) -> bytes:
-    """Return PNG bytes with alpha scaled to the configured wash opacity (default 60%)."""
+    """Return PNG bytes with alpha scaled to the configured wash opacity (default 75%)."""
     settings = get_settings()
     opacity = wash_opacity if wash_opacity is not None else float(settings.PDF_LOGO_WASH_OPACITY)
     opacity = max(0.05, min(1.0, opacity))

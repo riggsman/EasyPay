@@ -84,22 +84,21 @@ def verification_block(
         "VerifyHint",
         parent=styles["Normal"],
         fontSize=8,
-        textColor=colors.HexColor("#5b6b62"),
+        textColor=colors.black,
         leading=11,
     )
     code_style = ParagraphStyle(
         "VerifyCode",
         parent=styles["Normal"],
         fontSize=9,
-        textColor=colors.HexColor("#14231c"),
+        textColor=colors.black,
         leading=12,
     )
     text = Paragraph(
         "<b>Scan to verify</b><br/>"
-        "Scan the QR code or open the EasyPay verify page and enter the code below. "
-        "Verification uses the same public checks as before (token / receipt number; revoked receipts fail).<br/><br/>"
-        f"<b>Verification code:</b> {verification_token or '—'}<br/>"
-        f"<font size='7' color='#7a8a80'>{url}</font>",
+        "Scan the QR code or enter the verification code below. "
+        "Revoked receipts will not verify.<br/><br/>"
+        f"<b>Verification code:</b> {verification_token or '—'}",
         hint,
     )
     # Override with slightly larger leading for the mixed block
@@ -108,7 +107,7 @@ def verification_block(
         parent=code_style,
         fontSize=9,
         leading=12,
-        textColor=colors.HexColor("#14231c"),
+        textColor=colors.black,
     )
     qr = qr_flowable(url, size_mm=30)
     table = Table([[text, qr]], colWidths=[130 * mm, 36 * mm])

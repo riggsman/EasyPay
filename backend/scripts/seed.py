@@ -988,7 +988,7 @@ def seed():
         print(f"  Sample payers ensured: {stats['payers']}")
         print(f"  Settled payments (total in DB): {settled_count}")
         print("  History export: 2 free downloads / fee 500 XAF thereafter")
-        print("  PDF branding: platform logo watermark (60% wash) + receipt verify QR via PUBLIC_BASE_URL")
+        print("  PDF branding: platform logo watermark (75% wash) + receipt verify QR via PUBLIC_BASE_URL")
         demos = stats.get("failure_demos") or {}
         if demos:
             print(
