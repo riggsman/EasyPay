@@ -1318,6 +1318,7 @@ export function OpsUsersRoles() {
 }
 
 export function OpsConfig() {
+  const [tab, setTab] = useState('overview')
   const [rows, setRows] = useState([])
   const [notif, setNotif] = useState(null)
   const [historyExport, setHistoryExport] = useState({ fee_amount: '500', free_downloads: 2, currency: 'XAF' })
@@ -1331,6 +1332,13 @@ export function OpsConfig() {
   const [form, setForm] = useState({ config_key: '', config_value: '', description: '' })
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const tabs = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'cache', label: 'Client cache' },
+    { id: 'export', label: 'History export' },
+    { id: 'notifications', label: 'Notifications' },
+    { id: 'deliveries', label: 'Deliveries' },
+  ]
   async function load() {
     setRows(await api.opsConfig())
     setNotif(await api.opsNotificationSettings())
@@ -1367,6 +1375,11 @@ export function OpsConfig() {
     window.addEventListener('ep:realtime', onRealtime)
     return () => window.removeEventListener('ep:realtime', onRealtime)
   }, [])
+  function selectTab(id) {
+    setTab(id)
+    setError('')
+    setMessage('')
+  }
   async function toggleChannel(key, value) {
     setError('')
     try {
@@ -1437,136 +1450,176 @@ export function OpsConfig() {
       <PageHeader title="System Configuration" />
       {error && <div className="alert">{error}</div>}
       {message && <div className="alert ok">{message}</div>}
-      <Disclosure title="Client data cache" open>
-        <p className="muted">
-          After the first load, GET responses are cached in the browser. Default is 15 minutes.
-          Platform admins can increase this value; clients receive the new TTL on their next request
-          via the <code>X-EasyPay-Cache-TTL</code> response header and update locally.
-        </p>
-        <form className="stack" onSubmit={saveClientCache} style={{ maxWidth: 520 }}>
-          <div className="field">
-            <label>Cache time (minutes)</label>
-            <input
-              type="number"
-              min={Math.round((clientCache.min_ttl_seconds || 900) / 60)}
-              max={Math.round((clientCache.max_ttl_seconds || 86400) / 60)}
-              step="1"
-              required
-              value={clientCache.ttl_minutes}
-              onChange={(e) => setClientCache({ ...clientCache, ttl_minutes: e.target.value })}
-            />
-          </div>
-          <p className="muted" style={{ marginTop: 0 }}>
-            Minimum {Math.round((clientCache.min_ttl_seconds || 900) / 60)} minutes · maximum{' '}
-            {Math.round((clientCache.max_ttl_seconds || 86400) / 60)} minutes · default{' '}
-            {Math.round((clientCache.default_ttl_seconds || 900) / 60)} minutes.
-            Active browser TTL: {Math.round((api.getClientCacheTtlMs?.() || 900000) / 60000)} minutes.
-          </p>
-          <button className="btn btn-primary" type="submit">Save cache time</button>
-        </form>
-      </Disclosure>
-      <Disclosure title="Transaction history export (payer downloads)" open>
-        <p className="muted">
-          Payers can download dated transaction history PDFs. Each payer receives the configured number of free
-          downloads; further downloads are charged the fee via Mobile Money (Campay).
-        </p>
-        <form className="stack" onSubmit={saveHistoryExport} style={{ maxWidth: 520 }}>
-          <div className="field">
-            <label>Free downloads per payer</label>
-            <input
-              type="number"
-              min="0"
-              required
-              value={historyExport.free_downloads}
-              onChange={(e) => setHistoryExport({ ...historyExport, free_downloads: e.target.value })}
-            />
-          </div>
-          <div className="field">
-            <label>Fee after free allowance</label>
-            <input
-              type="number"
-              min="0"
-              step="1"
-              required
-              value={historyExport.fee_amount}
-              onChange={(e) => setHistoryExport({ ...historyExport, fee_amount: e.target.value })}
-            />
-          </div>
-          <div className="field">
-            <label>Currency</label>
-            <input
-              required
-              value={historyExport.currency}
-              onChange={(e) => setHistoryExport({ ...historyExport, currency: e.target.value })}
-            />
-          </div>
-          <button className="btn btn-primary" type="submit">Save export fee settings</button>
-        </form>
-      </Disclosure>
-      {notif && (
-        <Disclosure title="Notification channels (email, SMS, WhatsApp)" open>
-          <p className="muted">
-            SMS requires the server env <code>NOTIFICATIONS_SMS_ENABLED=true</code> before the toggle takes effect.
-          </p>
-          <div className="row" style={{ gap: '1rem', flexWrap: 'wrap' }}>
-            <label className="row">
-              <input type="checkbox" checked={notif.email_enabled} onChange={(e) => toggleChannel('email_enabled', e.target.checked)} />
-              Email
-            </label>
-            <label className="row">
-              <input
-                type="checkbox"
-                checked={notif.sms_enabled}
-                disabled={!notif.sms_master_switch}
-                onChange={(e) => toggleChannel('sms_enabled', e.target.checked)}
-              />
-              SMS {notif.sms_master_switch ? '' : '(disabled on server)'}
-            </label>
-            <label className="row">
-              <input type="checkbox" checked={notif.whatsapp_enabled} onChange={(e) => toggleChannel('whatsapp_enabled', e.target.checked)} />
-              WhatsApp
-            </label>
-          </div>
-        </Disclosure>
-      )}
-      <Disclosure title="Recent notification deliveries">
-        <table className="data">
-          <thead><tr><th>When</th><th>Channel</th><th>Event</th><th>Recipient</th><th>Status</th></tr></thead>
-          <tbody>
-            {listItems(logPage).map((n) => (
-              <tr key={n.notification_id}>
-                <td>{new Date(n.created_at).toLocaleString()}</td>
-                <td>{n.channel}</td>
-                <td>{n.event_type}</td>
-                <td className="muted">{n.recipient || '—'}</td>
-                <td><span className="pill">{n.status}</span></td>
-              </tr>
-            ))}
-            {!listItems(logPage).length && <EmptyRow cols={5} text="No deliveries yet." />}
-          </tbody>
-        </table>
-      </Disclosure>
-      <form className="panel" onSubmit={save} style={{ maxWidth: 560 }}>
-        <div className="field"><label>Key</label><input required value={form.config_key} onChange={(e) => setForm({ ...form, config_key: e.target.value })} /></div>
-        <div className="field"><label>Value</label><input required value={form.config_value} onChange={(e) => setForm({ ...form, config_value: e.target.value })} /></div>
-        <div className="field"><label>Description</label><input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
-        <button className="btn btn-primary" type="submit">Save</button>
-      </form>
-      <div className="panel table-wrap">
-        <table className="data">
-          <thead><tr><th>Key</th><th>Value</th><th>Description</th></tr></thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.config_id}>
-                <td>{r.config_key}</td>
-                <td>{r.config_value}</td>
-                <td className="muted">{r.description}</td>
-              </tr>
-            ))}
-            {!rows.length && <EmptyRow cols={3} />}
-          </tbody>
-        </table>
+      <div className="ops-tabs" role="tablist" aria-label="System configuration sections">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            aria-selected={tab === t.id}
+            className={`ops-tab${tab === t.id ? ' on' : ''}`}
+            onClick={() => selectTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
+
+      {tab === 'overview' && (
+        <div role="tabpanel" className="stack">
+          <form className="panel" onSubmit={save} style={{ maxWidth: 560 }}>
+            <h3>Config key</h3>
+            <div className="field"><label>Key</label><input required value={form.config_key} onChange={(e) => setForm({ ...form, config_key: e.target.value })} /></div>
+            <div className="field"><label>Value</label><input required value={form.config_value} onChange={(e) => setForm({ ...form, config_value: e.target.value })} /></div>
+            <div className="field"><label>Description</label><input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
+            <button className="btn btn-primary" type="submit">Save</button>
+          </form>
+          <div className="panel table-wrap">
+            <table className="data">
+              <thead><tr><th>Key</th><th>Value</th><th>Description</th></tr></thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.config_id}>
+                    <td>{r.config_key}</td>
+                    <td>{r.config_value}</td>
+                    <td className="muted">{r.description}</td>
+                  </tr>
+                ))}
+                {!rows.length && <EmptyRow cols={3} />}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {tab === 'cache' && (
+        <div role="tabpanel" className="panel stack" style={{ maxWidth: 640 }}>
+          <h3>Client data cache</h3>
+          <p className="muted">
+            After the first load, GET responses are cached in the browser. Default is 15 minutes.
+            Platform admins can increase this value; clients receive the new TTL on their next request
+            via the <code>X-EasyPay-Cache-TTL</code> response header and update locally.
+          </p>
+          <form className="stack" onSubmit={saveClientCache} style={{ maxWidth: 520 }}>
+            <div className="field">
+              <label>Cache time (minutes)</label>
+              <input
+                type="number"
+                min={Math.round((clientCache.min_ttl_seconds || 900) / 60)}
+                max={Math.round((clientCache.max_ttl_seconds || 86400) / 60)}
+                step="1"
+                required
+                value={clientCache.ttl_minutes}
+                onChange={(e) => setClientCache({ ...clientCache, ttl_minutes: e.target.value })}
+              />
+            </div>
+            <p className="muted" style={{ marginTop: 0 }}>
+              Minimum {Math.round((clientCache.min_ttl_seconds || 900) / 60)} minutes · maximum{' '}
+              {Math.round((clientCache.max_ttl_seconds || 86400) / 60)} minutes · default{' '}
+              {Math.round((clientCache.default_ttl_seconds || 900) / 60)} minutes.
+              Active browser TTL: {Math.round((api.getClientCacheTtlMs?.() || 900000) / 60000)} minutes.
+            </p>
+            <button className="btn btn-primary" type="submit">Save cache time</button>
+          </form>
+        </div>
+      )}
+
+      {tab === 'export' && (
+        <div role="tabpanel" className="panel stack" style={{ maxWidth: 640 }}>
+          <h3>Transaction history export</h3>
+          <p className="muted">
+            Payers can download dated transaction history PDFs. Each payer receives the configured number of free
+            downloads; further downloads are charged the fee via Mobile Money (Campay).
+          </p>
+          <form className="stack" onSubmit={saveHistoryExport} style={{ maxWidth: 520 }}>
+            <div className="field">
+              <label>Free downloads per payer</label>
+              <input
+                type="number"
+                min="0"
+                required
+                value={historyExport.free_downloads}
+                onChange={(e) => setHistoryExport({ ...historyExport, free_downloads: e.target.value })}
+              />
+            </div>
+            <div className="field">
+              <label>Fee after free allowance</label>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                required
+                value={historyExport.fee_amount}
+                onChange={(e) => setHistoryExport({ ...historyExport, fee_amount: e.target.value })}
+              />
+            </div>
+            <div className="field">
+              <label>Currency</label>
+              <input
+                required
+                value={historyExport.currency}
+                onChange={(e) => setHistoryExport({ ...historyExport, currency: e.target.value })}
+              />
+            </div>
+            <button className="btn btn-primary" type="submit">Save export fee settings</button>
+          </form>
+        </div>
+      )}
+
+      {tab === 'notifications' && (
+        <div role="tabpanel" className="panel stack" style={{ maxWidth: 640 }}>
+          <h3>Notification channels</h3>
+          {notif ? (
+            <>
+              <p className="muted">
+                SMS requires the server env <code>NOTIFICATIONS_SMS_ENABLED=true</code> before the toggle takes effect.
+              </p>
+              <div className="row" style={{ gap: '1rem', flexWrap: 'wrap' }}>
+                <label className="row">
+                  <input type="checkbox" checked={notif.email_enabled} onChange={(e) => toggleChannel('email_enabled', e.target.checked)} />
+                  Email
+                </label>
+                <label className="row">
+                  <input
+                    type="checkbox"
+                    checked={notif.sms_enabled}
+                    disabled={!notif.sms_master_switch}
+                    onChange={(e) => toggleChannel('sms_enabled', e.target.checked)}
+                  />
+                  SMS {notif.sms_master_switch ? '' : '(disabled on server)'}
+                </label>
+                <label className="row">
+                  <input type="checkbox" checked={notif.whatsapp_enabled} onChange={(e) => toggleChannel('whatsapp_enabled', e.target.checked)} />
+                  WhatsApp
+                </label>
+              </div>
+            </>
+          ) : (
+            <p className="muted">Loading notification settings…</p>
+          )}
+        </div>
+      )}
+
+      {tab === 'deliveries' && (
+        <div className="panel table-wrap" role="tabpanel">
+          <h3>Recent notification deliveries</h3>
+          <table className="data">
+            <thead><tr><th>When</th><th>Channel</th><th>Event</th><th>Recipient</th><th>Status</th></tr></thead>
+            <tbody>
+              {listItems(logPage).map((n) => (
+                <tr key={n.notification_id}>
+                  <td>{new Date(n.created_at).toLocaleString()}</td>
+                  <td>{n.channel}</td>
+                  <td>{n.event_type}</td>
+                  <td className="muted">{n.recipient || '—'}</td>
+                  <td><span className="pill">{n.status}</span></td>
+                </tr>
+              ))}
+              {!listItems(logPage).length && <EmptyRow cols={5} text="No deliveries yet." />}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }
